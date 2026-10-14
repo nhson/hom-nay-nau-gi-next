@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, Heart, UtensilsCrossed } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -17,7 +18,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
-      <header className="px-4 pt-6 pb-2 md:pt-10">
+      <header className="flex items-center gap-3 px-4 pt-6 pb-2 md:pt-10">
+        <Image src="/icons/icon.svg" alt="" width={40} height={40} unoptimized priority className="size-10 rounded-xl shadow-sm" />
         <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
           Hôm nay <span className="text-turmeric-text">nấu gì?</span>
         </h1>
@@ -41,13 +43,21 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors",
+                    "group flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors",
                     "md:min-h-11 md:flex-row md:gap-2 md:text-sm",
                     "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset",
                     active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <Icon aria-hidden className="size-5" />
+                  {/* The pill behind the icon marks the current tab by shape, not colour alone. */}
+                  <span
+                    className={cn(
+                      "flex h-7 w-14 items-center justify-center rounded-full transition-colors md:h-auto md:w-auto md:bg-transparent",
+                      active ? "bg-primary/12" : "group-hover:bg-muted",
+                    )}
+                  >
+                    <Icon aria-hidden className="size-5" strokeWidth={active ? 2.25 : 1.75} />
+                  </span>
                   {label}
                 </Link>
               </li>
