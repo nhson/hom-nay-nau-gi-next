@@ -1,26 +1,115 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Theme follows the system setting (no manual toggle), so `dark:` is the media query. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  /* The one warm accent: primary calls to action (Random thực đơn). */
+  --color-turmeric: var(--turmeric);
+  --color-turmeric-foreground: var(--turmeric-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+/* Not `inline`: the next/font CSS variables only exist at runtime, so they must stay var() references. */
+@theme {
+  --font-sans: var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
+}
+
+:root {
+  --radius: 1rem;
+  /* Warm rice-paper ground, jade primary, turmeric accent (the original app's identity). */
+  --background: #fbf7ee;
+  --foreground: #241f18;
+  --card: #ffffff;
+  --card-foreground: #241f18;
+  --popover: #ffffff;
+  --popover-foreground: #241f18;
+  --primary: #2f5d50;
+  --primary-foreground: #ffffff;
+  --secondary: #f4eee0;
+  --secondary-foreground: #241f18;
+  --muted: #f4eee0;
+  --muted-foreground: #6b6152;
+  --accent: #f4eee0;
+  --accent-foreground: #241f18;
+  --destructive: #b23a22;
+  --border: #e7decb;
+  --input: #e7decb;
+  --ring: #2f5d50;
+  --turmeric: #d98a22;
+  --turmeric-foreground: #241f18;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #181d17;
+    --foreground: #f1ecdd;
+    --card: #212720;
+    --card-foreground: #f1ecdd;
+    --popover: #212720;
+    --popover-foreground: #f1ecdd;
+    --primary: #7cae9b;
+    --primary-foreground: #12211c;
+    --secondary: #262c24;
+    --secondary-foreground: #f1ecdd;
+    --muted: #262c24;
+    --muted-foreground: #a39c89;
+    --accent: #262c24;
+    --accent-foreground: #f1ecdd;
+    --destructive: #e08066;
+    --border: #333a30;
+    --input: #333a30;
+    --ring: #7cae9b;
+    --turmeric: #e9a94e;
+    --turmeric-foreground: #20160a;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  }
+  button,
+  [role="button"],
+  summary {
+    cursor: pointer;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
