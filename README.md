@@ -72,4 +72,4 @@ Icons are rendered from `public/icons/*.svg`; after changing the artwork run `pn
 | 3 | Static shell, on-device store, Hôm nay | done |
 | 4 | Dish bank and favorites | done |
 | 5 | PWA and offline | done |
-| 6 | Analytics, accessibility, Playwright, parity checklist | in review (see [docs/parity-checklist.md](docs/parity-checklist.md)) |
+| 6 | Analytics, accessibility, Playwright, parity checklist | done (see [docs/parity-checklist.md](docs/parity-checklist.md)) |
