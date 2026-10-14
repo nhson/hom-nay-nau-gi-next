@@ -1,10 +1,11 @@
 import { formatDayMonth } from "./dates";
-import type { ResolvedCatalog } from "./catalog";
+import { hasOverride, type ResolvedCatalog } from "./catalog";
 import { isMenuCooked, latestHistory, resolveDishNames } from "./history";
 import { sortIdsByCategoryOrder } from "./menu";
 import type { PersonalState } from "./personal";
+import { CATEGORY_ORDER } from "./selection";
 import { buildShoppingList, type ShoppingItem } from "./shopping";
-import type { Dish, MealType, Menu } from "./types";
+import type { Category, Dish, MealType, Menu, UserCatalogState } from "./types";
 
 /** Today's dishes, resolved, in display order (fixed Xào -> Canh -> Món mặn for Bữa cơm 3 món). */
 export function menuDishes(menu: Menu | null, resolvable: readonly Dish[]): Dish[] {
@@ -48,4 +49,56 @@ export function selectToday(state: PersonalState, catalog: ResolvedCatalog, toda
       mealType: entry.mealType,
     })),
   };
+}
+
+export type BankFilter = "all" | Category | "buatomonuoc";
+
+export interface BankRow {
+  dish: Dish;
+  /** A catalog dish the user has edited on this device. */
+  edited: boolean;
+}
+
+const BANK_GROUP_ORDER: readonly string[] = [...CATEGORY_ORDER, "buatomonuoc"];
+
+function bankGroup(dish: Dish): number {
+  return BANK_GROUP_ORDER.indexOf(dish.category ?? "buatomonuoc");
+}
+
+/** The dish bank: pickable dishes, filtered, sorted by group then name (Vietnamese collation). */
+export function selectDishBank(
+  catalog: ResolvedCatalog,
+  user: UserCatalogState,
+  filter: BankFilter,
+  chayOnly: boolean,
+): BankRow[] {
+  return catalog.pickable
+    .filter((dish) => {
+      if (chayOnly && !dish.chay) return false;
+      if (filter === "all") return true;
+      if (filter === "buatomonuoc") return dish.mealType === "buatomonuoc";
+      return dish.category === filter;
+    })
+    .sort((a, b) => bankGroup(a) - bankGroup(b) || a.name.localeCompare(b.name, "vi"))
+    .map((dish) => ({ dish, edited: hasOverride(user, dish.id) }));
+}
+
+export interface FavoriteRow {
+  id: string;
+  name: string;
+  dishNames: string[];
+  mealType: MealType | undefined;
+  /** At least one of its dishes still exists, so it can be applied. */
+  usable: boolean;
+}
+
+export function selectFavorites(state: PersonalState, catalog: ResolvedCatalog): FavoriteRow[] {
+  const ids = new Set(catalog.resolvable.map((dish) => dish.id));
+  return state.favorites.map((favorite) => ({
+    id: favorite.id,
+    name: favorite.name,
+    dishNames: resolveDishNames(favorite.dishIds, catalog.resolvable),
+    mealType: favorite.mealType,
+    usable: favorite.dishIds.some((id) => ids.has(id)),
+  }));
 }

@@ -3,6 +3,7 @@
 import { Check, Dices, Soup } from "lucide-react";
 import { selectToday, type Category } from "@/domain";
 import { Button } from "@/components/ui/button";
+import { SaveFavoriteButton } from "../favorites/save-favorite-dialog";
 import { cn } from "@/lib/utils";
 import { useApp } from "../app-provider";
 import { DishCard } from "./dish-card";
@@ -44,9 +45,12 @@ export function TodayScreen() {
     <div>
       <p className="mb-4 text-sm text-muted-foreground capitalize">{formatLongDate(today)}</p>
 
-      <Button variant="turmeric" size="lg" className="w-full" onClick={() => dispatch({ type: "random-menu" })}>
-        <Dices aria-hidden /> Random thực đơn
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="turmeric" size="lg" className="flex-1" onClick={() => dispatch({ type: "random-menu" })}>
+          <Dices aria-hidden /> Random thực đơn
+        </Button>
+        <SaveFavoriteButton />
+      </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button
