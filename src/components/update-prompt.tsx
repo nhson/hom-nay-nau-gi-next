@@ -21,8 +21,11 @@ export function UpdatePrompt() {
         duration: Infinity,
         action: { label: "Cập nhật", onClick: () => serwist.messageSkipWaiting() },
       });
-    // Once the new worker takes control, reload so the page matches it.
-    const onControlling = () => window.location.reload();
+    // Once an updated worker takes control, reload so the page matches it. The very first install
+    // also takes control but is not an update: leave the page alone then.
+    const onControlling = (event: { isUpdate?: boolean }) => {
+      if (event.isUpdate) window.location.reload();
+    };
     serwist.addEventListener("waiting", onWaiting);
     serwist.addEventListener("controlling", onControlling);
     return () => {

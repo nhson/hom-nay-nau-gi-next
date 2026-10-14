@@ -4,19 +4,34 @@
 const DB_NAME = "hom-nay-nau-gi";
 const STORE = "kv";
 
+let connection: Promise<IDBDatabase | null> | null = null;
+
+/**
+ * One connection is kept open for the life of the page, so a write starts in the same tick as the
+ * tap that caused it (opening per write left a window where a quick reload lost the change).
+ */
 function open(): Promise<IDBDatabase | null> {
-  return new Promise((resolve) => {
+  connection ??= new Promise((resolve) => {
     try {
       if (typeof indexedDB === "undefined") return resolve(null);
       const request = indexedDB.open(DB_NAME, 1);
       request.onupgradeneeded = () => request.result.createObjectStore(STORE);
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        const db = request.result;
+        // Another tab upgrading or the browser closing the database: reconnect on next use.
+        db.onclose = db.onversionchange = () => {
+          db.close();
+          connection = null;
+        };
+        resolve(db);
+      };
       request.onerror = () => resolve(null);
       request.onblocked = () => resolve(null);
     } catch {
       resolve(null);
     }
   });
+  return connection;
 }
 
 export async function idbGet(key: string): Promise<unknown> {
@@ -29,8 +44,6 @@ export async function idbGet(key: string): Promise<unknown> {
       request.onerror = () => resolve(undefined);
     } catch {
       resolve(undefined);
-    } finally {
-      db.close();
     }
   });
 }
@@ -47,8 +60,6 @@ export async function idbSet(key: string, value: unknown): Promise<boolean> {
       tx.onabort = () => resolve(false);
     } catch {
       resolve(false);
-    } finally {
-      db.close();
     }
   });
 }

@@ -79,20 +79,25 @@ export function TodayScreen() {
       )}
 
       {view.dishes.length > 0 ? (
-        <ul className="mt-4 space-y-3">
-          {view.dishes.map((dish) => (
-            <DishCard
-              key={dish.id}
-              dish={dish}
-              onReroll={() =>
-                dispatch({
-                  type: "reroll",
-                  target: dish.mealType === "buatomonuoc" ? "monnuoc" : (dish.category as Category),
-                })
-              }
-            />
-          ))}
-        </ul>
+        <>
+          <h2 id="menu-heading" className="sr-only">
+            Thực đơn hôm nay
+          </h2>
+          <ul aria-labelledby="menu-heading" className="mt-4 space-y-3">
+            {view.dishes.map((dish) => (
+              <DishCard
+                key={dish.id}
+                dish={dish}
+                onReroll={() =>
+                  dispatch({
+                    type: "reroll",
+                    target: dish.mealType === "buatomonuoc" ? "monnuoc" : (dish.category as Category),
+                  })
+                }
+              />
+            ))}
+          </ul>
+        </>
       ) : (
         <p className="mt-4 rounded-xl border bg-card p-4 text-center text-muted-foreground">
           Bấm &ldquo;Random thực đơn&rdquo; để bắt đầu nhé!
