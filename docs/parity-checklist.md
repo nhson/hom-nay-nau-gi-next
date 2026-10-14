@@ -27,24 +27,24 @@ Legend: **E2E** = Playwright journey in `e2e/`, **Unit** = Vitest in `src/`.
 | F22 | Mobile-first (~400px) | Done | All E2E run on a Pixel 7 viewport; centered column on larger screens |
 | F23 | Fraunces + Be Vietnam Pro | Done | `next/font` with the Vietnamese subset; Manual check of diacritics |
 | F24 | Toasts | Done | E2E asserts "Đã lưu món ăn!" |
-| F25 | Analytics events (names + properties unchanged) | Done | Unit `analytics`. 12 of the legacy 14 events: `create_household` / `leave_household` belong to deferred F16–F20 |
-| F26 | CI/CD on Vercel + GitHub | Partly | CI runs lint, typecheck, unit + contract, build and Playwright. **Pending owner:** connect the repo to Vercel (preview + production from `main`) |
+| F25 | Analytics events (names + properties unchanged) | Done in code | Unit `analytics`; production sends page view + events (HTTP 200). 12 of the legacy 14 events: `create_household` / `leave_household` belong to deferred F16–F20. **Custom events are not shown on the Vercel Hobby plan** (owner decision: stay on Hobby) |
+| F26 | CI/CD on Vercel + GitHub | Done | CI runs lint, typecheck, unit + contract, build and Playwright; Vercel builds a preview per PR and deploys `main` to production (verified) |
 | F27 | Automated tests (legacy had 32) | Done | 200+ unit/contract tests, 16 Playwright tests |
 
 ## New in v1 (beyond parity)
 
 | ID | Feature | Status | Verified by |
 |---|---|---|---|
-| N1 | Installable PWA, works offline | Done | E2E "works offline…"; update flow checked manually. **Manual:** install on a real Android and iOS device |
-| N2/N3/N6 | Postgres catalog, typed API, seed in DB | Done in code | Contract tests on real migrations. **Pending owner:** provision Neon, then `pnpm db:migrate && pnpm db:seed` |
+| N1 | Installable PWA, works offline | Done | E2E "works offline…"; update flow checked manually. Installed and working on a real phone (owner-confirmed) |
+| N2/N3/N6 | Postgres catalog, typed API, seed in DB | Done | Contract tests on real migrations; production `/api/v1/health` ok, catalog v1 with 73 dishes. No rate limiting (see [features.md](features.md)) |
 
-## Owner steps before sign-off
+## Remaining before retiring the old app
 
-1. Link the repo to a Vercel project and connect GitHub (preview per PR, production from `main`).
-2. `vercel integration add neon`, then `pnpm db:migrate && pnpm db:seed` against it; confirm `/api/v1/health` reports `ok`.
-3. Enable Web Analytics on the new project and confirm events arrive (first five: `random_menu`, `reroll_dish`, `toggle_chay`, `mark_cooked`, `view_recipe`).
-4. On a real phone: install to the home screen (Android and iOS), go offline, check Hôm nay, recipe, shopping list.
-5. Use it for a few days alongside the old app; then decide the domain cutover and update product principle #3 in the old repo.
+1. Use the new app for a few days alongside the old one.
+2. Decide the domain cutover; then update product principle #3 ("no framework, no build step") in the old repo's `pm/context/product.md`.
+3. Optional: protect `main` so CI must pass before merge; revisit analytics visibility if the north-star metric (`mark_cooked` per week) matters (needs Vercel Pro or our own event counting).
+
+Done: Vercel project linked to GitHub, Neon provisioned/migrated/seeded, Web Analytics enabled, install on a real phone.
 
 ## Notes on deliberate differences
 

@@ -68,6 +68,8 @@ prompt and reloads only when the user accepts (data is never cleared).
 
 Icons are rendered from `public/icons/*.svg`; after changing the artwork run `pnpm icons` and commit the PNGs.
 
+See [docs/features.md](docs/features.md) for the full feature list and what is done.
+
 ## Status
 
 | Slice | Scope | State |
