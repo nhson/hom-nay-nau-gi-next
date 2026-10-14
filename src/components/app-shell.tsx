@@ -19,7 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
       <header className="px-4 pt-6 pb-2 md:pt-10">
         <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
-          Hôm nay <span className="text-turmeric">nấu gì?</span>
+          Hôm nay <span className="text-turmeric-text">nấu gì?</span>
         </h1>
       </header>
 

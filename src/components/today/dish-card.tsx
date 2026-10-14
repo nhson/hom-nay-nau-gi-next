@@ -1,7 +1,8 @@
 import { Clock, Shuffle } from "lucide-react";
-import type { Dish } from "@/domain";
+import { viewRecipeEvent, type Dish } from "@/domain";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { trackEvents } from "@/lib/analytics";
 import { BOWL_LABEL, CATEGORY_LABEL, REGION_LABEL } from "@/lib/labels";
 
 interface DishCardProps {
@@ -35,7 +36,10 @@ export function DishCard({ dish, onReroll }: DishCardProps) {
         <p className="mt-1 text-sm text-muted-foreground">{dish.ingredients.join(", ")}</p>
 
         {dish.steps.length > 0 && (
-          <details className="group mt-3">
+          <details
+            className="group mt-3"
+            onToggle={(event) => event.currentTarget.open && trackEvents([viewRecipeEvent(dish)])}
+          >
             <summary className="flex min-h-11 w-fit cursor-pointer items-center text-sm font-medium text-primary marker:content-none">
               Xem cách nấu ({dish.steps.length} bước)
             </summary>

@@ -27,6 +27,8 @@
   /* The one warm accent: primary calls to action (Random thực đơn). */
   --color-turmeric: var(--turmeric);
   --color-turmeric-foreground: var(--turmeric-foreground);
+  /* The accent as *text*: the button colour is too light for body-size contrast on the cream ground. */
+  --color-turmeric-text: var(--turmeric-text);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -62,6 +64,7 @@
   --ring: #2f5d50;
   --turmeric: #d98a22;
   --turmeric-foreground: #241f18;
+  --turmeric-text: #a35f08;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -86,6 +89,7 @@
     --ring: #7cae9b;
     --turmeric: #e9a94e;
     --turmeric-foreground: #20160a;
+    --turmeric-text: #e9a94e;
   }
 }
 
