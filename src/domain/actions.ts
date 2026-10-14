@@ -16,6 +16,7 @@ import {
   rerollMonNuoc,
   rerollSlot,
 } from "./menu";
+import { eventsFor, type AnalyticsEvent } from "./analytics";
 import type { PersonalState } from "./personal";
 import { buildShoppingList, pruneTicks, setTick } from "./shopping";
 import type { Category, Dish, Menu, Rng } from "./types";
@@ -67,9 +68,13 @@ export interface ActionContext {
 export interface ActionResult {
   state: PersonalState;
   notice?: Notice;
+  /** Analytics events for what the user just did; the UI sends them, the domain only describes them. */
+  events: AnalyticsEvent[];
 }
 
-function riceMenu(state: PersonalState, ctx: ActionContext): ActionResult {
+type StepResult = Omit<ActionResult, "events">;
+
+function riceMenu(state: PersonalState, ctx: ActionContext): StepResult {
   const { menu, missing } = generateBuaComMenu(ctx.catalog.pickable, state.history, ctx.today, {
     chay: state.chayFilter,
     rng: ctx.rng,
@@ -80,7 +85,7 @@ function riceMenu(state: PersonalState, ctx: ActionContext): ActionResult {
   };
 }
 
-function oneDishMenu(state: PersonalState, ctx: ActionContext): ActionResult {
+function oneDishMenu(state: PersonalState, ctx: ActionContext): StepResult {
   const menu = generateMonNuocMenu(ctx.catalog.pickable, state.history, ctx.today, {
     chay: state.chayFilter,
     rng: ctx.rng,
@@ -99,8 +104,13 @@ function withMenu(state: PersonalState, menu: Menu, ctx: ActionContext): Persona
   };
 }
 
-/** Pure state transition for every user action on the Hôm nay screen. */
+/** Pure state transition for every user action. */
 export function reduce(state: PersonalState, action: Action, ctx: ActionContext): ActionResult {
+  const step = apply(state, action, ctx);
+  return { ...step, events: eventsFor(action, state, { ...step, events: [] }) };
+}
+
+function apply(state: PersonalState, action: Action, ctx: ActionContext): StepResult {
   switch (action.type) {
     case "ensure-today":
       return isMenuStale(state.todayMenu, ctx.today) ? riceMenu(state, ctx) : { state };

@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, Fraunces } from "next/font/google";
 import { AppProvider } from "@/components/app-provider";
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <AppShell>{children}</AppShell>
             <Toaster position="top-center" />
             <UpdatePrompt />
+            <Analytics />
           </AppProvider>
         </PwaProvider>
       </body>

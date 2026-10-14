@@ -28,6 +28,7 @@ import {
   saveCatalog,
   type CachedCatalog,
 } from "@/lib/catalog-client";
+import { trackEvents } from "@/lib/analytics";
 import { noticeMessage } from "@/lib/notices";
 import { loadPersonal, savePersonal } from "@/lib/personal-store";
 
@@ -85,6 +86,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setState(result.state);
       void savePersonal(result.state);
     }
+    trackEvents(result.events);
     if (result.notice) toast(noticeMessage(result.notice));
     return result.notice;
   }, []);

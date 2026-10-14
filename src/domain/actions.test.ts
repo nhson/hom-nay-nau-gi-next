@@ -159,7 +159,7 @@ describe("mark-cooked and set-tick", () => {
 
   it("does nothing without a menu", () => {
     const before = stateWith();
-    expect(reduce(before, { type: "mark-cooked" }, ctx())).toEqual({ state: before });
+    expect(reduce(before, { type: "mark-cooked" }, ctx())).toEqual({ state: before, events: [] });
   });
 
   it("ticks and unticks an ingredient", () => {
@@ -219,7 +219,7 @@ describe("favorites", () => {
 
   it("explains when there is no menu to save", () => {
     const before = stateWith();
-    expect(reduce(before, { type: "save-favorite", name: "x" }, ctx())).toEqual({ state: before, notice: { code: "no-menu-to-save" } });
+    expect(reduce(before, { type: "save-favorite", name: "x" }, ctx())).toEqual({ state: before, notice: { code: "no-menu-to-save" }, events: [] });
   });
 
   it("applying a favorite sets today's menu and resets ticks", () => {
