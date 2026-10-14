@@ -29,6 +29,11 @@
   --color-turmeric-foreground: var(--turmeric-foreground);
   /* The accent as *text*: the button colour is too light for body-size contrast on the cream ground. */
   --color-turmeric-text: var(--turmeric-text);
+  /* One hue per kind of dish: stir-fry/greens, soup, mains, one-bowl meals. Used for icons and tints only, never for text. */
+  --color-cat-xao: var(--cat-xao);
+  --color-cat-canh: var(--cat-canh);
+  --color-cat-man: var(--cat-man);
+  --color-cat-bowl: var(--cat-bowl);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -65,6 +70,10 @@
   --turmeric: #d98a22;
   --turmeric-foreground: #241f18;
   --turmeric-text: #a35f08;
+  --cat-xao: #3c7a4b;
+  --cat-canh: #a1690f;
+  --cat-man: #b4492c;
+  --cat-bowl: #3d6a8a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -90,6 +99,10 @@
     --turmeric: #e9a94e;
     --turmeric-foreground: #20160a;
     --turmeric-text: #e9a94e;
+    --cat-xao: #86c595;
+    --cat-canh: #e3b25a;
+    --cat-man: #ee8f72;
+    --cat-bowl: #86b4d8;
   }
 }
 

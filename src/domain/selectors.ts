@@ -65,16 +65,24 @@ function bankGroup(dish: Dish): number {
   return BANK_GROUP_ORDER.indexOf(dish.category ?? "buatomonuoc");
 }
 
+/** Lower-case, accent-free text so "canh chua" finds "Canh Chua" and "ca loc" finds "cá lóc". */
+export function foldText(text: string): string {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/g, "d").replace(/Đ/g, "d").toLowerCase().trim();
+}
+
 /** The dish bank: pickable dishes, filtered, sorted by group then name (Vietnamese collation). */
 export function selectDishBank(
   catalog: ResolvedCatalog,
   user: UserCatalogState,
   filter: BankFilter,
   chayOnly: boolean,
+  query = "",
 ): BankRow[] {
+  const needle = foldText(query);
   return catalog.pickable
     .filter((dish) => {
       if (chayOnly && !dish.chay) return false;
+      if (needle !== "" && !foldText(dish.name).includes(needle)) return false;
       if (filter === "all") return true;
       if (filter === "buatomonuoc") return dish.mealType === "buatomonuoc";
       return dish.category === filter;
