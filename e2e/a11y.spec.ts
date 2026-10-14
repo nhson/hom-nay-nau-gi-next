@@ -24,7 +24,8 @@ const PAGES = [
 for (const colorScheme of ["light", "dark"] as const) {
   for (const { path, ready } of PAGES) {
     test(`no accessibility violations on ${path} (${colorScheme})`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme });
+      // Reduced motion: no entrance animation, so axe reads the final colours, not a mid-fade blend.
+      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
       await page.goto(path);
       await expect(ready(page)).toBeVisible();
       const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
@@ -33,7 +34,17 @@ for (const colorScheme of ["light", "dark"] as const) {
   }
 }
 
+test("the recipe view is accessible", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/dishes");
+  await page.getByRole("button", { name: "Xem công thức Cá kho tộ" }).click();
+  await expect(page.getByRole("dialog", { name: "Cá kho tộ" })).toBeVisible();
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  expect(describe(results.violations)).toEqual([]);
+});
+
 test("dialogs are accessible and keyboard operable", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/dishes");
   await expect(page.getByText(/^73 món$/)).toBeVisible();
   await page.getByRole("button", { name: "Thêm món mới" }).click();

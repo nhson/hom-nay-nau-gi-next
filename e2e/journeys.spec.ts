@@ -5,7 +5,7 @@ import { dishCount, flushWrites, menuList, menuNames, openToday } from "./helper
 test("first open generates a Bữa cơm 3 món in the fixed order", async ({ page }) => {
   await openToday(page);
   await expect(menuNames(page)).toHaveCount(3);
-  const groups = await menuList(page).locator("span.uppercase").allTextContents();
+  const groups = await menuList(page).locator("p.uppercase").allTextContents();
   expect(groups).toEqual(["Xào / Luộc / Salad", "Canh", "Món mặn"]);
   await expect(page.getByRole("heading", { name: "Danh sách đi chợ" })).toBeVisible();
   await expect(page.getByRole("checkbox").first()).toBeVisible();
@@ -128,6 +128,29 @@ test("the dish bank filters by group and Chay", async ({ page }) => {
 
   await page.getByRole("button", { name: "Chay", exact: true }).click();
   expect(await dishCount(page)).toBe(count((d) => d.mealType === "buatomonuoc"));
+});
+
+test("search the dish bank and read a recipe without adding it to the menu", async ({ page }) => {
+  await page.goto("/dishes");
+  const search = page.getByRole("searchbox", { name: "Tìm món" });
+  // Accent- and case-insensitive: "ca kho" finds "Cá kho tộ".
+  await search.fill("CA KHO");
+  await expect(page.getByRole("button", { name: "Xem công thức Cá kho tộ" })).toBeVisible();
+  expect(await dishCount(page)).toBeLessThan(10);
+
+  await page.getByRole("button", { name: "Xem công thức Cá kho tộ" }).click();
+  const dialog = page.getByRole("dialog", { name: "Cá kho tộ" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: /^Nguyên liệu/ })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: /^Cách nấu/ })).toBeVisible();
+  await expect(dialog.getByRole("listitem").filter({ hasText: /\S/ }).first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  await search.fill("khong co mon nay");
+  await expect(page.getByText("Không có món nào phù hợp.")).toBeVisible();
+  await search.fill("");
+  expect(await dishCount(page)).toBe(SEED_DISHES.length);
 });
 
 test("save a favorite and use it again", async ({ page }) => {

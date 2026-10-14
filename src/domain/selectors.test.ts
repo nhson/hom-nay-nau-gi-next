@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveCatalog } from "./catalog";
 import { EMPTY_PERSONAL_STATE } from "./personal";
-import { menuDishes, selectDishBank, selectFavorites, selectToday } from "./selectors";
+import { foldText, menuDishes, selectDishBank, selectFavorites, selectToday } from "./selectors";
 import { bowl, dish } from "./testing";
 
 const TODAY = "2026-10-14";
@@ -94,5 +94,29 @@ describe("selectFavorites", () => {
     const rows = selectFavorites({ ...EMPTY_PERSONAL_STATE, favorites }, catalog);
     expect(rows[0]).toMatchObject({ dishNames: ["Xào", "(đã xoá)"], usable: true });
     expect(rows[1]).toMatchObject({ usable: false });
+  });
+});
+
+describe("dish bank search", () => {
+  const dishes = [
+    dish({ id: "c1", category: "canh", name: "Canh chua cá lóc" }),
+    dish({ id: "m1", category: "man", name: "Cá kho tộ" }),
+    dish({ id: "x1", category: "xao", name: "Đậu hũ xào" }),
+  ];
+  const resolved = resolveCatalog(dishes);
+  const user = EMPTY_PERSONAL_STATE.user;
+  const ids = (query: string) => selectDishBank(resolved, user, "all", false, query).map((r) => r.dish.id);
+
+  it("ignores case and accents", () => {
+    expect(foldText("Đậu HŨ Xào")).toBe("dau hu xao");
+    expect(ids("CA LOC")).toEqual(["c1"]);
+    expect(ids("dau hu")).toEqual(["x1"]);
+  });
+
+  it("matches anywhere in the name, combines with filters, and a blank query matches everything", () => {
+    expect(ids("ca")).toEqual(["c1", "m1"]);
+    expect(selectDishBank(resolved, user, "man", false, "ca").map((r) => r.dish.id)).toEqual(["m1"]);
+    expect(ids("   ")).toHaveLength(3);
+    expect(ids("khong co")).toEqual([]);
   });
 });
