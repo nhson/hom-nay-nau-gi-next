@@ -1,4 +1,13 @@
-import type { ResolvedCatalog } from "./catalog";
+import {
+  addCustomDish,
+  deleteDish,
+  makeCustomDishId,
+  resetDish,
+  restoreDish,
+  saveDish,
+  type ResolvedCatalog,
+} from "./catalog";
+import { applyFavorite, createFavorite, deleteFavorite } from "./favorites";
 import { recordCooked } from "./history";
 import {
   generateBuaComMenu,
@@ -9,7 +18,7 @@ import {
 } from "./menu";
 import type { PersonalState } from "./personal";
 import { buildShoppingList, pruneTicks, setTick } from "./shopping";
-import type { Category, Menu, Rng } from "./types";
+import type { Category, Dish, Menu, Rng } from "./types";
 
 export type Action =
   /** Open / return to the app: generate a fresh menu if today has none. */
@@ -19,17 +28,37 @@ export type Action =
   | { type: "reroll"; target: Category | "monnuoc" }
   | { type: "toggle-chay" }
   | { type: "mark-cooked" }
-  | { type: "set-tick"; key: string; checked: boolean };
+  | { type: "set-tick"; key: string; checked: boolean }
+  /** `id: null` adds a custom dish; otherwise edits that dish (a catalog dish becomes an override). */
+  | { type: "save-dish"; id: string | null; dish: Omit<Dish, "id"> }
+  | { type: "delete-dish"; id: string }
+  | { type: "restore-dish"; id: string }
+  | { type: "reset-dish"; id: string }
+  | { type: "save-favorite"; name: string }
+  | { type: "use-favorite"; id: string }
+  | { type: "delete-favorite"; id: string };
 
 /** What the UI should tell the user; the wording lives in the UI. */
 export type Notice =
   | { code: "groups-missing"; groups: Category[]; chay: boolean }
   | { code: "no-alternative" }
   | { code: "no-one-dish" }
-  | { code: "cooked" };
+  | { code: "cooked" }
+  | { code: "dish-saved" }
+  | { code: "favorite-saved" }
+  | { code: "favorite-applied" }
+  | { code: "no-menu-to-save" }
+  | { code: "favorite-unavailable" };
 
 export interface ActionContext {
+  /** The user's view of the catalog (edits and deletions applied). */
   catalog: ResolvedCatalog;
+  /** The server catalog as received, before the user's edits: tells catalog dishes from custom ones. */
+  catalogDishes: readonly Dish[];
+  /** Unique string for new custom dishes and favorites (injected: the domain has no crypto). */
+  newId: () => string;
+  /** Epoch milliseconds. */
+  now: number;
   /** Device-local date, YYYY-MM-DD. */
   today: string;
   rng?: Rng;
@@ -120,5 +149,43 @@ export function reduce(state: PersonalState, action: Action, ctx: ActionContext)
 
     case "set-tick":
       return { state: { ...state, ticks: setTick(state.ticks, action.key, action.checked) } };
+
+    case "save-dish": {
+      const user = action.id
+        ? saveDish(state.user, ctx.catalogDishes, { ...action.dish, id: action.id })
+        : addCustomDish(state.user, { ...action.dish, id: makeCustomDishId(ctx.newId()) });
+      return { state: { ...state, user }, notice: { code: "dish-saved" } };
+    }
+
+    case "delete-dish":
+      return { state: { ...state, user: deleteDish(state.user, ctx.catalogDishes, action.id) } };
+
+    case "restore-dish":
+      return { state: { ...state, user: restoreDish(state.user, action.id) } };
+
+    case "reset-dish":
+      return { state: { ...state, user: resetDish(state.user, action.id) } };
+
+    case "save-favorite": {
+      if (!state.todayMenu) return { state, notice: { code: "no-menu-to-save" } };
+      const favorite = createFavorite(state.todayMenu, action.name, ctx.newId(), ctx.now);
+      return {
+        state: { ...state, favorites: [favorite, ...state.favorites] },
+        notice: { code: "favorite-saved" },
+      };
+    }
+
+    case "use-favorite": {
+      const favorite = state.favorites.find((candidate) => candidate.id === action.id);
+      const menu = favorite && applyFavorite(favorite, ctx.today, ctx.catalog.resolvable);
+      if (!menu) return { state, notice: { code: "favorite-unavailable" } };
+      return {
+        state: { ...state, todayMenu: menu, ticks: {} },
+        notice: { code: "favorite-applied" },
+      };
+    }
+
+    case "delete-favorite":
+      return { state: { ...state, favorites: deleteFavorite(state.favorites, action.id) } };
   }
 }

@@ -17,7 +17,15 @@ const DISHES = [
 ];
 
 function ctx(overrides: Partial<ActionContext> = {}): ActionContext {
-  return { catalog: resolveCatalog(DISHES), today: TODAY, rng: firstPick, ...overrides };
+  return {
+    catalog: resolveCatalog(DISHES),
+    catalogDishes: DISHES,
+    newId: () => "uid",
+    now: 1000,
+    today: TODAY,
+    rng: firstPick,
+    ...overrides,
+  };
 }
 
 function stateWith(overrides: Partial<PersonalState> = {}): PersonalState {
@@ -159,5 +167,79 @@ describe("mark-cooked and set-tick", () => {
     expect(ticked.ticks).toEqual({ hành: true });
     const unticked = reduce(ticked, { type: "set-tick", key: "hành", checked: false }, ctx()).state;
     expect(unticked.ticks).toEqual({});
+  });
+});
+
+describe("dish management", () => {
+  const form = { name: "Món mới", mealType: "buacom" as const, category: "canh" as const, chay: false, region: null, time: 15, ingredients: ["a"], steps: ["b"] };
+
+  it("adds a custom dish with a custom id that joins the pickable pool", () => {
+    const { state, notice } = reduce(stateWith(), { type: "save-dish", id: null, dish: form }, ctx({ newId: () => "abc" }));
+    expect(state.user.customDishes.map((d) => d.id)).toEqual(["custom:abc"]);
+    expect(notice).toEqual({ code: "dish-saved" });
+    expect(resolveCatalog(DISHES, state.user).pickable.some((d) => d.id === "custom:abc")).toBe(true);
+  });
+
+  it("editing a catalog dish stores an override and leaves the catalog untouched", () => {
+    const { state } = reduce(stateWith(), { type: "save-dish", id: "x1", dish: { ...form, category: "xao", name: "Xào sửa" } }, ctx());
+    expect(state.user.overrides.x1.name).toBe("Xào sửa");
+    expect(resolveCatalog(DISHES, state.user).resolvable.find((d) => d.id === "x1")?.name).toBe("Xào sửa");
+  });
+
+  it("deleting a catalog dish hides it; restoring and resetting undo that", () => {
+    let { state } = reduce(stateWith(), { type: "delete-dish", id: "x1" }, ctx());
+    expect(state.user.hiddenIds).toEqual(["x1"]);
+    ({ state } = reduce(state, { type: "restore-dish", id: "x1" }, ctx()));
+    expect(state.user.hiddenIds).toEqual([]);
+    ({ state } = reduce(state, { type: "save-dish", id: "x1", dish: { ...form, category: "xao" } }, ctx()));
+    ({ state } = reduce(state, { type: "reset-dish", id: "x1" }, ctx()));
+    expect(state.user.overrides).toEqual({});
+  });
+
+  it("deleting a custom dish removes it", () => {
+    let { state } = reduce(stateWith(), { type: "save-dish", id: null, dish: form }, ctx({ newId: () => "abc" }));
+    ({ state } = reduce(state, { type: "delete-dish", id: "custom:abc" }, ctx()));
+    expect(state.user.customDishes).toEqual([]);
+  });
+});
+
+describe("favorites", () => {
+  const menu = { date: TODAY, dishIds: ["x1", "c1", "m1"], mealType: "buacom" as const };
+
+  it("saves today's menu under the given name, newest first", () => {
+    const { state, notice } = reduce(stateWith({ todayMenu: menu }), { type: "save-favorite", name: "Cuối tuần" }, ctx({ newId: () => "f1", now: 7 }));
+    expect(state.favorites).toEqual([{ id: "f1", name: "Cuối tuần", dishIds: ["x1", "c1", "m1"], mealType: "buacom", savedAt: 7 }]);
+    expect(notice).toEqual({ code: "favorite-saved" });
+  });
+
+  it("defaults a blank name to 'Thực đơn dd/mm'", () => {
+    const { state } = reduce(stateWith({ todayMenu: menu }), { type: "save-favorite", name: "  " }, ctx());
+    expect(state.favorites[0].name).toBe("Thực đơn 14/10");
+  });
+
+  it("explains when there is no menu to save", () => {
+    const before = stateWith();
+    expect(reduce(before, { type: "save-favorite", name: "x" }, ctx())).toEqual({ state: before, notice: { code: "no-menu-to-save" } });
+  });
+
+  it("applying a favorite sets today's menu and resets ticks", () => {
+    const favorite = { id: "f1", name: "n", dishIds: ["x2", "c1", "m1"], mealType: "buacom" as const, savedAt: 1 };
+    const { state, notice } = reduce(stateWith({ favorites: [favorite], ticks: { hành: true } }), { type: "use-favorite", id: "f1" }, ctx());
+    expect(state.todayMenu).toEqual({ date: TODAY, dishIds: ["x2", "c1", "m1"], mealType: "buacom" });
+    expect(state.ticks).toEqual({});
+    expect(notice).toEqual({ code: "favorite-applied" });
+  });
+
+  it("refuses a favorite whose dishes are all gone", () => {
+    const favorite = { id: "f1", name: "n", dishIds: ["gone"], savedAt: 1 };
+    const before = stateWith({ favorites: [favorite] });
+    const result = reduce(before, { type: "use-favorite", id: "f1" }, ctx());
+    expect(result.state).toBe(before);
+    expect(result.notice).toEqual({ code: "favorite-unavailable" });
+  });
+
+  it("deletes a favorite", () => {
+    const favorite = { id: "f1", name: "n", dishIds: ["x1"], savedAt: 1 };
+    expect(reduce(stateWith({ favorites: [favorite] }), { type: "delete-favorite", id: "f1" }, ctx()).state.favorites).toEqual([]);
   });
 });

@@ -14,5 +14,15 @@ export function noticeMessage(notice: Notice): string {
       return "Chưa có món Bữa 1 món nào phù hợp";
     case "cooked":
       return "Đã ghi nhận thực đơn hôm nay!";
+    case "dish-saved":
+      return "Đã lưu món ăn!";
+    case "favorite-saved":
+      return "Đã lưu vào yêu thích!";
+    case "favorite-applied":
+      return "Đã áp dụng thực đơn yêu thích!";
+    case "no-menu-to-save":
+      return "Chưa có thực đơn để lưu";
+    case "favorite-unavailable":
+      return "Các món trong thực đơn này đã bị xoá";
   }
 }
