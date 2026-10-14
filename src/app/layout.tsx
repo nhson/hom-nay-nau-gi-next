@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, Fraunces } from "next/font/google";
 import { AppProvider } from "@/components/app-provider";
 import { AppShell } from "@/components/app-shell";
+import { PwaProvider } from "@/components/pwa-provider";
+import { UpdatePrompt } from "@/components/update-prompt";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -20,6 +22,8 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: "Hôm nay nấu gì?",
+  applicationName: "Hôm nay nấu gì?",
+  appleWebApp: { capable: true, title: "Nấu gì?", statusBarStyle: "default" },
   description:
     "Gợi ý bữa cơm gia đình mỗi ngày: 3 món hoặc 1 món, kèm cách nấu và danh sách đi chợ.",
 };
@@ -38,10 +42,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="vi" className={`${beVietnam.variable} ${fraunces.variable} h-full`}>
       <body className="min-h-full">
-        <AppProvider>
-          <AppShell>{children}</AppShell>
-          <Toaster position="top-center" />
-        </AppProvider>
+        <PwaProvider>
+          <AppProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster position="top-center" />
+            <UpdatePrompt />
+          </AppProvider>
+        </PwaProvider>
       </body>
     </html>
   );
