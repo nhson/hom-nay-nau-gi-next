@@ -52,6 +52,16 @@ production. Clients pick up the new catalog version on their next background ref
 Tests never need a database server: the API contract tests run the real migrations on PGlite
 (in-memory Postgres).
 
+### Installable and offline (PWA)
+
+A service worker (Serwist) precaches the app shell, pages and static assets, so the whole app works
+offline once opened; personal data and the cached catalog live in IndexedDB, not in the worker's cache.
+It only runs in production builds. To try it: `pnpm build && pnpm start`, open the app, then stop the
+server and reload. A new build installs a new worker in the background; the app shows an "Cập nhật"
+prompt and reloads only when the user accepts (data is never cleared).
+
+Icons are rendered from `public/icons/*.svg`; after changing the artwork run `pnpm icons` and commit the PNGs.
+
 ## Status
 
 | Slice | Scope | State |
@@ -59,6 +69,6 @@ Tests never need a database server: the API contract tests run the real migratio
 | 1 | Repo, CI, domain core with ported tests | done |
 | 2 | Seed source, Postgres, catalog API + contract tests | done |
 | 3 | Static shell, on-device store, Hôm nay | done |
-| 4 | Dish bank and favorites | in review |
-| 5 | PWA and offline | — |
+| 4 | Dish bank and favorites | done |
+| 5 | PWA and offline | in review |
 | 6 | Analytics, accessibility, Playwright, parity checklist | — |
