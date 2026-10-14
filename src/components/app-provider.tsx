@@ -17,6 +17,7 @@ import {
   reduce,
   resolveCatalog,
   type Action,
+  type Notice,
   type PersonalState,
   type ResolvedCatalog,
 } from "@/domain";
@@ -36,7 +37,8 @@ interface AppContextValue {
   state: PersonalState;
   catalog: ResolvedCatalog;
   today: string;
-  dispatch: (action: Action) => void;
+  /** Applies an action; returns the notice it produced (also shown as a toast), if any. */
+  dispatch: (action: Action) => Notice | undefined;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -56,26 +58,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // The reducer is pure; these refs let `dispatch` stay stable and read the latest values.
   const stateRef = useRef(state);
   const catalogRef = useRef<ResolvedCatalog | null>(null);
+  const catalogDishesRef = useRef(catalogData.dishes);
   const todayRef = useRef(today);
 
   const catalog = useMemo(() => resolveCatalog(catalogData.dishes, state.user), [catalogData, state.user]);
 
   useEffect(() => {
     catalogRef.current = catalog;
+    catalogDishesRef.current = catalogData.dishes;
     todayRef.current = today;
     stateRef.current = state;
   });
 
   const dispatch = useCallback((action: Action) => {
     const resolved = catalogRef.current;
-    if (!resolved) return;
-    const result = reduce(stateRef.current, action, { catalog: resolved, today: todayRef.current });
+    if (!resolved) return undefined;
+    const result = reduce(stateRef.current, action, {
+      catalog: resolved,
+      catalogDishes: catalogDishesRef.current,
+      newId: () => crypto.randomUUID(),
+      now: Date.now(),
+      today: todayRef.current,
+    });
     if (result.state !== stateRef.current) {
       stateRef.current = result.state;
       setState(result.state);
       void savePersonal(result.state);
     }
     if (result.notice) toast(noticeMessage(result.notice));
+    return result.notice;
   }, []);
 
   // Boot: load the device's data, then show the catalog from the cache (or the bundled seed)
@@ -87,6 +98,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       stateRef.current = personal;
       catalogRef.current = resolveCatalog(cached.dishes, personal.user);
+      catalogDishesRef.current = cached.dishes;
       setState(personal);
       setCatalogData(cached);
       setReady(true);

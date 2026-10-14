@@ -58,7 +58,7 @@ Tests never need a database server: the API contract tests run the real migratio
 |---|---|---|
 | 1 | Repo, CI, domain core with ported tests | done |
 | 2 | Seed source, Postgres, catalog API + contract tests | done |
-| 3 | Static shell, on-device store, Hôm nay | in review |
-| 4 | Dish bank and favorites | — |
+| 3 | Static shell, on-device store, Hôm nay | done |
+| 4 | Dish bank and favorites | in review |
 | 5 | PWA and offline | — |
 | 6 | Analytics, accessibility, Playwright, parity checklist | — |
