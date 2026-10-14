@@ -12,6 +12,11 @@ rebuild reaches parity).
 - **Vocabulary:** [CONTEXT.md](CONTEXT.md) — use these terms exactly (Hộ gia đình, Nhóm món, Kiểu bữa ăn, Chay, Vùng miền)
 - **Decisions:** [docs/adr](docs/adr)
 
+**Live:** https://hom-nay-nau-gi-next.vercel.app · health: `/api/v1/health`
+
+Deploys: every pull request gets a Vercel preview; merging to `main` deploys to production.
+Database: Neon (Vercel Marketplace), `DATABASE_URL` / `DATABASE_URL_UNPOOLED` are injected by the integration.
+
 ## Stack
 
 Next.js (App Router, TypeScript) · Tailwind CSS · Zod · Drizzle + Neon Postgres · Vitest · Playwright · Vercel.
