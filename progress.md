@@ -12,12 +12,11 @@
 - [x] Phase 1 rebuild shipped and live (slices 1 to 6, production setup, food/recipe UI refresh); see `feature_list.json` for evidence
 - [x] Neon database connected to the new Vercel project only, migrated and seeded (catalog v1, 73 dishes); the unused second database was deleted
 - [x] Git-triggered deploys verified: PR gets a preview, merge to `main` deploys to production
-- [x] Harness initialised (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`)
+- [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
 
 - [ ] PR #10 "Docs: Phase 1 summary and feature list" is open, docs only, waiting for the owner to merge
-- [ ] This harness is uncommitted on the working tree; it still needs a branch and PR
 
 ### What's Next
 

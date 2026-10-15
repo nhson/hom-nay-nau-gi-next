@@ -3,8 +3,8 @@
 ## Current Objective
 
 - Goal: Phase 1 is complete and live; harness initialised so Phase 2 can start cleanly.
-- Current status: `main` at 240bd79 is deployed; PR #10 (docs) open; harness files present but not yet committed.
-- Branch / commit: `main` / 240bd79 (working tree has the new harness files)
+- Current status: `main` is deployed and healthy; PR #10 (docs) is open; the harness arrives with PR #12.
+- Branch / commit: `main` (harness from PR #12)
 
 ## Completed This Session
 
@@ -20,7 +20,7 @@
 
 ## Files Changed
 
-- `CLAUDE.md`, `feature_list.json`, `progress.md`, `session-handoff.md`, `init.sh` (new, uncommitted)
+- `CLAUDE.md`, `feature_list.json`, `progress.md`, `session-handoff.md`, `init.sh` (new, PR #12)
 
 ## Decisions Made
 
