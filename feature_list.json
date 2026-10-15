@@ -1,0 +1,104 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Domain core",
+      "description": "Pure domain logic (menus, rerolls, shopping, history, favorites, catalog merge, forms, analytics events) with injected rng/clock/ids",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "PR #2 (+ later PRs); 150+ domain tests in src/domain; lint rule forbids framework imports"
+    },
+    {
+      "id": "feat-002",
+      "name": "Catalog API and database",
+      "description": "Seed of 73 dishes, Postgres schema + migrations, read-only versioned /api/v1/catalog with ETag, /api/v1/health",
+      "dependencies": [
+        "feat-001"
+      ],
+      "status": "done",
+      "evidence": "PR #3; contract tests on real migrations (PGlite); production health ok, catalog v1 with 73 dishes"
+    },
+    {
+      "id": "feat-003",
+      "name": "Hôm nay screen and on-device store",
+      "description": "IndexedDB personal store, catalog client with bundled-seed fallback, random/reroll/Chay/Bữa 1 món/cooked, shopping ticks, history",
+      "dependencies": [
+        "feat-001",
+        "feat-002"
+      ],
+      "status": "done",
+      "evidence": "PR #4; Playwright first-open, random/reroll/cooked, Chay, Nấu 1 món journeys"
+    },
+    {
+      "id": "feat-004",
+      "name": "Dish bank and favorites",
+      "description": "Add/edit/delete/reset/restore dishes, filters, favorites save/use/delete",
+      "dependencies": [
+        "feat-003"
+      ],
+      "status": "done",
+      "evidence": "PR #5; Playwright dish CRUD, filters and favorites journeys"
+    },
+    {
+      "id": "feat-005",
+      "name": "PWA and offline",
+      "description": "Manifest, icons, Serwist service worker, update prompt",
+      "dependencies": [
+        "feat-003"
+      ],
+      "status": "done",
+      "evidence": "PR #6; Playwright offline journey; installed and working on a real phone (owner-confirmed)"
+    },
+    {
+      "id": "feat-006",
+      "name": "Analytics, accessibility, E2E, parity checklist",
+      "description": "12 legacy analytics events, axe WCAG 2.1 AA scans, Playwright journeys in CI, docs/parity-checklist.md",
+      "dependencies": [
+        "feat-004",
+        "feat-005"
+      ],
+      "status": "done",
+      "evidence": "PR #7; 18 Playwright tests incl. axe in light and dark"
+    },
+    {
+      "id": "feat-007",
+      "name": "Production deployment",
+      "description": "Vercel project linked to GitHub, Neon via Marketplace migrated and seeded, preview per PR, main deploys to production",
+      "dependencies": [
+        "feat-006"
+      ],
+      "status": "done",
+      "evidence": "https://hom-nay-nau-gi-next.vercel.app health ok; git-triggered production deploy verified on commit f52b3de"
+    },
+    {
+      "id": "feat-008",
+      "name": "Food/recipe UI refresh",
+      "description": "Category icons and tints, richer dish cards and recipe view, segmented meal switch, shopping progress, dish search",
+      "dependencies": [
+        "feat-007"
+      ],
+      "status": "done",
+      "evidence": "PR #11; 212 unit tests, 18 Playwright tests, visual check light/dark/desktop"
+    },
+    {
+      "id": "feat-009",
+      "name": "Phase 1 documentation",
+      "description": "docs/phase-1.md, docs/features.md, refreshed parity checklist",
+      "dependencies": [
+        "feat-008"
+      ],
+      "status": "in-progress",
+      "evidence": "PR #10 open and unmerged (docs only)"
+    },
+    {
+      "id": "feat-010",
+      "name": "Phase 2 enhancement (to be specified by the owner)",
+      "description": "Placeholder: replace with the first concrete Phase 2 enhancement; for anything larger than a tweak, write a short spec as an issue first",
+      "dependencies": [
+        "feat-009"
+      ],
+      "status": "not-started",
+      "evidence": ""
+    }
+  ]
+}
