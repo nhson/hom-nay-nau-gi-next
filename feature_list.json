@@ -107,8 +107,8 @@
       "dependencies": [
         "feat-008"
       ],
-      "status": "in-progress",
-      "evidence": "PR #16 (Closes #15): lint, typecheck, 197 unit/contract tests, 20 Playwright tests (incl. axe) green; code-review run, findings fixed; checked in a browser at phone width"
+      "status": "done",
+      "evidence": "PR #16 merged (Closes #15): 197 unit/contract tests, 20 Playwright tests (incl. axe) green; code-review run and fixed; live on production (Món ăn shows no add/edit/delete controls)"
     }
   ]
 }
