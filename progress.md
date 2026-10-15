@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-10-15
-**Active Feature:** feat-009 (Phase 1 documentation), then feat-010 (Phase 2, to be specified by the owner)
+**Active Feature:** feat-010 (Phase 2 enhancement, to be specified by the owner)
 
 ## Status
 
@@ -12,15 +12,16 @@
 - [x] Phase 1 rebuild shipped and live (slices 1 to 6, production setup, food/recipe UI refresh); see `feature_list.json` for evidence
 - [x] Neon database connected to the new Vercel project only, migrated and seeded (catalog v1, 73 dishes); the unused second database was deleted
 - [x] Git-triggered deploys verified: PR gets a preview, merge to `main` deploys to production
+- [x] Phase 1 documentation merged (PR #10): `docs/phase-1.md`, `docs/features.md`, `docs/parity-checklist.md`
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
 
-- [ ] PR #10 "Docs: Phase 1 summary and feature list" is open, docs only, waiting for the owner to merge
+- [ ] Nothing in flight; waiting for the owner's first Phase 2 enhancement
 
 ### What's Next
 
-1. Merge PR #10 when the owner says so; then (only if asked) tag/release "Phase 1"
+1. (Only if the owner asks) tag/release "Phase 1" on `main`
 2. Owner brings the first Phase 2 enhancement; capture it in `feature_list.json` (feat-010) and, if bigger than a tweak, write a spec issue first
 3. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
 
