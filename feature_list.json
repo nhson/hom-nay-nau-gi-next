@@ -108,7 +108,7 @@
         "feat-008"
       ],
       "status": "in-progress",
-      "evidence": ""
+      "evidence": "PR #16 (Closes #15): lint, typecheck, 197 unit/contract tests, 20 Playwright tests (incl. axe) green; code-review run, findings fixed; checked in a browser at phone width"
     }
   ]
 }
