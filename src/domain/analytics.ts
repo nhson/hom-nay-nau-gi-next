@@ -1,13 +1,11 @@
 import type { Action, ActionResult } from "./actions";
-import { isCustomDishId } from "./catalog";
 import type { PersonalState } from "./personal";
 import type { Dish } from "./types";
 
 /**
  * Product analytics events. Names and properties are identical to the legacy app so the north-star
  * metric (mark_cooked per week) and the reroll / cook-through / recipe ratios stay comparable.
- * Properties never contain personal content: category and flags only (see viewRecipeEvent for the
- * one place a dish name appears).
+ * Properties never contain personal content: category, flags and the name of a public catalog dish.
  */
 export interface AnalyticsEvent {
   name: string;
@@ -55,17 +53,6 @@ export function eventsFor(action: Action, before: PersonalState, result: ActionR
     case "mark-cooked":
       return result.notice?.code === "cooked" ? [{ name: "mark_cooked" }] : [];
 
-    case "save-dish":
-      return [
-        {
-          name: action.id === null ? "add_dish" : "edit_dish",
-          props: { category: action.dish.category ?? "buatomonuoc" },
-        },
-      ];
-
-    case "delete-dish":
-      return after.user !== before.user ? [{ name: "delete_dish" }] : [];
-
     case "save-favorite":
       return result.notice?.code === "favorite-saved" ? [{ name: "save_favorite" }] : [];
 
@@ -77,16 +64,11 @@ export function eventsFor(action: Action, before: PersonalState, result: ActionR
 
     case "ensure-today":
     case "set-tick":
-    case "restore-dish":
-    case "reset-dish":
       return [];
   }
 }
 
-/**
- * Opening a recipe. Catalog dishes are identified by name (public content); a dish the user wrote
- * is personal, so it is reported without its name.
- */
-export function viewRecipeEvent(dish: Pick<Dish, "id" | "name">): AnalyticsEvent {
-  return { name: "view_recipe", props: { dish: isCustomDishId(dish.id) ? "(món tự thêm)" : dish.name } };
+/** Opening a recipe (from today's menu or the dish library). Every dish is a public catalog dish. */
+export function viewRecipeEvent(dish: Pick<Dish, "name">): AnalyticsEvent {
+  return { name: "view_recipe", props: { dish: dish.name } };
 }

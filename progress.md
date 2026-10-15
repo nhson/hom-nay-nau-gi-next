@@ -20,6 +20,7 @@
 
 ### What's Next
 
+0. Review and merge the PR for issue #15 (branch `feat/read-only-dish-catalog`); then mark feat-012 done in `feature_list.json`
 1. Merge PR #10 when the owner says so; then (only if asked) tag/release "Phase 1"
 2. Owner brings the first Phase 2 enhancement; capture it in `feature_list.json` (feat-010) and, if bigger than a tweak, write a spec issue first
 3. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)

@@ -43,15 +43,16 @@ test("the recipe view is accessible", async ({ page }) => {
   expect(describe(results.violations)).toEqual([]);
 });
 
-test("dialogs are accessible and keyboard operable", async ({ page }) => {
+test("the recipe dialog is keyboard operable", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/dishes");
-  await expect(page.getByText(/^73 món$/)).toBeVisible();
-  await page.getByRole("button", { name: "Thêm món mới" }).click();
-  const dialog = page.getByRole("dialog", { name: "Thêm món mới" });
+  const row = page.getByRole("button", { name: "Xem công thức Cá kho tộ" });
+  await row.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Cá kho tộ" });
   await expect(dialog).toBeVisible();
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
-  expect(describe(results.violations)).toEqual([]);
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
+  // Focus returns to the row that opened it.
+  await expect(row).toBeFocused();
 });

@@ -29,10 +29,10 @@ user stories are in issue #1.
 
 | ID | Feature | Status |
 |---|---|---|
-| F9 | Add / edit / delete dishes; reset an edited catalog dish; restore a hidden one | ✅ |
+| F9 | Dish library: search, filter and read any dish's recipe. **Add / edit / delete / reset / restore were removed on purpose** (ADR-0003); an admin page comes in a later phase | ✅ changed |
 | F10 | Filter by Nhóm món / Bữa 1 món / Chay | ✅ |
 | F11 | 73 seed dishes (Xào 20, Canh 23, Mặn 21, Bữa 1 món 9; 27 chay, no tỏi) | ✅ stored in Neon, bundled as offline fallback |
-| F12 | Catalog updates without overwriting the user's own edits | ✅ versioned + ETag; user edits win |
+| F12 | Catalog updates reach every device | ✅ versioned + ETag; devices hold no dish edits any more, so a correction always shows |
 
 ## Yêu thích
 

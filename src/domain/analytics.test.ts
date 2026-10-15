@@ -16,7 +16,6 @@ const DISHES = [
 ];
 const ctx: ActionContext = {
   catalog: resolveCatalog(DISHES),
-  catalogDishes: DISHES,
   newId: () => "uid",
   now: 1,
   today: TODAY,
@@ -52,16 +51,9 @@ describe("analytics events keep the legacy names and properties", () => {
     ]);
   });
 
-  it("mark_cooked, favorites and dish events", () => {
-    const form = { name: "n", mealType: "buacom" as const, category: "canh" as const, chay: false, region: null, time: null, ingredients: ["a"], steps: [] };
+  it("mark_cooked and save_favorite", () => {
     expect(events({ type: "mark-cooked" }, withState({ todayMenu: riceMenu }))).toEqual([{ name: "mark_cooked" }]);
     expect(events({ type: "save-favorite", name: "x" }, withState({ todayMenu: riceMenu }))).toEqual([{ name: "save_favorite" }]);
-    expect(events({ type: "save-dish", id: null, dish: form })).toEqual([{ name: "add_dish", props: { category: "canh" } }]);
-    expect(events({ type: "save-dish", id: "x1", dish: form })).toEqual([{ name: "edit_dish", props: { category: "canh" } }]);
-    expect(events({ type: "save-dish", id: null, dish: { ...form, mealType: "buatomonuoc", category: null } })).toEqual([
-      { name: "add_dish", props: { category: "buatomonuoc" } },
-    ]);
-    expect(events({ type: "delete-dish", id: "x1" })).toEqual([{ name: "delete_dish" }]);
   });
 
   it("use_favorite and delete_favorite", () => {
@@ -73,11 +65,29 @@ describe("analytics events keep the legacy names and properties", () => {
 });
 
 describe("analytics only counts what the user actually did", () => {
-  it("emits nothing for the automatic new-day menu, ticks, restore or reset", () => {
+  it("emits nothing for the automatic new-day menu or for ticks", () => {
     expect(events({ type: "ensure-today" })).toEqual([]);
     expect(events({ type: "set-tick", key: "a", checked: true })).toEqual([]);
-    expect(events({ type: "restore-dish", id: "x1" })).toEqual([]);
-    expect(events({ type: "reset-dish", id: "x1" })).toEqual([]);
+  });
+
+  it("never emits the dish events that no longer exist, whatever the user does", () => {
+    const favorite = { id: "f", name: "n", dishIds: ["x1"], mealType: "buacom" as const, savedAt: 1 };
+    const state = withState({ todayMenu: riceMenu, favorites: [favorite] });
+    const everyAction: Action[] = [
+      { type: "ensure-today" },
+      { type: "random-menu" },
+      { type: "cook-one-dish" },
+      { type: "reroll", target: "xao" },
+      { type: "toggle-chay" },
+      { type: "mark-cooked" },
+      { type: "set-tick", key: "a", checked: true },
+      { type: "save-favorite", name: "x" },
+      { type: "use-favorite", id: "f" },
+      { type: "delete-favorite", id: "f" },
+    ];
+    const emitted = everyAction.flatMap((action) => events(action, state)).map((event) => event.name);
+    expect(emitted.length).toBeGreaterThan(5); // the actions really do emit events
+    expect(emitted.filter((name) => ["add_dish", "edit_dish", "delete_dish"].includes(name))).toEqual([]);
   });
 
   it("emits nothing when a reroll finds no alternative or an action is refused", () => {
@@ -93,12 +103,8 @@ describe("analytics only counts what the user actually did", () => {
   });
 });
 
-describe("viewRecipeEvent (privacy)", () => {
-  it("names catalog dishes", () => {
-    expect(viewRecipeEvent({ id: "x1", name: "Canh chua" })).toEqual({ name: "view_recipe", props: { dish: "Canh chua" } });
-  });
-
-  it("never sends the name of a dish the user wrote", () => {
-    expect(viewRecipeEvent({ id: "custom:abc", name: "Món bí mật của bà" }).props).toEqual({ dish: "(món tự thêm)" });
+describe("viewRecipeEvent", () => {
+  it("names the catalog dish", () => {
+    expect(viewRecipeEvent({ name: "Canh chua" })).toEqual({ name: "view_recipe", props: { dish: "Canh chua" } });
   });
 });

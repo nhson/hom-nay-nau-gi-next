@@ -55,7 +55,7 @@ describe("selectToday", () => {
   });
 });
 
-describe("selectDishBank", () => {
+describe("selectDishBank (a read-only library)", () => {
   const dishes = [
     dish({ id: "m1", category: "man", name: "Thịt kho" }),
     dish({ id: "x2", category: "xao", name: "Đậu xào", chay: true }),
@@ -65,58 +65,38 @@ describe("selectDishBank", () => {
     dish({ id: "old", category: "canh", name: "Cũ", retired: true }),
   ];
   const resolved = resolveCatalog(dishes);
+  const ids = (filter: Parameters<typeof selectDishBank>[1], chayOnly = false, query = "") =>
+    selectDishBank(resolved, filter, chayOnly, query).map((dish) => dish.id);
 
   it("sorts by group (Xào, Canh, Mặn, Bữa 1 món) then name with Vietnamese collation", () => {
-    const names = selectDishBank(resolved, EMPTY_PERSONAL_STATE.user, "all", false).map((row) => row.dish.name);
+    const names = selectDishBank(resolved, "all", false).map((dish) => dish.name);
     expect(names).toEqual(["Âu xào", "Bắp cải xào", "Đậu xào", "Thịt kho", "Phở"]);
   });
 
   it("filters by group and Chay independently, and never lists retired dishes", () => {
-    expect(selectDishBank(resolved, EMPTY_PERSONAL_STATE.user, "xao", true).map((r) => r.dish.id)).toEqual(["x2"]);
-    expect(selectDishBank(resolved, EMPTY_PERSONAL_STATE.user, "buatomonuoc", false).map((r) => r.dish.id)).toEqual(["t1"]);
-    expect(selectDishBank(resolved, EMPTY_PERSONAL_STATE.user, "canh", false)).toEqual([]);
+    expect(ids("xao", true)).toEqual(["x2"]);
+    expect(ids("buatomonuoc")).toEqual(["t1"]);
+    expect(ids("canh")).toEqual([]);
   });
 
-  it("marks catalog dishes the user has edited", () => {
-    const user = { ...EMPTY_PERSONAL_STATE.user, overrides: { x1: dish({ id: "x1", name: "Sửa" }) } };
-    const rows = selectDishBank(resolveCatalog(dishes, user), user, "xao", false);
-    expect(rows.find((r) => r.dish.id === "x1")).toMatchObject({ edited: true });
-    expect(rows.find((r) => r.dish.id === "x2")).toMatchObject({ edited: false });
+  it("searches ignoring case and accents, anywhere in the name, combined with the filters", () => {
+    expect(foldText("Đậu HŨ Xào")).toBe("dau hu xao");
+    expect(ids("all", false, "XAO")).toEqual(["x3", "x1", "x2"]);
+    expect(ids("all", false, "dau")).toEqual(["x2"]);
+    expect(ids("man", false, "xao")).toEqual([]);
+    expect(ids("all", false, "   ")).toHaveLength(5);
+    expect(ids("all", false, "khong co")).toEqual([]);
   });
 });
 
 describe("selectFavorites", () => {
-  it("resolves names, flags deleted dishes and marks unusable favorites", () => {
+  it("resolves names, flags removed dishes and marks a favorite with no dish left as unusable", () => {
     const favorites = [
-      { id: "a", name: "A", dishIds: ["x1", "gone"], savedAt: 1 },
-      { id: "b", name: "B", dishIds: ["gone"], savedAt: 2 },
+      { id: "a", name: "A", dishIds: ["x1", "custom:gone"], savedAt: 1 },
+      { id: "b", name: "B", dishIds: ["custom:gone"], savedAt: 2 },
     ];
     const rows = selectFavorites({ ...EMPTY_PERSONAL_STATE, favorites }, catalog);
     expect(rows[0]).toMatchObject({ dishNames: ["Xào", "(đã xoá)"], usable: true });
-    expect(rows[1]).toMatchObject({ usable: false });
-  });
-});
-
-describe("dish bank search", () => {
-  const dishes = [
-    dish({ id: "c1", category: "canh", name: "Canh chua cá lóc" }),
-    dish({ id: "m1", category: "man", name: "Cá kho tộ" }),
-    dish({ id: "x1", category: "xao", name: "Đậu hũ xào" }),
-  ];
-  const resolved = resolveCatalog(dishes);
-  const user = EMPTY_PERSONAL_STATE.user;
-  const ids = (query: string) => selectDishBank(resolved, user, "all", false, query).map((r) => r.dish.id);
-
-  it("ignores case and accents", () => {
-    expect(foldText("Đậu HŨ Xào")).toBe("dau hu xao");
-    expect(ids("CA LOC")).toEqual(["c1"]);
-    expect(ids("dau hu")).toEqual(["x1"]);
-  });
-
-  it("matches anywhere in the name, combines with filters, and a blank query matches everything", () => {
-    expect(ids("ca")).toEqual(["c1", "m1"]);
-    expect(selectDishBank(resolved, user, "man", false, "ca").map((r) => r.dish.id)).toEqual(["m1"]);
-    expect(ids("   ")).toHaveLength(3);
-    expect(ids("khong co")).toEqual([]);
+    expect(rows[1]).toMatchObject({ dishNames: ["(đã xoá)"], usable: false });
   });
 });

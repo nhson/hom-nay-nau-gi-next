@@ -16,10 +16,10 @@ Legend: **E2E** = Playwright journey in `e2e/`, **Unit** = Vitest in `src/`.
 | F6 | Step-by-step recipe | Done | E2E "works offline…" (opens a recipe offline) |
 | F7 | Shopping list merged, tickable, remembered | Done | Unit `shopping`, `selectors`; E2E "works offline…" (tick survives reload) |
 | F8 | Chay and Vùng miền badges (region display only) | Done | Manual look; badges are plain rendering of `dish.chay` / `dish.region` |
-| F9 | Add / edit / delete dishes (+ reset, restore) | Done | Unit `catalog`, `form`, `actions`; E2E "add, edit, delete, reset and restore dishes" |
+| F9 | Dish library (add / edit / delete / reset / restore **removed on purpose**, ADR-0003) | Changed | Unit `catalog`, `selectors`, `personal` (old data carried untouched); E2E "the dish library is read-only…" and "a device that still holds dishes…" |
 | F10 | Filter by group / Bữa 1 món / Chay | Done | Unit `selectors`; E2E "the dish bank filters…" |
 | F11 | 73 seed dishes (20/23/21/9, 27 chay, no tỏi in chay) | Done | Unit `seed/dishes.test`; E2E dish counts |
-| F12 | Catalog updates without overwriting the user's edits | Done | Contract tests (versioning, ETag, retired); Unit `catalog`; E2E "a catalog correction…" |
+| F12 | Catalog updates reach every device (no device edits any more) | Done | Contract tests (versioning, ETag, retired); Unit `catalog`; E2E "a catalog correction reaches every device…" |
 | F13 | Save a named favorite | Done | E2E "save a favorite and use it again" |
 | F14 | Reuse a favorite | Done | same |
 | F15 | Delete a favorite | Done | same |
@@ -49,5 +49,5 @@ Done: Vercel project linked to GitHub, Neon provisioned/migrated/seeded, Web Ana
 ## Notes on deliberate differences
 
 - A new local day regenerates the menu on open (the legacy app kept showing yesterday's).
-- `view_recipe` reports the dish name only for catalog dishes; a dish the user wrote is reported as "(món tự thêm)" so personal content never leaves the device.
-- Custom dish ids are `custom:<uuid>`; catalog ids are unchanged from the legacy seed.
+- `view_recipe` reports the name of the catalog dish that was opened (dishes are public catalog content; nothing personal is sent).
+- Dishes can no longer be added, edited or deleted on a device (ADR-0003); catalog ids are unchanged from the legacy seed.
