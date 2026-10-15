@@ -16,12 +16,13 @@
 
 ### What's In Progress
 
+- [ ] feat-011: feature workflow wired into the harness (PR open: `docs/agents/*`, `CLAUDE.md`, `docs/workflow.md`)
 - [ ] PR #10 "Docs: Phase 1 summary and feature list" is open, docs only, waiting for the owner to merge
 
 ### What's Next
 
 1. Merge PR #10 when the owner says so; then (only if asked) tag/release "Phase 1"
-2. Owner brings the first Phase 2 enhancement; capture it in `feature_list.json` (feat-010) and, if bigger than a tweak, write a spec issue first
+2. Owner brings the first Phase 2 enhancement: run the loop in `docs/workflow.md` (grill, `/to-spec`, `/implement`) and capture it in `feature_list.json` (feat-010)
 3. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
 
 ## Blockers / Risks
