@@ -93,11 +93,21 @@
     {
       "id": "feat-010",
       "name": "Phase 2 enhancement (to be specified by the owner)",
-      "description": "Placeholder: replace with the first concrete Phase 2 enhancement; for anything larger than a tweak, write a short spec as an issue first",
+      "description": "Placeholder: replace with the first concrete Phase 2 enhancement. Follow docs/workflow.md: grill (/grill-with-docs), publish the spec with /to-spec as a ready-for-agent issue, then /implement; record the issue number here.",
       "dependencies": [
         "feat-009"
       ],
       "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-011",
+      "name": "Feature workflow (grill, spec, implement, docs)",
+      "description": "Wire mattpocock-skills into the harness: docs/agents/* (GitHub issues, default triage labels, single-context docs), CLAUDE.md workflow section, docs/workflow.md",
+      "dependencies": [
+        "feat-009"
+      ],
+      "status": "in-progress",
       "evidence": ""
     }
   ]
