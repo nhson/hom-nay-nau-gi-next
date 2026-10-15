@@ -49,5 +49,5 @@ Done: Vercel project linked to GitHub, Neon provisioned/migrated/seeded, Web Ana
 ## Notes on deliberate differences
 
 - A new local day regenerates the menu on open (the legacy app kept showing yesterday's).
-- `view_recipe` reports the dish name only for catalog dishes; a dish the user wrote is reported as "(món tự thêm)" so personal content never leaves the device.
+- `view_recipe` reports the name of the catalog dish that was opened (dishes are public catalog content; nothing personal is sent).
 - Dishes can no longer be added, edited or deleted on a device (ADR-0003); catalog ids are unchanged from the legacy seed.

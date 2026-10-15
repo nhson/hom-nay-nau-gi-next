@@ -57,7 +57,7 @@ export interface GeneratedMenu {
   missing: Category[];
 }
 
-/** `dishes` must already be the pickable set (hidden and retired dishes removed). */
+/** `dishes` must already be the pickable set (retired dishes removed). */
 export function generateBuaComMenu(
   dishes: readonly Dish[],
   history: readonly HistoryEntry[],

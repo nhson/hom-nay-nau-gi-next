@@ -70,13 +70,24 @@ describe("analytics only counts what the user actually did", () => {
     expect(events({ type: "set-tick", key: "a", checked: true })).toEqual([]);
   });
 
-  it("emits nothing for the dish events that no longer exist: dishes cannot be added, edited or deleted", () => {
-    const names = [
-      ...events({ type: "random-menu" }),
-      ...events({ type: "mark-cooked" }, withState({ todayMenu: riceMenu })),
-    ].map((event) => event.name);
-    expect(names).not.toEqual(expect.arrayContaining(["add_dish"]));
-    expect(names.some((name) => ["add_dish", "edit_dish", "delete_dish"].includes(name))).toBe(false);
+  it("never emits the dish events that no longer exist, whatever the user does", () => {
+    const favorite = { id: "f", name: "n", dishIds: ["x1"], mealType: "buacom" as const, savedAt: 1 };
+    const state = withState({ todayMenu: riceMenu, favorites: [favorite] });
+    const everyAction: Action[] = [
+      { type: "ensure-today" },
+      { type: "random-menu" },
+      { type: "cook-one-dish" },
+      { type: "reroll", target: "xao" },
+      { type: "toggle-chay" },
+      { type: "mark-cooked" },
+      { type: "set-tick", key: "a", checked: true },
+      { type: "save-favorite", name: "x" },
+      { type: "use-favorite", id: "f" },
+      { type: "delete-favorite", id: "f" },
+    ];
+    const emitted = everyAction.flatMap((action) => events(action, state)).map((event) => event.name);
+    expect(emitted.length).toBeGreaterThan(5); // the actions really do emit events
+    expect(emitted.filter((name) => ["add_dish", "edit_dish", "delete_dish"].includes(name))).toEqual([]);
   });
 
   it("emits nothing when a reroll finds no alternative or an action is refused", () => {

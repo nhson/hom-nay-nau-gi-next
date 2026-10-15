@@ -1,5 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 
+/** Name of the IndexedDB database the app stores its data in (see src/lib/idb.ts). */
+const DB_NAME = "hom-nay-nau-gi";
+
 /** Names of the dishes on today's menu, in display order. */
 export const menuList = (page: Page) => page.getByRole("list", { name: "Thực đơn hôm nay" });
 export const menuNames = (page: Page) => menuList(page).locator("h3");
@@ -22,9 +25,9 @@ export async function dishCount(page: Page): Promise<number> {
  */
 export async function flushWrites(page: Page) {
   await page.evaluate(
-    () =>
+    (name) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("hom-nay-nau-gi");
+        const request = indexedDB.open(name);
         request.onerror = () => reject(request.error);
         request.onsuccess = () => {
           const db = request.result;
@@ -36,17 +39,16 @@ export async function flushWrites(page: Page) {
           tx.onerror = () => reject(tx.error);
         };
       }),
+    DB_NAME,
   );
 }
-
-const DB = "hom-nay-nau-gi";
 
 /** Reads the app's whole stored personal state (what a device would hold). */
 export async function readPersonal(page: Page): Promise<Record<string, unknown>> {
   return page.evaluate(
-    () =>
+    (name) =>
       new Promise<Record<string, unknown>>((resolve, reject) => {
-        const open = indexedDB.open("hom-nay-nau-gi");
+        const open = indexedDB.open(name);
         open.onerror = () => reject(open.error);
         open.onsuccess = () => {
           const db = open.result;
@@ -58,6 +60,7 @@ export async function readPersonal(page: Page): Promise<Record<string, unknown>>
           get.onerror = () => reject(get.error);
         };
       }),
+    DB_NAME,
   );
 }
 
@@ -84,12 +87,12 @@ export async function seedDevice(page: Page, state: Record<string, unknown>) {
           tx.onerror = () => reject(tx.error);
         };
       }),
-    [DB, state] as const,
+    [DB_NAME, state] as const,
   );
   await page.reload();
 }
 
-/** Today's date as the app computes it (local calendar date in the test's time zone). */
+/** Today's date as the app computes it. Playwright config pins the browser to Asia/Ho_Chi_Minh, so use that zone here too. */
 export function localToday(offsetDays = 0): string {
   const date = new Date(Date.now() + offsetDays * 86_400_000);
   return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });

@@ -29,8 +29,8 @@ journeys, incl. axe accessibility scans) · Vercel (hosting, previews, Web Analy
 
 ## Decisions worth remembering
 
-- **Personal data stays on the device.** History, favorites, custom and edited dishes, ticks and the
-  Chay setting live in IndexedDB. The server only publishes the shared catalog; nothing personal is
+- **Personal data stays on the device.** History, favorites, today's menu, ticks and the Chay setting
+  live in IndexedDB (before ADR-0003 this also included custom and edited dishes). The server only publishes the shared catalog; nothing personal is
   uploaded. Device data and the installed app are tied to the web address.
 - **Merge by dish id.** The user's edits override the catalog; a dish retired on the server stops
   being picked but still resolves in old history and favorites. *(After Phase 1, ADR-0003 made the

@@ -20,7 +20,7 @@ export function RecipeDialog({
   dish: Dish | null;
   onClose: () => void;
   /** The element that opened the dialog; it gets focus back when the dialog closes. */
-  returnFocusTo?: HTMLElement | null;
+  returnFocusTo: HTMLElement | null;
 }) {
   return (
     <Dialog open={dish !== null} onOpenChange={(open) => !open && onClose()}>
