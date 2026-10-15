@@ -30,3 +30,7 @@ Thuộc tính (tag) gắn trên món ăn, không phải Nhóm món hay Kiểu b�
 
 **Vùng miền**:
 Thuộc tính (tag) gắn trên món ăn — Bắc / Trung / Nam. Hiện tại **chỉ hiển thị thông tin**, không dùng để lọc/random (có thể nâng cấp thành bộ lọc sau).
+
+**Danh mục món**:
+Danh sách các món ăn dùng chung cho mọi thiết bị, do quản trị viên cập nhật tập trung. Thiết bị chỉ đọc: người dùng tra cứu, tìm, lọc và xem công thức ở tab "Món ăn", nhưng không thêm, sửa hay xoá món. Xem [ADR-0003](docs/adr/0003-dish-catalog-is-read-only.md).
+_Avoid_: Món tự thêm, món đã sửa, ẩn/khôi phục món — các khái niệm này không còn tồn tại ở phía người dùng.
