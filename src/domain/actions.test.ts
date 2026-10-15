@@ -19,7 +19,6 @@ const DISHES = [
 function ctx(overrides: Partial<ActionContext> = {}): ActionContext {
   return {
     catalog: resolveCatalog(DISHES),
-    catalogDishes: DISHES,
     newId: () => "uid",
     now: 1000,
     today: TODAY,
@@ -170,39 +169,6 @@ describe("mark-cooked and set-tick", () => {
   });
 });
 
-describe("dish management", () => {
-  const form = { name: "Món mới", mealType: "buacom" as const, category: "canh" as const, chay: false, region: null, time: 15, ingredients: ["a"], steps: ["b"] };
-
-  it("adds a custom dish with a custom id that joins the pickable pool", () => {
-    const { state, notice } = reduce(stateWith(), { type: "save-dish", id: null, dish: form }, ctx({ newId: () => "abc" }));
-    expect(state.user.customDishes.map((d) => d.id)).toEqual(["custom:abc"]);
-    expect(notice).toEqual({ code: "dish-saved" });
-    expect(resolveCatalog(DISHES, state.user).pickable.some((d) => d.id === "custom:abc")).toBe(true);
-  });
-
-  it("editing a catalog dish stores an override and leaves the catalog untouched", () => {
-    const { state } = reduce(stateWith(), { type: "save-dish", id: "x1", dish: { ...form, category: "xao", name: "Xào sửa" } }, ctx());
-    expect(state.user.overrides.x1.name).toBe("Xào sửa");
-    expect(resolveCatalog(DISHES, state.user).resolvable.find((d) => d.id === "x1")?.name).toBe("Xào sửa");
-  });
-
-  it("deleting a catalog dish hides it; restoring and resetting undo that", () => {
-    let { state } = reduce(stateWith(), { type: "delete-dish", id: "x1" }, ctx());
-    expect(state.user.hiddenIds).toEqual(["x1"]);
-    ({ state } = reduce(state, { type: "restore-dish", id: "x1" }, ctx()));
-    expect(state.user.hiddenIds).toEqual([]);
-    ({ state } = reduce(state, { type: "save-dish", id: "x1", dish: { ...form, category: "xao" } }, ctx()));
-    ({ state } = reduce(state, { type: "reset-dish", id: "x1" }, ctx()));
-    expect(state.user.overrides).toEqual({});
-  });
-
-  it("deleting a custom dish removes it", () => {
-    let { state } = reduce(stateWith(), { type: "save-dish", id: null, dish: form }, ctx({ newId: () => "abc" }));
-    ({ state } = reduce(state, { type: "delete-dish", id: "custom:abc" }, ctx()));
-    expect(state.user.customDishes).toEqual([]);
-  });
-});
-
 describe("favorites", () => {
   const menu = { date: TODAY, dishIds: ["x1", "c1", "m1"], mealType: "buacom" as const };
 
@@ -241,5 +207,36 @@ describe("favorites", () => {
   it("deletes a favorite", () => {
     const favorite = { id: "f1", name: "n", dishIds: ["x1"], savedAt: 1 };
     expect(reduce(stateWith({ favorites: [favorite] }), { type: "delete-favorite", id: "f1" }, ctx()).state.favorites).toEqual([]);
+  });
+});
+
+describe("ensure-today with a menu that references a dish which no longer exists", () => {
+  const retired = dish({ id: "old", category: "canh", name: "Canh cũ", retired: true });
+  const withRetired = () => ctx({ catalog: resolveCatalog([...DISHES, retired]) });
+
+  it("replaces today's menu with a fresh complete one and clears its shopping ticks", () => {
+    const menu = { date: TODAY, dishIds: ["x1", "custom:gone", "m1"], mealType: "buacom" as const };
+    const { state } = reduce(stateWith({ todayMenu: menu, ticks: { hành: true } }), { type: "ensure-today" }, ctx());
+    expect(state.todayMenu?.date).toBe(TODAY);
+    expect(state.todayMenu?.dishIds).toHaveLength(3);
+    expect(state.todayMenu?.dishIds).not.toContain("custom:gone");
+    expect(state.ticks).toEqual({});
+  });
+
+  it("emits no analytics event for that automatic replacement", () => {
+    const menu = { date: TODAY, dishIds: ["custom:gone"], mealType: "buacom" as const };
+    expect(reduce(stateWith({ todayMenu: menu }), { type: "ensure-today" }, ctx()).events).toEqual([]);
+  });
+
+  it("keeps a menu whose dish is retired: a retired dish still resolves", () => {
+    const menu = { date: TODAY, dishIds: ["x1", "old", "m1"], mealType: "buacom" as const };
+    const before = stateWith({ todayMenu: menu });
+    expect(reduce(before, { type: "ensure-today" }, withRetired()).state).toBe(before);
+  });
+
+  it("keeps a complete menu untouched", () => {
+    const menu = { date: TODAY, dishIds: ["x1", "c1", "m1"], mealType: "buacom" as const };
+    const before = stateWith({ todayMenu: menu });
+    expect(reduce(before, { type: "ensure-today" }, ctx()).state).toBe(before);
   });
 });

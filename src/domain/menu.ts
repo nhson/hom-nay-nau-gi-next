@@ -39,6 +39,13 @@ export function isMenuStale(menu: Menu | null, today: string): boolean {
   return menu === null || menu.date !== today;
 }
 
+/** True when the menu names a dish that cannot be resolved at all (retired dishes still resolve). */
+export function hasMissingDish(menu: Menu | null, resolvable: readonly Dish[]): boolean {
+  if (!menu) return false;
+  const known = new Set(resolvable.map((dish) => dish.id));
+  return menu.dishIds.some((id) => !known.has(id));
+}
+
 export interface MenuOptions {
   chay?: boolean;
   rng?: Rng;

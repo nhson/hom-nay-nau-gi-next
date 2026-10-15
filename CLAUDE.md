@@ -33,11 +33,12 @@ pnpm is **not on PATH**: use `corepack pnpm <script>`.
   here first with tests. UI components stay thin and only dispatch actions and render selectors.
 - Second seam: the catalog API contract (`src/server/catalog/*.contract.test.ts`, real migrations on PGlite).
   Playwright (`e2e/`) is verification only. No component tests, no service-worker unit tests.
-- **Personal data never leaves the device** (history, favorites, custom/edited dishes, ticks) and lives in
+- **Personal data never leaves the device** (history, favorites, today's menu, ticks) and lives in
   IndexedDB (`src/lib/idb.ts`). The server only publishes the shared catalog. Analytics events carry
   no personal content (see `src/domain/analytics.ts`).
 - Dish enum values and ids are identical to the legacy app (`buacom`/`buatomonuoc`, `xao|canh|man`,
-  `bac|trung|nam`, `x*`/`c*`/`m*`/`t*`); custom dishes are `custom:<uuid>`. Chay dishes contain no tỏi.
+  `bac|trung|nam`, `x*`/`c*`/`m*`/`t*`). Chay dishes contain no tỏi.
+- **The Danh mục món is read-only on devices** (ADR-0003): no add, edit, delete, restore or reset of dishes. Dish content changes only via the seed (later an admin page). Old per-device dish data is not read but is carried through untouched in storage (`user` in the personal state): never interpret it, never drop it.
 - Use the glossary terms (Nhóm món, Kiểu bữa ăn, Bữa cơm 3 món, Bữa 1 món, Chay, Vùng miền) in code and copy. UI copy is Vietnamese.
 - Seed content lives only in `src/seed/dishes.ts` (changing a dish = edit seed + `db:seed`).
 

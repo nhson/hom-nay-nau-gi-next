@@ -38,3 +38,59 @@ export async function flushWrites(page: Page) {
       }),
   );
 }
+
+const DB = "hom-nay-nau-gi";
+
+/** Reads the app's whole stored personal state (what a device would hold). */
+export async function readPersonal(page: Page): Promise<Record<string, unknown>> {
+  return page.evaluate(
+    () =>
+      new Promise<Record<string, unknown>>((resolve, reject) => {
+        const open = indexedDB.open("hom-nay-nau-gi");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const get = db.transaction("kv").objectStore("kv").get("personal");
+          get.onsuccess = () => {
+            db.close();
+            resolve(get.result);
+          };
+          get.onerror = () => reject(get.error);
+        };
+      }),
+  );
+}
+
+/**
+ * Pretends this device already holds `state` from an older version of the app. Opens the app once so
+ * the database exists, replaces the stored personal state, then reloads so the app boots from it.
+ */
+export async function seedDevice(page: Page, state: Record<string, unknown>) {
+  await openToday(page);
+  await flushWrites(page);
+  await page.evaluate(
+    ([name, value]) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open(name as string);
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction("kv", "readwrite");
+          tx.objectStore("kv").put(value, "personal");
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+    [DB, state] as const,
+  );
+  await page.reload();
+}
+
+/** Today's date as the app computes it (local calendar date in the test's time zone). */
+export function localToday(offsetDays = 0): string {
+  const date = new Date(Date.now() + offsetDays * 86_400_000);
+  return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+}

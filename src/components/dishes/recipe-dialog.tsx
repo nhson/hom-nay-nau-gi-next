@@ -12,10 +12,28 @@ import { GroupTile } from "../group-tile";
 import { Recipe } from "../recipe";
 
 /** Read a dish's recipe from the dish bank without adding it to today's menu. */
-export function RecipeDialog({ dish, onClose }: { dish: Dish | null; onClose: () => void }) {
+export function RecipeDialog({
+  dish,
+  onClose,
+  returnFocusTo,
+}: {
+  dish: Dish | null;
+  onClose: () => void;
+  /** The element that opened the dialog; it gets focus back when the dialog closes. */
+  returnFocusTo?: HTMLElement | null;
+}) {
   return (
     <Dialog open={dish !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">{dish && <RecipeBody dish={dish} />}</DialogContent>
+      <DialogContent
+        className="sm:max-w-md"
+        onCloseAutoFocus={(event) => {
+          if (!returnFocusTo) return;
+          event.preventDefault();
+          returnFocusTo.focus();
+        }}
+      >
+        {dish && <RecipeBody dish={dish} />}
+      </DialogContent>
     </Dialog>
   );
 }
