@@ -139,6 +139,16 @@
       ],
       "status": "done",
       "evidence": "PR #23 merged (Closes #22): ./init.sh green (327 unit/contract, 61 Playwright incl. axe on phone and desktop, light and dark); code review run and fixed. Live on production: migration 0001 applied; the owner signed in at /admin and saved a real edit, and the public catalog moved to v2 (73 dishes). Still to check by hand: VoiceOver pass on /admin."
+    },
+    {
+      "id": "feat-015",
+      "name": "Giao diện switch (Sáng / Tối / Theo thiết bị)",
+      "description": "An icon button + menu in the app header, the admin top bar and the admin sign-in page; theme is a data-theme attribute set before first paint; saved on the device; browser-bar colour follows. Spec: issue #25. No prototype by owner decision. Branch: feat/theme-switch.",
+      "dependencies": [
+        "feat-014"
+      ],
+      "status": "in-progress",
+      "evidence": ""
     }
   ]
 }

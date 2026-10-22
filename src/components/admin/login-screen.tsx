@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { adminApi, AdminApiError } from "@/lib/admin-api";
 import { LOCK_MINUTES, SESSION_DAYS } from "@/shared/admin-policy";
+import { ThemeSwitch } from "../theme-switch";
 
 /** Only ever send the person back somewhere inside the admin. */
 function safeNext(next: string | null): string {
@@ -42,7 +43,8 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="grid min-h-dvh place-items-center p-6">
+    <div className="relative grid min-h-dvh place-items-center p-6">
+      <ThemeSwitch className="absolute top-3 right-3" />
       <div className="w-full max-w-sm rounded-2xl border bg-card p-7 shadow-sm">
         <div className="flex items-center gap-2.5 font-display text-lg font-semibold">
           <span aria-hidden className="grid size-[34px] place-items-center rounded-full bg-primary text-primary-foreground">

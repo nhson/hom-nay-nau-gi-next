@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { ThemeSwitch } from "./theme-switch";
 
 const TABS = [
   { href: "/", label: "Hôm nay", icon: UtensilsCrossed },
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <h1 className="font-display text-3xl leading-tight font-semibold tracking-tight">
           Hôm nay <span className="text-turmeric-text">nấu gì?</span>
         </h1>
+        <ThemeSwitch className="ml-auto" />
       </header>
 
       <nav

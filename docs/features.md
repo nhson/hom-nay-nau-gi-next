@@ -96,6 +96,7 @@ Dropped by decision: personal data stays on the device and the term "Hộ gia đ
 | N8 | Tests: unit + API contract + E2E on a phone viewport | ✅ |
 | N9 | Weekly planner | ⏸ |
 | N10 | i18n vi/en | ⏸ |
+| N11 | Giao diện: Sáng / Tối / Theo thiết bị switch in the app header, the admin top bar and the admin sign-in page; saved on the device, no flash, drives the browser-bar colour (issue #25) | ✅ |
 
 ## Infrastructure and operations
 
