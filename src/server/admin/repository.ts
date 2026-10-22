@@ -1,10 +1,10 @@
 import { sql } from "drizzle-orm";
-import type { Dish, DishDraft } from "@/domain";
-import { readDish, type Db } from "@/server/catalog/repository";
+import type { DishDraft } from "@/domain";
+import { readAdminDish, type AdminDish, type Db } from "@/server/catalog/repository";
 
 export interface Published {
   version: number;
-  dish: Dish;
+  dish: AdminDish;
 }
 
 /**
@@ -71,6 +71,6 @@ export async function setRetired(db: Db, id: string, retired: boolean): Promise<
 }
 
 async function withDish(db: Db, id: string, version: number): Promise<Published | null> {
-  const dish = await readDish(db, id);
+  const dish = await readAdminDish(db, id);
   return dish ? { version, dish } : null;
 }

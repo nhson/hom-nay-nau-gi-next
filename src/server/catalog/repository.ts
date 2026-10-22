@@ -37,6 +37,23 @@ export async function readDish(db: Db, id: string): Promise<Dish | null> {
   return row ? rowToDish(row) : null;
 }
 
+/** A dish plus when it was last changed: for the admin only, never published to devices. */
+export type AdminDish = Dish & { updatedAt: string };
+
+const toAdminDish = (row: DishRow): AdminDish => ({ ...rowToDish(row), updatedAt: row.updatedAt.toISOString() });
+
+export async function readAdminDish(db: Db, id: string): Promise<AdminDish | null> {
+  const [row] = await db.select().from(dishes).where(eq(dishes.id, id));
+  return row ? toAdminDish(row) : null;
+}
+
+export async function readAdminCatalog(db: Db): Promise<{ version: number; dishes: AdminDish[] } | null> {
+  const [meta] = await db.select().from(catalogMeta).where(eq(catalogMeta.id, 1));
+  if (!meta) return null;
+  const rows = await db.select().from(dishes).orderBy(asc(dishes.position));
+  return { version: meta.version, dishes: rows.map(toAdminDish) };
+}
+
 /** The whole catalog, or null when it has never been seeded. */
 export async function readCatalog(db: Db): Promise<CatalogSnapshot | null> {
   // Read the version BEFORE the dishes. If a seed commits in between, the client receives newer

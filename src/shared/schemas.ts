@@ -7,20 +7,20 @@ export const mealTypeSchema = z.enum(["buacom", "buatomonuoc"]);
 export const categorySchema = z.enum(["xao", "canh", "man"]);
 export const regionSchema = z.enum(["bac", "trung", "nam"]);
 
-export const dishSchema = z
-  .object({
-    id: z.string().min(1),
-    mealType: mealTypeSchema,
-    category: categorySchema.nullable(),
-    chay: z.boolean(),
-    region: regionSchema.nullable(),
-    name: z.string().min(1),
-    time: z.number().int().positive().nullable(),
-    ingredients: z.array(z.string().min(1)).min(1),
-    steps: z.array(z.string().min(1)),
-    retired: z.boolean().default(false),
-  })
-  .superRefine((dish, ctx) => {
+const dishFields = z.object({
+  id: z.string().min(1),
+  mealType: mealTypeSchema,
+  category: categorySchema.nullable(),
+  chay: z.boolean(),
+  region: regionSchema.nullable(),
+  name: z.string().min(1),
+  time: z.number().int().positive().nullable(),
+  ingredients: z.array(z.string().min(1)).min(1),
+  steps: z.array(z.string().min(1)),
+  retired: z.boolean().default(false),
+});
+
+export const dishSchema = dishFields.superRefine((dish, ctx) => {
     // Mirrors the database CHECK constraint.
     if (dish.mealType === "buacom" && dish.category === null) {
       ctx.addIssue({ code: "custom", path: ["category"], message: "Bữa cơm 3 món needs a Nhóm món" });
@@ -96,8 +96,16 @@ export const healthResponseSchema = z.object({
   database: z.enum(["up", "down"]),
 });
 
+/** A dish as the admin sees it: the public fields plus when it was last changed (never sent to devices). */
+export const adminDishSchema = dishFields.extend({ updatedAt: z.string() });
+export const adminCatalogResponseSchema = z.object({
+  version: z.number().int().min(0),
+  dishes: z.array(adminDishSchema),
+});
 /** A saved dish and the catalog version that now contains it. */
-export const adminDishResponseSchema = z.object({ version: z.number().int().min(0), dish: dishSchema });
+export const adminDishResponseSchema = z.object({ version: z.number().int().min(0), dish: adminDishSchema });
+export type AdminDish = z.infer<typeof adminDishSchema>;
+export type AdminCatalogResponse = z.infer<typeof adminCatalogResponseSchema>;
 export type DishDraftInput = z.infer<typeof dishDraftSchema>;
 export type AdminDishResponse = z.infer<typeof adminDishResponseSchema>;
 export type DishIssue = z.infer<typeof dishIssueSchema>;

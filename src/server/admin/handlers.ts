@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { dishIdPrefix, nextDishId, normalizeDraft, validateDish } from "@/domain";
 import { errorResponse } from "@/server/api/responses";
-import { readCatalog, type Db } from "@/server/catalog/repository";
-import { catalogResponseSchema, dishDraftSchema } from "@/shared/schemas";
+import { readAdminCatalog, readCatalog, type Db } from "@/server/catalog/repository";
+import { adminCatalogResponseSchema, catalogResponseSchema, dishDraftSchema } from "@/shared/schemas";
 import type { AdminConfig } from "./config";
 import { createDish, setRetired, updateDish } from "./repository";
 import {
@@ -158,8 +158,8 @@ export function createAdminHandlers(deps: AdminDeps) {
   }
 
   const listDishes = guarded(false, async (_request, db) => {
-    const catalog = await readCatalog(db);
-    return catalog ? json(catalogResponseSchema.parse(catalog)) : catalogUnavailable();
+    const catalog = await readAdminCatalog(db);
+    return catalog ? json(adminCatalogResponseSchema.parse(catalog)) : catalogUnavailable();
   });
 
   const exportCatalog = guarded(false, async (_request, db) => {

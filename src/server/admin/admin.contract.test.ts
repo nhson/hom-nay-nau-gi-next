@@ -178,7 +178,7 @@ describe("the session", () => {
 import { bowl, dish } from "@/domain/testing";
 import { applySeed } from "@/server/catalog/repository";
 import { createCatalogHandlers } from "@/server/catalog/handlers";
-import { catalogResponseSchema } from "@/shared/schemas";
+import { adminCatalogResponseSchema, catalogResponseSchema } from "@/shared/schemas";
 
 const FIXTURE = [
   dish({ id: "x1", name: "Rau muống xào", category: "xao" }),
@@ -248,6 +248,26 @@ describe("listing", () => {
     expect(body.version).toBe(2);
     expect(body.dishes.map((d) => d.id)).toEqual(["x1", "x2", "c1", "m1", "t1"]);
     expect(body.dishes.find((d) => d.id === "m1")?.retired).toBe(true);
+  });
+
+  it("says when each dish was last changed, and only the dish that changed moves", async () => {
+    const { k, cookie } = await seeded();
+    const list = async () => adminCatalogResponseSchema.parse(await (await k.handlers.listDishes(k.request("/dishes", { cookie }))).json());
+    const before = await list();
+    for (const dish of before.dishes) expect(Number.isNaN(Date.parse(dish.updatedAt))).toBe(false);
+
+    await k.handlers.updateDish(k.request("/dishes/x1", { method: "PUT", cookie, body: draft({ name: "Rau muống xào", time: 99 }) }), "x1");
+    const after = await list();
+    const stamp = (body: typeof before, id: string) => body.dishes.find((d) => d.id === id)?.updatedAt;
+    expect(stamp(after, "x1")).not.toBe(stamp(before, "x1"));
+    expect(stamp(after, "x2")).toBe(stamp(before, "x2"));
+  });
+
+  it("keeps the public catalog free of that admin-only field", async () => {
+    const { k, cookie } = await seeded();
+    await k.handlers.listDishes(k.request("/dishes", { cookie }));
+    const dishes = (await (await publicCatalog()).json()).dishes as Record<string, unknown>[];
+    expect(dishes.every((d) => !("updatedAt" in d))).toBe(true);
   });
 
   it("is a typed 503 while the catalog has never been published", async () => {
