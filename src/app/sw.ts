@@ -19,6 +19,8 @@ const serwist = new Serwist({
   runtimeCaching: [
     // The catalog is cached on-device by the app itself (ETag, validation); keep the worker out of it.
     { matcher: ({ url }) => url.pathname.startsWith("/api/"), handler: new NetworkOnly() },
+    // The admin area is private and online-only: never cache or serve it from the worker.
+    { matcher: ({ url }) => url.pathname === "/admin" || url.pathname.startsWith("/admin/"), handler: new NetworkOnly() },
     ...defaultCache,
   ],
 });

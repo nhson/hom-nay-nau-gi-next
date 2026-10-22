@@ -33,7 +33,10 @@ const noStore = { "Cache-Control": "no-store" };
 const json = (body: unknown, init: ResponseInit & { headers?: Record<string, string> } = {}) =>
   Response.json(body, { ...init, headers: { ...noStore, ...init.headers } });
 
-/** The client the failed-attempt counter belongs to: the first address the platform saw. */
+/**
+ * The client the failed-attempt counter belongs to: the first address the platform saw. On Vercel the
+ * platform sets this header itself, so a client cannot pick its own key to dodge the lock.
+ */
 function clientKey(request: Request): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
 }

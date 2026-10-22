@@ -25,9 +25,10 @@ Next.js (App Router, TypeScript) · Tailwind CSS · Zod · Drizzle + Neon Postgr
 
 All business rules live in a **framework-free domain core** (`src/domain`) that runs unchanged in the
 browser and in tests. An ESLint rule forbids it from importing React, Next.js, the DB, Zod, the
-browser, or anything outside the folder. The server will only serve a read-only dish catalog; user
-data (history, favorites, today's menu, shopping ticks) lives on the device and refers to catalog
-dishes by `id`. The dish catalog is read-only on devices (see ADR-0003).
+browser, or anything outside the folder. The server publishes the shared dish catalog (read-only on
+devices, ADR-0003) and lets the one Quản trị viên manage it at `/admin` (ADR-0004); user data
+(history, favorites, today's menu, shopping ticks) lives on the device and refers to catalog dishes by
+`id` (ADR-0005).
 
 ## Develop
 
@@ -42,18 +43,33 @@ pnpm test:e2e          # Playwright journeys + axe a11y checks against the produ
 ### Database (catalog API)
 
 The catalog lives in Postgres (Neon via the Vercel Marketplace). Copy `.env.example` to `.env.local`
-(or run `vercel env pull .env.local`) and set `DATABASE_URL`. The seed in `src/seed/dishes.ts` is the
-single source of truth.
+(or run `vercel env pull .env.local`) and set `DATABASE_URL`. The **database is the source of truth**
+(ADR-0004): dishes are managed in `/admin`. The seed in `src/seed/dishes.ts` only bootstraps an empty
+catalog and is test data.
 
 ```bash
 pnpm db:migrate        # apply drizzle/ migrations
-pnpm db:seed           # idempotent: upsert by id, retire missing ids, bump version only on change
+pnpm db:seed           # fills an EMPTY catalog only; refuses when any dish exists (never overwrites admin edits)
 pnpm db:generate       # after editing src/server/db/schema.ts
 pnpm dev               # http://localhost:3000, GET /api/v1/catalog, GET /api/v1/health
 ```
 
-Changing a dish is a data change: edit `src/seed/dishes.ts`, merge, run `pnpm db:seed` against
-production. Clients pick up the new catalog version on their next background refresh.
+Changing a dish is done in the admin page (`/admin`): add, edit, hide, show again, export JSON. A save
+publishes at once and bumps the catalog version; devices pick it up the next time they open the app.
+
+### Admin page (`/admin`)
+
+Private and online-only (not indexed, never cached by the service worker, no analytics, no link from
+the user app). One Quản trị viên signs in with a password. Set two environment variables (Vercel
+project settings, or `.env.local` for local development); without them the admin reports itself
+unavailable:
+
+```bash
+ADMIN_PASSPHRASE=...        # the password
+ADMIN_SESSION_SECRET=...    # signs the 7-day session cookie, at least 32 characters (openssl rand -base64 48)
+```
+
+After 5 wrong passwords in a row a client is locked out for 15 minutes.
 
 Tests never need a database server: the API contract tests run the real migrations on PGlite
 (in-memory Postgres).

@@ -6,5 +6,8 @@ Lý do: mọi thiết bị thấy cùng một nội dung, một chỗ sửa lỗ
 
 Ứng dụng đang ở chu kỳ sử dụng đầu tiên nên không bảo toàn dữ liệu cũ: món tự thêm, bản sửa và món đã ẩn lưu trên máy **không còn được đọc** (không bị xoá khỏi bộ nhớ, nên có thể bật lại nếu cần). Lịch sử hoặc yêu thích từng dùng món tự thêm sẽ hiện "(đã xoá)".
 
+## Cập nhật
+Trang quản trị đã được làm (xem [ADR-0004](0004-database-is-the-catalog-source-of-truth.md)): quản trị viên thêm, sửa, ẩn món tại `/admin`; cơ sở dữ liệu là nguồn sự thật và `db:seed` chỉ khởi tạo danh mục rỗng. Thiết bị vẫn chỉ đọc.
+
 ## Thay thế
 Các user story 39–45 của spec #1 (thêm, sửa, xoá, khôi phục, đặt lại, món tự thêm hoạt động như món có sẵn) và tính năng F9 không còn hiệu lực. Sự kiện phân tích `add_dish`, `edit_dish`, `delete_dish` ngừng gửi.

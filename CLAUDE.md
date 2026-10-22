@@ -70,13 +70,13 @@ but still get a `feature_list.json` entry and the checks in the definition of do
 - Second seam: the catalog API contract (`src/server/catalog/*.contract.test.ts`, real migrations on PGlite).
   Playwright (`e2e/`) is verification only. No component tests, no service-worker unit tests.
 - **Personal data never leaves the device** (history, favorites, today's menu, ticks) and lives in
-  IndexedDB (`src/lib/idb.ts`). The server only publishes the shared catalog. Analytics events carry
+  IndexedDB (`src/lib/idb.ts`). The server publishes the shared catalog and accepts catalog writes only from the Quản trị viên (admin API, signed session cookie; ADR-0004/0005). Analytics events carry
   no personal content (see `src/domain/analytics.ts`).
 - Dish enum values and ids are identical to the legacy app (`buacom`/`buatomonuoc`, `xao|canh|man`,
   `bac|trung|nam`, `x*`/`c*`/`m*`/`t*`). Chay dishes contain no tỏi.
-- **The Danh mục món is read-only on devices** (ADR-0003): no add, edit, delete, restore or reset of dishes. Dish content changes only via the seed (later an admin page). Old per-device dish data is not read but is carried through untouched in storage (`user` in the personal state): never interpret it, never drop it.
+- **The Danh mục món is read-only on devices** (ADR-0003): no add, edit, delete, restore or reset of dishes. Dish content changes only through the admin page at `/admin` (ADR-0004: the database is the source of truth; `db:seed` refuses a non-empty catalog). Old per-device dish data is not read but is carried through untouched in storage (`user` in the personal state): never interpret it, never drop it.
 - Use the glossary terms (Nhóm món, Kiểu bữa ăn, Bữa cơm 3 món, Bữa 1 món, Chay, Vùng miền) in code and copy. UI copy is Vietnamese.
-- Seed content lives only in `src/seed/dishes.ts` (changing a dish = edit seed + `db:seed`).
+- `src/seed/dishes.ts` only bootstraps an empty catalog and serves as test data. Never run `db:seed` to change dishes. The admin lives in its own route group (`src/app/(admin)`): no user app shell, no analytics, no service-worker caching; admin API under `/api/v1/admin`.
 
 ## Working rules
 

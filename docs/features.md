@@ -29,7 +29,7 @@ user stories are in issue #1.
 
 | ID | Feature | Status |
 |---|---|---|
-| F9 | Dish library: search, filter and read any dish's recipe. **Add / edit / delete / reset / restore were removed on purpose** (ADR-0003); an admin page comes in a later phase | ✅ changed |
+| F9 | Dish library: search, filter and read any dish's recipe. **Add / edit / delete / reset / restore were removed on purpose** (ADR-0003); managed in the admin page (A1–A10, ADR-0004) | ✅ changed |
 | F10 | Filter by Nhóm món / Bữa 1 món / Chay | ✅ |
 | F11 | 73 seed dishes (Xào 20, Canh 23, Mặn 21, Bữa 1 món 9; 27 chay, no tỏi) | ✅ stored in Neon, bundled as offline fallback |
 | F12 | Catalog updates reach every device | ✅ versioned + ETag; devices hold no dish edits any more, so a correction always shows |
@@ -41,6 +41,21 @@ user stories are in issue #1.
 | F13 | Save a named favorite menu | ✅ |
 | F14 | Reuse a favorite | ✅ |
 | F15 | Delete a favorite | ✅ |
+
+## Quản trị (admin page, `/admin`)
+
+| ID | Feature | Status |
+|---|---|---|
+| A1 | Password sign-in, 7-day session, sign-out; locks 15 min after 5 wrong passwords | ✅ |
+| A2 | List every dish (hidden included) with counts, accent-free search, filters | ✅ |
+| A3 | Add a dish (id assigned: x / c / m / t) and edit every field, with live preview | ✅ |
+| A4 | Rules enforced on the server: Chay dish has no tỏi, unique names, valid Nhóm món | ✅ |
+| A5 | Hide / show a dish (Món đã ẩn), never delete | ✅ |
+| A6 | Save publishes at once, atomically with the catalog version | ✅ |
+| A7 | Export the whole catalog as JSON | ✅ |
+| A8 | Error summary, save failure with retry, unsaved-changes prompt, session expiry keeps the form | ✅ |
+| A9 | Private: noindex, never cached or served offline, no analytics | ✅ |
+| A10 | Deferred: sort, preview toggle on narrow screens, show/hide password, visible version text, filter divider | ⏸ |
 
 ## Hộ gia đình (Household): dropped
 
@@ -76,7 +91,7 @@ Dropped by decision: personal data stays on the device and the term "Hộ gia đ
 | N3 | Typed, validated, versioned API | 🟡 Zod schemas on both sides, typed errors, ETag + catalog version. ⛔ **No rate limiting** (read-only, CDN-cached endpoint) |
 | N4 | Official Household feature | ⛔ dropped (ADR-0005) |
 | N5 | Import the legacy `localStorage` data | ⏸ |
-| N6 | Seed lives in the database (fix a dish without redeploying) | ✅ `pnpm db:seed`; superseded by the admin page (ADR-0004) |
+| N6 | Fix a dish without redeploying | ✅ the admin page (ADR-0004); `pnpm db:seed` now only fills an empty catalog |
 | N7 | Server-side tracking of the north-star metric | ⏸ |
 | N8 | Tests: unit + API contract + E2E on a phone viewport | ✅ |
 | N9 | Weekly planner | ⏸ |
