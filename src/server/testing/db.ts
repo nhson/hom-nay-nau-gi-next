@@ -15,7 +15,7 @@ export async function createTestDb() {
   return {
     db,
     reset: async () => {
-      await db.execute(sql`truncate table dishes, catalog_meta`);
+      await db.execute(sql`truncate table dishes, catalog_meta, admin_login_attempts`);
     },
     close: () => client.close(),
   };

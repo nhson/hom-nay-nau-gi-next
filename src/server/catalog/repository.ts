@@ -31,6 +31,12 @@ function rowToDish(row: DishRow): Dish {
   };
 }
 
+/** One dish by id (hidden ones included), or null. */
+export async function readDish(db: Db, id: string): Promise<Dish | null> {
+  const [row] = await db.select().from(dishes).where(eq(dishes.id, id));
+  return row ? rowToDish(row) : null;
+}
+
 /** The whole catalog, or null when it has never been seeded. */
 export async function readCatalog(db: Db): Promise<CatalogSnapshot | null> {
   // Read the version BEFORE the dishes. If a seed commits in between, the client receives newer
@@ -143,4 +149,19 @@ export async function applySeed(db: Db, seed: readonly Dish[]): Promise<SeedResu
 
     return { changed: true, version, added, updated, retired: toRetire.length };
   });
+}
+
+export type SeedEmptyResult =
+  | ({ status: "seeded" } & SeedResult)
+  | { status: "refused"; dishes: number };
+
+/**
+ * What `db:seed` runs. The database is the source of truth once the admin page exists (ADR-0004), so
+ * the seed only bootstraps an EMPTY catalog and refuses to touch one that already has dishes: a stray
+ * command must never overwrite the Quản trị viên's edits or hide the dishes they added.
+ */
+export async function seedEmptyCatalog(db: Db, seed: readonly Dish[]): Promise<SeedEmptyResult> {
+  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(dishes);
+  if (count > 0) return { status: "refused", dishes: count };
+  return { status: "seeded", ...(await applySeed(db, seed)) };
 }
