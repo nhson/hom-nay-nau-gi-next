@@ -87,8 +87,8 @@
       "dependencies": [
         "feat-008"
       ],
-      "status": "in-progress",
-      "evidence": "PR #10 open and unmerged (docs only)"
+      "status": "done",
+      "evidence": "PR #10 merged: docs/phase-1.md, docs/features.md, refreshed docs/parity-checklist.md"
     },
     {
       "id": "feat-010",

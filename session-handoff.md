@@ -3,7 +3,7 @@
 ## Current Objective
 
 - Goal: Phase 1 is complete and live; harness initialised so Phase 2 can start cleanly.
-- Current status: `main` is deployed and healthy; PR #10 (docs) is open; the harness arrives with PR #12.
+- Current status: `main` is deployed and healthy; no PRs open; Phase 1 docs (#10) and the harness (#12) are merged.
 - Branch / commit: `main` (harness from PR #12)
 
 ## Completed This Session
