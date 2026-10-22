@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype: gợi ý cài app trên iPhone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+  /* Tokens copied from src/app/globals.css */
+  .light{--background:#fbf7ee;--foreground:#241f18;--card:#fff;--primary:#2f5d50;--primary-foreground:#fff;--muted:#f4eee0;--muted-foreground:#6b6152;--border:#e7decb;--ring:#2f5d50;--turmeric:#d98a22;--turmeric-foreground:#241f18;--turmeric-text:#a35f08;--turmeric-tint:#fbeed6;--cat-xao:#3c7a4b;--cat-canh:#a1690f;--cat-man:#b4492c}
+  .dark{--background:#181d17;--foreground:#f1ecdd;--card:#212720;--primary:#7cae9b;--primary-foreground:#12211c;--muted:#262c24;--muted-foreground:#a39c89;--border:#333a30;--ring:#7cae9b;--turmeric:#e9a94e;--turmeric-foreground:#20160a;--turmeric-text:#e9a94e;--turmeric-tint:#2c2518;--cat-xao:#86c595;--cat-canh:#e3b25a;--cat-man:#ee8f72}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Be Vietnam Pro",system-ui,sans-serif;background:#e9e4d6;color:#241f18;padding:24px 16px 56px}
+  h1{font-family:Fraunces,Georgia,serif;font-size:26px;margin:0 0 6px}
+  .lead{max-width:760px;color:#5b5243;line-height:1.55;margin:0 0 28px}
+  h2{font-size:17px;margin:34px 0 4px}
+  .note{max-width:760px;color:#5b5243;font-size:14px;line-height:1.55;margin:0 0 14px}
+  .row{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+  .frame{width:390px;border-radius:34px;border:8px solid #1c1b18;overflow:hidden;background:var(--background);color:var(--foreground);box-shadow:0 14px 40px rgba(0,0,0,.18)}
+  .screen{padding:18px 16px 20px;min-height:540px}
+  .tag{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5b5243;margin:0 0 8px}
+  /* fake app chrome */
+  .top{display:flex;align-items:center;gap:8px;font-family:Fraunces,serif;font-size:19px;font-weight:600;margin-bottom:12px}
+  .date{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted-foreground);margin:0 0 14px}
+  .cta{display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border-radius:16px;background:var(--turmeric);color:var(--turmeric-foreground);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .dish{margin-top:12px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;gap:12px;align-items:center}
+  .dish i{width:40px;height:40px;border-radius:12px;display:block}
+  .dish b{display:block;font-size:15px}.dish span{font-size:13px;color:var(--muted-foreground)}
+
+  /* ---- the hint ---- */
+  .hint{position:relative;margin:0 0 14px;border-radius:20px;border:1px solid color-mix(in oklab,var(--turmeric) 45%,var(--border));background:var(--turmeric-tint);padding:14px 14px 14px 14px}
+  .hint-head{display:flex;gap:12px;align-items:flex-start}
+  .tile{flex:none;width:40px;height:40px;border-radius:12px;background:var(--turmeric);color:var(--turmeric-foreground);display:grid;place-items:center}
+  .hint h3{margin:0;font-family:Fraunces,serif;font-size:17px;line-height:1.25}
+  .hint p{margin:2px 0 0;font-size:13.5px;line-height:1.45;color:var(--muted-foreground)}
+  ol.steps{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px;counter-reset:s}
+  ol.steps li{counter-increment:s;display:flex;gap:10px;align-items:center;font-size:14px;line-height:1.4}
+  ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:99px;background:var(--card);border:1px solid var(--border);font-size:12px;font-weight:700;display:grid;place-items:center;color:var(--turmeric-text)}
+  .glyph{display:inline-flex;vertical-align:-5px;margin:0 2px;width:26px;height:26px;border-radius:8px;background:var(--card);border:1px solid var(--border);align-items:center;justify-content:center;color:var(--primary)}
+  .kbd{font-weight:600}
+  .fallback{margin:12px 0 0;font-size:13px;color:var(--muted-foreground);border-top:1px dashed color-mix(in oklab,var(--turmeric) 40%,var(--border));padding-top:10px}
+  .actions{display:flex;justify-content:flex-end;margin-top:12px}
+  .btn{min-height:44px;padding:0 18px;border-radius:14px;border:0;font:600 14px "Be Vietnam Pro",sans-serif;background:var(--primary);color:var(--primary-foreground);cursor:pointer}
+  .btn:focus-visible,.x:focus-visible,.link:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
+  .btn.ghost{background:transparent;color:var(--foreground);border:1px solid var(--border)}
+  .x{position:absolute;top:4px;right:4px;width:44px;height:44px;border:0;background:transparent;color:var(--muted-foreground);border-radius:12px;display:grid;place-items:center;cursor:pointer}
+  .link{min-height:44px;display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--turmeric-text);font:600 14px "Be Vietnam Pro",sans-serif;cursor:pointer;padding:0 4px}
+  /* option B */
+  .hint.compact{padding:6px 6px 6px 12px}
+  .hint.compact .bar{display:flex;align-items:center;gap:10px;min-height:52px;padding-right:44px}
+  .hint.compact .tile{width:34px;height:34px;border-radius:10px}
+  .hint.compact .t{flex:1;font-weight:600;font-size:14px;line-height:1.3}
+  .hint.compact .body{display:none;padding:0 8px 8px 0}
+  .hint.compact.open .body{display:block}
+  .chev{transition:transform .2s}.open .chev{transform:rotate(180deg)}
+  /* option C */
+  .sheet{position:relative}
+  .sheet .card{position:absolute;left:12px;right:12px;bottom:68px;border-radius:22px;background:var(--card);border:1px solid var(--border);box-shadow:0 -6px 24px rgba(0,0,0,.14);padding:14px}
+  .sheet .card::after{content:"";position:absolute;left:50%;bottom:-8px;width:16px;height:16px;background:var(--card);border-right:1px solid var(--border);border-bottom:1px solid var(--border);transform:translateX(-50%) rotate(45deg)}
+  .sheet .screen{min-height:640px}
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:52px;background:var(--muted);border-top:1px solid var(--border)}
+  @media (prefers-reduced-motion:reduce){.chev{transition:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></symbol>
+  <symbol id="phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="dice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01M12 12h.01"/></symbol>
+</svg>
+
+<h1>Gợi ý cài app trên iPhone</h1>
+<p class="lead">Prototype tĩnh cho issue #19: không phải code của app. Màu, bo góc, font lấy từ <code>globals.css</code>; mỗi phương án hiển thị sáng và tối cạnh nhau, ở bề rộng iPhone 390px. Chỉ hiện trên iPhone/iPad, trong trình duyệt, chưa cài app, chưa bấm “Đã hiểu”.</p>
+
+<h2>A. Thẻ đầy đủ (đề xuất)</h2>
+<p class="note">Thẻ nằm trên cùng màn Hôm nay, ba bước đánh số kèm biểu tượng thật của iOS, một dòng dự phòng cho Chrome, nút “Đã hiểu”. Cao khoảng 250px nên đẩy nút Random xuống, nhưng chỉ cho tới khi người dùng bấm “Đã hiểu”.</p>
+<div class="row">
+  <div>
+    <p class="tag">Sáng</p>
+    <div class="frame light"><div class="screen">
+      <div class="top">Hôm nay nấu gì?</div>
+      <section class="hint" aria-labelledby="a1">
+        <div class="hint-head">
+          <div class="tile"><svg width="22" height="22" aria-hidden="true"><use href="#phone"/></svg></div>
+          <div><h3 id="a1">Cài app lên màn hình chính</h3><p>Mở nhanh như một app, dùng được cả khi mất mạng.</p></div>
+        </div>
+        <ol class="steps">
+          <li><span>Bấm nút Chia sẻ <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#share"/></svg></span> của trình duyệt</span></li>
+          <li><span>Chọn <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#plus"/></svg></span> <span class="kbd">Thêm vào MH chính</span></span></li>
+          <li><span>Bấm <span class="kbd">Thêm</span> ở góc trên bên phải</span></li>
+        </ol>
+        <p class="fallback">Không thấy mục này? Cuộn xuống, hoặc mở trang bằng Safari.</p>
+        <div class="actions"><button class="btn">Đã hiểu</button></div>
+      </section>
+      <div class="date">Thứ Tư, 22/10/2026</div>
+      <div class="cta"><svg width="20" height="20" aria-hidden="true"><use href="#dice"/></svg> Random thực đơn</div>
+      <div class="dish"><i style="background:color-mix(in oklab,var(--cat-xao) 22%,transparent)"></i><div><b>Rau muống xào tỏi</b><span>Xào · 15 phút</span></div></div>
+    </div></div>
+  </div>
+  <div>
+    <p class="tag">Tối</p>
+    <div class="frame dark"><div class="screen">
+      <div class="top">Hôm nay nấu gì?</div>
+      <section class="hint" aria-labelledby="a2">
+        <div class="hint-head">
+          <div class="tile"><svg width="22" height="22" aria-hidden="true"><use href="#phone"/></svg></div>
+          <div><h3 id="a2">Cài app lên màn hình chính</h3><p>Mở nhanh như một app, dùng được cả khi mất mạng.</p></div>
+        </div>
+        <ol class="steps">
+          <li><span>Bấm nút Chia sẻ <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#share"/></svg></span> của trình duyệt</span></li>
+          <li><span>Chọn <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#plus"/></svg></span> <span class="kbd">Thêm vào MH chính</span></span></li>
+          <li><span>Bấm <span class="kbd">Thêm</span> ở góc trên bên phải</span></li>
+        </ol>
+        <p class="fallback">Không thấy mục này? Cuộn xuống, hoặc mở trang bằng Safari.</p>
+        <div class="actions"><button class="btn">Đã hiểu</button></div>
+      </section>
+      <div class="date">Thứ Tư, 22/10/2026</div>
+      <div class="cta"><svg width="20" height="20" aria-hidden="true"><use href="#dice"/></svg> Random thực đơn</div>
+      <div class="dish"><i style="background:color-mix(in oklab,var(--cat-xao) 22%,transparent)"></i><div><b>Rau muống xào tỏi</b><span>Xào · 15 phút</span></div></div>
+    </div></div>
+  </div>
+</div>
+
+<h2>B. Thanh gọn, bấm để mở</h2>
+<p class="note">Mặc định chỉ một dòng cao 64px nên thực đơn hôm nay vẫn nằm ngay màn hình đầu. Bấm “Xem cách” mở ba bước (thử bấm). Nút × cũng ẩn vĩnh viễn, tương đương “Đã hiểu”. Đổi lại: người dùng phải bấm thêm một lần, và dễ bị bỏ qua.</p>
+<div class="row">
+  <div>
+    <p class="tag">Sáng · bấm thử</p>
+    <div class="frame light"><div class="screen">
+      <div class="top">Hôm nay nấu gì?</div>
+      <section class="hint compact" id="b1" aria-label="Cài app lên màn hình chính">
+        <button class="x" aria-label="Ẩn gợi ý, không hiện lại"><svg width="18" height="18" aria-hidden="true"><use href="#close"/></svg></button>
+        <div class="bar"><div class="tile"><svg width="18" height="18" aria-hidden="true"><use href="#phone"/></svg></div><div class="t">Cài app lên màn hình chính</div>
+          <button class="link" aria-expanded="false" aria-controls="b1body" onclick="tog(this)">Xem cách <svg class="chev" width="16" height="16" aria-hidden="true"><use href="#chev"/></svg></button></div>
+        <div class="body" id="b1body">
+          <ol class="steps">
+            <li><span>Bấm nút Chia sẻ <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#share"/></svg></span></span></li>
+            <li><span>Chọn <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#plus"/></svg></span> <span class="kbd">Thêm vào MH chính</span></span></li>
+            <li><span>Bấm <span class="kbd">Thêm</span></span></li>
+          </ol>
+          <p class="fallback">Không thấy mục này? Cuộn xuống, hoặc mở trang bằng Safari.</p>
+          <div class="actions"><button class="btn">Đã hiểu</button></div>
+        </div>
+      </section>
+      <div class="date">Thứ Tư, 22/10/2026</div>
+      <div class="cta"><svg width="20" height="20" aria-hidden="true"><use href="#dice"/></svg> Random thực đơn</div>
+      <div class="dish"><i style="background:color-mix(in oklab,var(--cat-xao) 22%,transparent)"></i><div><b>Rau muống xào tỏi</b><span>Xào · 15 phút</span></div></div>
+    </div></div>
+  </div>
+  <div>
+    <p class="tag">Tối · bấm thử</p>
+    <div class="frame dark"><div class="screen">
+      <div class="top">Hôm nay nấu gì?</div>
+      <section class="hint compact" id="b2" aria-label="Cài app lên màn hình chính">
+        <button class="x" aria-label="Ẩn gợi ý, không hiện lại"><svg width="18" height="18" aria-hidden="true"><use href="#close"/></svg></button>
+        <div class="bar"><div class="tile"><svg width="18" height="18" aria-hidden="true"><use href="#phone"/></svg></div><div class="t">Cài app lên màn hình chính</div>
+          <button class="link" aria-expanded="false" aria-controls="b2body" onclick="tog(this)">Xem cách <svg class="chev" width="16" height="16" aria-hidden="true"><use href="#chev"/></svg></button></div>
+        <div class="body" id="b2body">
+          <ol class="steps">
+            <li><span>Bấm nút Chia sẻ <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#share"/></svg></span></span></li>
+            <li><span>Chọn <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#plus"/></svg></span> <span class="kbd">Thêm vào MH chính</span></span></li>
+            <li><span>Bấm <span class="kbd">Thêm</span></span></li>
+          </ol>
+          <p class="fallback">Không thấy mục này? Cuộn xuống, hoặc mở trang bằng Safari.</p>
+          <div class="actions"><button class="btn">Đã hiểu</button></div>
+        </div>
+      </section>
+      <div class="date">Thứ Tư, 22/10/2026</div>
+      <div class="cta"><svg width="20" height="20" aria-hidden="true"><use href="#dice"/></svg> Random thực đơn</div>
+      <div class="dish"><i style="background:color-mix(in oklab,var(--cat-xao) 22%,transparent)"></i><div><b>Rau muống xào tỏi</b><span>Xào · 15 phút</span></div></div>
+    </div></div>
+  </div>
+</div>
+
+<h2>C. Thẻ nổi dưới màn hình, mũi tên chỉ xuống nút Chia sẻ</h2>
+<p class="note">Giống gợi ý cài app quen thuộc: thẻ nổi sát đáy, mũi tên chỉ về nút Chia sẻ của Safari ở giữa thanh dưới. Không che nội dung phía trên, nhưng mũi tên chỉ đúng với Safari iPhone; Chrome và iPad đặt nút Chia sẻ ở chỗ khác nên mũi tên có thể chỉ sai, và thẻ che thanh điều hướng của app.</p>
+<div class="row">
+  <div>
+    <p class="tag">Sáng</p>
+    <div class="frame light sheet"><div class="screen">
+      <div class="top">Hôm nay nấu gì?</div>
+      <div class="date">Thứ Tư, 22/10/2026</div>
+      <div class="cta"><svg width="20" height="20" aria-hidden="true"><use href="#dice"/></svg> Random thực đơn</div>
+      <div class="dish"><i style="background:color-mix(in oklab,var(--cat-xao) 22%,transparent)"></i><div><b>Rau muống xào tỏi</b><span>Xào · 15 phút</span></div></div>
+      <div class="dish"><i style="background:color-mix(in oklab,var(--cat-canh) 22%,transparent)"></i><div><b>Canh chua cá lóc</b><span>Canh · 30 phút</span></div></div>
+    </div>
+    <div class="card" role="region" aria-label="Cài app lên màn hình chính">
+      <div class="hint-head"><div class="tile"><svg width="22" height="22" aria-hidden="true"><use href="#phone"/></svg></div><div><h3 style="margin:0;font:600 16px Fraunces,serif">Cài app lên màn hình chính</h3><p style="margin:2px 0 0;font-size:13.5px;color:var(--muted-foreground);line-height:1.45">Bấm <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#share"/></svg></span> bên dưới, rồi chọn <b>Thêm vào MH chính</b>.</p></div></div>
+      <div class="actions"><button class="btn ghost">Đã hiểu</button></div>
+    </div>
+    <div class="tabbar"></div></div>
+  </div>
+  <div>
+    <p class="tag">Tối</p>
+    <div class="frame dark sheet"><div class="screen">
+      <div class="top">Hôm nay nấu gì?</div>
+      <div class="date">Thứ Tư, 22/10/2026</div>
+      <div class="cta"><svg width="20" height="20" aria-hidden="true"><use href="#dice"/></svg> Random thực đơn</div>
+      <div class="dish"><i style="background:color-mix(in oklab,var(--cat-xao) 22%,transparent)"></i><div><b>Rau muống xào tỏi</b><span>Xào · 15 phút</span></div></div>
+      <div class="dish"><i style="background:color-mix(in oklab,var(--cat-canh) 22%,transparent)"></i><div><b>Canh chua cá lóc</b><span>Canh · 30 phút</span></div></div>
+    </div>
+    <div class="card" role="region" aria-label="Cài app lên màn hình chính">
+      <div class="hint-head"><div class="tile"><svg width="22" height="22" aria-hidden="true"><use href="#phone"/></svg></div><div><h3 style="margin:0;font:600 16px Fraunces,serif">Cài app lên màn hình chính</h3><p style="margin:2px 0 0;font-size:13.5px;color:var(--muted-foreground);line-height:1.45">Bấm <span class="glyph"><svg width="16" height="16" aria-hidden="true"><use href="#share"/></svg></span> bên dưới, rồi chọn <b>Thêm vào MH chính</b>.</p></div></div>
+      <div class="actions"><button class="btn ghost">Đã hiểu</button></div>
+    </div>
+    <div class="tabbar"></div></div>
+  </div>
+</div>
+
+<script>
+function tog(b){var s=b.closest('.hint');var o=s.classList.toggle('open');b.setAttribute('aria-expanded',o);b.firstChild.nodeValue=o?'Thu gọn ':'Xem cách '}
+</script>
+</body>
+</html>

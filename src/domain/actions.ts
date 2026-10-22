@@ -25,7 +25,9 @@ export type Action =
   | { type: "set-tick"; key: string; checked: boolean }
   | { type: "save-favorite"; name: string }
   | { type: "use-favorite"; id: string }
-  | { type: "delete-favorite"; id: string };
+  | { type: "delete-favorite"; id: string }
+  /** "Đã hiểu" on the iPhone install hint: it never shows again on this device. */
+  | { type: "dismiss-install-hint" };
 
 /** What the UI should tell the user; the wording lives in the UI. */
 export type Notice =
@@ -169,5 +171,8 @@ function apply(state: PersonalState, action: Action, ctx: ActionContext): StepRe
 
     case "delete-favorite":
       return { state: { ...state, favorites: deleteFavorite(state.favorites, action.id) } };
+
+    case "dismiss-install-hint":
+      return state.installHintDismissed ? { state } : { state: { ...state, installHintDismissed: true } };
   }
 }

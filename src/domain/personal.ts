@@ -15,6 +15,8 @@ export interface PersonalState {
   /** Shopping ticks keyed by normalized ingredient name. */
   ticks: Record<string, boolean>;
   chayFilter: boolean;
+  /** The person closed the "install on your Home Screen" hint on this device (iPhone/iPad only). */
+  installHintDismissed: boolean;
 }
 
 export const PERSONAL_SCHEMA_VERSION = 1;
@@ -26,6 +28,7 @@ export const EMPTY_PERSONAL_STATE: PersonalState = {
   todayMenu: null,
   ticks: {},
   chayFilter: false,
+  installHintDismissed: false,
 };
 
 type Raw = Record<string, unknown>;
@@ -112,5 +115,6 @@ export function normalizePersonalState(stored: unknown): PersonalState {
     todayMenu: parseMenu(raw.todayMenu),
     ticks: parseTicks(raw.ticks),
     chayFilter: raw.chayFilter === true,
+    installHintDismissed: raw.installHintDismissed === true,
   };
 }

@@ -119,6 +119,16 @@
       ],
       "status": "done",
       "evidence": "PR #16 merged (Closes #15): 197 unit/contract tests, 20 Playwright tests (incl. axe) green; code-review run and fixed; live on production (Món ăn shows no add/edit/delete controls)"
+    },
+    {
+      "id": "feat-013",
+      "name": "iPhone install hint",
+      "description": "iOS has no install prompt: show a one-time, dismissible hint on Hôm nay (iPhone/iPad browser tab only) explaining Share -> Thêm vào MH chính; add apple-mobile-web-app-capable. Spec: issue #19. Design: option B (compact bar) from docs/design/ios-install-hint-prototype.html.",
+      "dependencies": [
+        "feat-008"
+      ],
+      "status": "in-progress",
+      "evidence": ""
     }
   ]
 }

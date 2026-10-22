@@ -7,6 +7,7 @@ import { SaveFavoriteButton } from "../favorites/save-favorite-dialog";
 import { useApp } from "../app-provider";
 import { DishCard } from "./dish-card";
 import { HistoryList } from "./history-list";
+import { InstallHint } from "./install-hint";
 import { ShoppingList } from "./shopping-list";
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,7 @@ export function TodayScreen() {
 
   return (
     <div>
+      <InstallHint />
       <p className="mb-4 flex items-center gap-2 text-sm text-muted-foreground capitalize">
         <CalendarDays aria-hidden className="size-4" /> {formatLongDate(today)}
       </p>

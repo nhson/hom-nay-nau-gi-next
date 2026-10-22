@@ -19,8 +19,18 @@ describe("normalizePersonalState", () => {
       todayMenu: { date: "2026-10-14", dishIds: ["x1"], mealType: "buacom" as const },
       ticks: { hành: true },
       chayFilter: true,
+      installHintDismissed: true,
     };
     expect(normalizePersonalState(JSON.parse(JSON.stringify(state)))).toEqual(state);
+  });
+
+  it("loads a state saved before the install hint existed as not dismissed", () => {
+    const legacy = { schemaVersion: 1, history: [], favorites: [], todayMenu: null, ticks: {}, chayFilter: true };
+    expect(normalizePersonalState(legacy).installHintDismissed).toBe(false);
+  });
+
+  it.each(["yes", 1, null, {}])("ignores a bad install hint value %j", (value) => {
+    expect(normalizePersonalState({ installHintDismissed: value }).installHintDismissed).toBe(false);
   });
 
   it("treats a record with no schemaVersion as version 0 and stamps the current version", () => {

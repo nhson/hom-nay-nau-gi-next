@@ -64,6 +64,7 @@ export function eventsFor(action: Action, before: PersonalState, result: ActionR
 
     case "ensure-today":
     case "set-tick":
+    case "dismiss-install-hint":
       return [];
   }
 }
