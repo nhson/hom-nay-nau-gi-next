@@ -138,7 +138,7 @@
         "feat-012"
       ],
       "status": "done",
-      "evidence": "PR #23 merged (Closes #22): ./init.sh green (327 unit/contract, 61 Playwright incl. axe on phone and desktop, light and dark); code review run and fixed. Live on production: migration 0001 applied; the owner signed in at /admin and saved a real edit, and the public catalog moved to v2 (73 dishes). Still to check by hand: VoiceOver pass on /admin."
+      "evidence": "PR #23 merged (Closes #22): ./init.sh green (327 unit/contract, 61 Playwright incl. axe on phone and desktop, light and dark); code review run and fixed. Live on production: migration 0001 applied; the owner signed in at /admin and saved a real edit, and the public catalog moved to v2 (73 dishes). No manual screen-reader pass planned (owner decision): the structure is covered by axe and keyboard tests."
     },
     {
       "id": "feat-015",
