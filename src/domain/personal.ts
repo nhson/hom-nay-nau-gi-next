@@ -1,19 +1,14 @@
-import { EMPTY_USER_CATALOG } from "./catalog";
-import type {
-  Category,
-  Dish,
-  Favorite,
-  HistoryEntry,
-  MealType,
-  Menu,
-  Region,
-  UserCatalogState,
-} from "./types";
+import type { Favorite, HistoryEntry, MealType, Menu } from "./types";
 
 /** Everything that lives on the device (nothing personal is ever sent to a server). */
 export interface PersonalState {
   schemaVersion: number;
-  user: UserCatalogState;
+  /**
+   * Dishes people once added, edited or hid on this device (the old "user catalog"). Devices no longer
+   * read it (ADR-0003: the catalog is read-only), but it is carried through opaquely and written back
+   * unchanged so the data is not erased and could be re-enabled. The key name is kept for that reason.
+   */
+  user?: unknown;
   history: HistoryEntry[];
   favorites: Favorite[];
   todayMenu: Menu | null;
@@ -26,7 +21,6 @@ export const PERSONAL_SCHEMA_VERSION = 1;
 
 export const EMPTY_PERSONAL_STATE: PersonalState = {
   schemaVersion: PERSONAL_SCHEMA_VERSION,
-  user: EMPTY_USER_CATALOG,
   history: [],
   favorites: [],
   todayMenu: null,
@@ -49,31 +43,9 @@ const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(isString);
 
 const MEAL_TYPES: readonly string[] = ["buacom", "buatomonuoc"] satisfies MealType[];
-const CATEGORIES: readonly string[] = ["xao", "canh", "man"] satisfies Category[];
-const REGIONS: readonly string[] = ["bac", "trung", "nam"] satisfies Region[];
 
 function isMealType(value: unknown): value is MealType {
   return isString(value) && MEAL_TYPES.includes(value);
-}
-
-function isDish(value: unknown): value is Dish {
-  if (!isRecord(value)) return false;
-  const categoryOk =
-    value.mealType === "buacom"
-      ? isString(value.category) && CATEGORIES.includes(value.category)
-      : value.category === null;
-  return (
-    isString(value.id) &&
-    value.id !== "" &&
-    isMealType(value.mealType) &&
-    categoryOk &&
-    typeof value.chay === "boolean" &&
-    (value.region === null || (isString(value.region) && REGIONS.includes(value.region))) &&
-    isString(value.name) &&
-    (value.time === null || typeof value.time === "number") &&
-    isStringArray(value.ingredients) &&
-    isStringArray(value.steps)
-  );
 }
 
 function parseMenu(value: unknown): Menu | null {
@@ -111,21 +83,6 @@ function parseFavorites(value: unknown): Favorite[] {
   });
 }
 
-function parseUser(value: unknown): UserCatalogState {
-  if (!isRecord(value)) return EMPTY_USER_CATALOG;
-  const overrides: Record<string, Dish> = {};
-  if (isRecord(value.overrides)) {
-    for (const [id, dish] of Object.entries(value.overrides)) {
-      if (isDish(dish)) overrides[id] = { ...dish, id };
-    }
-  }
-  return {
-    customDishes: Array.isArray(value.customDishes) ? value.customDishes.filter(isDish) : [],
-    overrides,
-    hiddenIds: isStringArray(value.hiddenIds) ? value.hiddenIds : [],
-  };
-}
-
 function parseTicks(value: unknown): Record<string, boolean> {
   if (!isRecord(value)) return {};
   const ticks: Record<string, boolean> = {};
@@ -149,7 +106,7 @@ export function normalizePersonalState(stored: unknown): PersonalState {
   }
   return {
     schemaVersion: PERSONAL_SCHEMA_VERSION,
-    user: parseUser(raw.user),
+    ...(raw.user !== undefined ? { user: raw.user } : {}),
     history: parseHistory(raw.history),
     favorites: parseFavorites(raw.favorites),
     todayMenu: parseMenu(raw.todayMenu),

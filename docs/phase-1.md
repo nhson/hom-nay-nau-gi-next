@@ -15,7 +15,7 @@ Evidence per feature: [parity-checklist.md](parity-checklist.md).
 | 1 | New repo, CI, pure domain core (primary test seam) with ported tests | #2 |
 | 2 | Seed source (73 dishes), Postgres schema + migrations, read-only catalog API with contract tests | #3 |
 | 3 | Responsive shell, on-device store (IndexedDB), the Hôm nay screen | #4 |
-| 4 | Dish bank (add / edit / delete / reset / restore) and favorites | #5 |
+| 4 | Dish bank (add / edit / delete / reset / restore; later made read-only, ADR-0003) and favorites | #5 |
 | 5 | Installable PWA, offline, update prompt | #6 |
 | 6 | Analytics events, accessibility checks, Playwright journeys, parity checklist | #7 |
 | — | Production setup, deployment notes, README | #8, #9 |
@@ -29,11 +29,12 @@ journeys, incl. axe accessibility scans) · Vercel (hosting, previews, Web Analy
 
 ## Decisions worth remembering
 
-- **Personal data stays on the device.** History, favorites, custom and edited dishes, ticks and the
-  Chay setting live in IndexedDB. The server only publishes the shared catalog; nothing personal is
+- **Personal data stays on the device.** History, favorites, today's menu, ticks and the Chay setting
+  live in IndexedDB (before ADR-0003 this also included custom and edited dishes). The server only publishes the shared catalog; nothing personal is
   uploaded. Device data and the installed app are tied to the web address.
 - **Merge by dish id.** The user's edits override the catalog; a dish retired on the server stops
-  being picked but still resolves in old history and favorites.
+  being picked but still resolves in old history and favorites. *(After Phase 1, ADR-0003 made the
+  catalog read-only on devices: add/edit/delete were removed, so there are no device edits to merge.)*
 - **The domain core is the main test seam.** Pure TypeScript with injected random/clock/ids, no React,
   Next.js, database or browser imports (enforced by lint). The second seam is the catalog API contract
   (real handlers, real migrations on PGlite). Playwright is verification only.
@@ -42,7 +43,7 @@ journeys, incl. axe accessibility scans) · Vercel (hosting, previews, Web Analy
 - **Deliberate change from the legacy app:** a new local day regenerates the menu on open.
 - **Analytics:** the 12 legacy event names and properties are preserved. `view_recipe` never carries
   the name of a dish the user wrote.
-- **Out of scope for v1, by decision:** Household (F16–F20), weekly planner, importing old
+- **Out of scope for v1, by decision:** Household (F16–F20, dropped: ADR-0005), weekly planner, importing old
   `localStorage` data, i18n (see [features.md](features.md)).
 
 ## State of the platform
@@ -72,7 +73,8 @@ journeys, incl. axe accessibility scans) · Vercel (hosting, previews, Web Analy
 Not decided: these are the deferred or open items, to pick from when Phase 2 is scoped.
 
 - Custom domain and a friendlier public name (switching address resets on-device data: consider export/import first).
-- Household / sharing across family devices (F16–F20, N4) and importing legacy data (N5).
+- Importing legacy data (N5). Household / sharing across devices (F16–F20, N4) is dropped (ADR-0005).
+- Admin page for the dish catalog (specified in a grill session; see ADR-0004).
 - Measuring the north-star metric (N7): upgrade analytics, or count events ourselves anonymously.
 - Weekly menu planner (F28, N9) and i18n (N10).
 - Dish photos or a better visual identity per dish.

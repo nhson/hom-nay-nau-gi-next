@@ -87,8 +87,8 @@
       "dependencies": [
         "feat-008"
       ],
-      "status": "in-progress",
-      "evidence": "PR #10 open and unmerged (docs only)"
+      "status": "done",
+      "evidence": "PR #10 merged: docs/phase-1.md, docs/features.md, refreshed docs/parity-checklist.md"
     },
     {
       "id": "feat-010",
@@ -107,8 +107,18 @@
       "dependencies": [
         "feat-009"
       ],
-      "status": "in-progress",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PR #14 merged: docs/agents/*, CLAUDE.md workflow section, docs/workflow.md; first run of the loop shipped feat-012 (issue #15, PR #16), second run specified in issue #19"
+    },
+    {
+      "id": "feat-012",
+      "name": "Món ăn becomes a read-only recipe library",
+      "description": "Remove add, edit, delete, restore and reset of dishes; the dish catalog is read-only on devices (Danh mục món, ADR-0003). Spec: issue #15. Branch: feat/read-only-dish-catalog.",
+      "dependencies": [
+        "feat-008"
+      ],
+      "status": "done",
+      "evidence": "PR #16 merged (Closes #15): 197 unit/contract tests, 20 Playwright tests (incl. axe) green; code-review run and fixed; live on production (Món ăn shows no add/edit/delete controls)"
     }
   ]
 }

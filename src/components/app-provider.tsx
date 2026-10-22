@@ -59,14 +59,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // The reducer is pure; these refs let `dispatch` stay stable and read the latest values.
   const stateRef = useRef(state);
   const catalogRef = useRef<ResolvedCatalog | null>(null);
-  const catalogDishesRef = useRef(catalogData.dishes);
   const todayRef = useRef(today);
 
-  const catalog = useMemo(() => resolveCatalog(catalogData.dishes, state.user), [catalogData, state.user]);
+  const catalog = useMemo(() => resolveCatalog(catalogData.dishes), [catalogData]);
 
   useEffect(() => {
     catalogRef.current = catalog;
-    catalogDishesRef.current = catalogData.dishes;
     todayRef.current = today;
     stateRef.current = state;
   });
@@ -76,7 +74,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!resolved) return undefined;
     const result = reduce(stateRef.current, action, {
       catalog: resolved,
-      catalogDishes: catalogDishesRef.current,
       newId: () => crypto.randomUUID(),
       now: Date.now(),
       today: todayRef.current,
@@ -99,8 +96,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const [personal, cached] = await Promise.all([loadPersonal(), loadCatalog()]);
       if (cancelled) return;
       stateRef.current = personal;
-      catalogRef.current = resolveCatalog(cached.dishes, personal.user);
-      catalogDishesRef.current = cached.dishes;
+      catalogRef.current = resolveCatalog(cached.dishes);
       setState(personal);
       setCatalogData(cached);
       setReady(true);

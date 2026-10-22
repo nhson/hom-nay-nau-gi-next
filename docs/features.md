@@ -29,10 +29,10 @@ user stories are in issue #1.
 
 | ID | Feature | Status |
 |---|---|---|
-| F9 | Add / edit / delete dishes; reset an edited catalog dish; restore a hidden one | ✅ |
+| F9 | Dish library: search, filter and read any dish's recipe. **Add / edit / delete / reset / restore were removed on purpose** (ADR-0003); an admin page comes in a later phase | ✅ changed |
 | F10 | Filter by Nhóm món / Bữa 1 món / Chay | ✅ |
 | F11 | 73 seed dishes (Xào 20, Canh 23, Mặn 21, Bữa 1 món 9; 27 chay, no tỏi) | ✅ stored in Neon, bundled as offline fallback |
-| F12 | Catalog updates without overwriting the user's own edits | ✅ versioned + ETag; user edits win |
+| F12 | Catalog updates reach every device | ✅ versioned + ETag; devices hold no dish edits any more, so a correction always shows |
 
 ## Yêu thích
 
@@ -42,17 +42,17 @@ user stories are in issue #1.
 | F14 | Reuse a favorite | ✅ |
 | F15 | Delete a favorite | ✅ |
 
-## Hộ gia đình (Household)
+## Hộ gia đình (Household): dropped
 
 | ID | Feature | Status |
 |---|---|---|
-| F16 | Create / leave a household, shared `/h/<code>` link | ⏸ |
-| F17 | Sync once on open, debounced write | ⏸ |
-| F18 | Sync status | ⏸ |
-| F19 | Copy link | ⏸ |
-| F20 | Read/write API with code check and size limit | ⏸ |
+| F16 | Create / leave a household, shared `/h/<code>` link | ⛔ dropped |
+| F17 | Sync once on open, debounced write | ⛔ dropped |
+| F18 | Sync status | ⛔ dropped |
+| F19 | Copy link | ⛔ dropped |
+| F20 | Read/write API with code check and size limit | ⛔ dropped |
 
-Deferred together by decision (the legacy UI was already hidden); see ADR-0001.
+Dropped by decision: personal data stays on the device and the term "Hộ gia đình" is retired. See ADR-0005 (supersedes ADR-0001).
 
 ## Nền tảng
 
@@ -74,9 +74,9 @@ Deferred together by decision (the legacy UI was already hidden); see ADR-0001.
 | N1 | Installable PWA, works offline | ✅ offline covered by Playwright; install confirmed on a real phone |
 | N2 | Structured data on Postgres | ✅ Neon via the Vercel Marketplace; Drizzle migrations |
 | N3 | Typed, validated, versioned API | 🟡 Zod schemas on both sides, typed errors, ETag + catalog version. ⛔ **No rate limiting** (read-only, CDN-cached endpoint) |
-| N4 | Official Household feature | ⏸ |
+| N4 | Official Household feature | ⛔ dropped (ADR-0005) |
 | N5 | Import the legacy `localStorage` data | ⏸ |
-| N6 | Seed lives in the database (fix a dish without redeploying) | ✅ `pnpm db:seed` |
+| N6 | Seed lives in the database (fix a dish without redeploying) | ✅ `pnpm db:seed`; superseded by the admin page (ADR-0004) |
 | N7 | Server-side tracking of the north-star metric | ⏸ |
 | N8 | Tests: unit + API contract + E2E on a phone viewport | ✅ |
 | N9 | Weekly planner | ⏸ |

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { SEED_DISHES } from "../src/seed/dishes";
-import { dishCount, flushWrites, menuList, menuNames, openToday } from "./helpers";
+import { dishCount, flushWrites, localToday, menuList, menuNames, openToday, readPersonal, seedDevice } from "./helpers";
 
 test("first open generates a Bữa cơm 3 món in the fixed order", async ({ page }) => {
   await openToday(page);
@@ -61,55 +61,87 @@ test("Nấu 1 món switches to a single dish and Random returns to 3 dishes", as
   await expect(menuNames(page)).toHaveCount(3);
 });
 
-test("add, edit, delete, reset and restore dishes", async ({ page }) => {
+test("the dish library is read-only: no add, edit, delete, restore or reset anywhere", async ({ page }) => {
   await page.goto("/dishes");
   await expect(page.getByText(/^73 món$/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Thêm món/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Sửa / })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Xoá / })).toHaveCount(0);
+  await expect(page.getByText("Món đã xoá")).toHaveCount(0);
+  await expect(page.getByText("Đã sửa")).toHaveCount(0);
 
-  // Add a custom dish.
-  await page.getByRole("button", { name: "Thêm món mới" }).click();
-  await page.getByRole("button", { name: "Lưu món" }).click();
-  await expect(page.locator("#dish-name-error")).toHaveText("Nhập tên món");
-  await expect(page.locator("#dish-category-error")).toHaveText("Chọn nhóm món");
-  await page.getByLabel("Tên món").fill("Canh chua nhà làm");
-  await page.getByLabel("Nhóm món").selectOption("canh");
-  await page.getByLabel("Thời gian (phút)").fill("25");
-  await page.getByLabel("Nguyên liệu (cách nhau bằng dấu phẩy)").fill("cá, cà chua, me");
-  await page.getByLabel("Hướng dẫn nấu (mỗi bước 1 dòng)").fill("Sơ chế\nNấu chín");
-  await page.getByRole("button", { name: "Lưu món" }).click();
-  await expect(page.getByText("Đã lưu món ăn!")).toBeVisible();
-  expect(await dishCount(page)).toBe(74);
+  // What is left: tap a dish to read it.
+  await page.getByRole("button", { name: "Xem công thức Bắp cải luộc" }).click();
+  const dialog = page.getByRole("dialog", { name: "Bắp cải luộc" });
+  await expect(dialog.getByRole("button", { name: /Khôi phục|Lưu|Sửa/ })).toHaveCount(0);
+  await expect(dialog.getByRole("heading", { name: /^Cách nấu/ })).toBeVisible();
+});
 
-  // Edit a catalog dish: it becomes an on-device override.
-  await page.getByRole("button", { name: "Sửa Bắp cải luộc" }).click();
-  await page.getByLabel("Tên món").fill("Bắp cải luộc chấm mắm");
-  await page.getByRole("button", { name: "Lưu món" }).click();
-  const row = page.getByRole("listitem").filter({ hasText: "Bắp cải luộc chấm mắm" });
-  await expect(row).toContainText("Đã sửa");
+test.describe("a device that still holds dishes from the version that allowed editing", () => {
+  const caiLuoc = SEED_DISHES.find((dish) => dish.name === "Bắp cải luộc")!;
+  const caiThia = SEED_DISHES.find((dish) => dish.name === "Cải thìa xào nấm")!;
+  const custom = {
+    id: "custom:1",
+    mealType: "buacom",
+    category: "canh",
+    chay: false,
+    region: null,
+    name: "Món nhà làm",
+    time: 20,
+    ingredients: ["cá"],
+    steps: ["nấu"],
+  };
+  const legacyUser = {
+    customDishes: [custom],
+    overrides: { [caiLuoc.id]: { ...caiLuoc, name: "Bản sửa cũ" } },
+    hiddenIds: [caiThia.id],
+  };
+  const xao = SEED_DISHES.find((dish) => dish.category === "xao" && dish.id !== caiLuoc.id)!;
+  const man = SEED_DISHES.find((dish) => dish.category === "man")!;
+  const oldDevice = () => ({
+    schemaVersion: 1,
+    user: legacyUser,
+    history: [{ date: localToday(-1), dishIds: [custom.id, xao.id], mealType: "buacom" }],
+    favorites: [{ id: "f1", name: "Món cũ của nhà", dishIds: [custom.id], mealType: "buacom", savedAt: 1 }],
+    todayMenu: { date: localToday(), dishIds: [custom.id, xao.id, man.id], mealType: "buacom" },
+    ticks: {},
+    chayFilter: false,
+  });
 
-  // Reset to the catalog version.
-  await page.getByRole("button", { name: "Sửa Bắp cải luộc chấm mắm" }).click();
-  await page.getByRole("button", { name: "Khôi phục bản gốc" }).click();
-  await expect(page.getByRole("button", { name: "Sửa Bắp cải luộc", exact: true })).toBeVisible();
+  test("shows exactly the catalog, with removed dishes marked in history and favorites", async ({ page }) => {
+    await seedDevice(page, oldDevice());
 
-  // Delete (confirmed), then restore the hidden catalog dish.
-  await page.getByRole("button", { name: "Xoá Bắp cải luộc" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Huỷ" }).click();
-  expect(await dishCount(page)).toBe(74);
-  await page.getByRole("button", { name: "Xoá Bắp cải luộc" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Xoá" }).click();
-  expect(await dishCount(page)).toBe(73);
-  await page.getByRole("button", { name: "Khôi phục" }).click();
-  expect(await dishCount(page)).toBe(74);
+    // Today's menu named a dish that no longer exists: it is replaced by a complete fresh one.
+    await expect(menuNames(page)).toHaveCount(3);
+    await expect(menuNames(page).filter({ hasText: "Món nhà làm" })).toHaveCount(0);
+    await expect(page.getByRole("listitem").filter({ hasText: "(đã xoá)" })).toBeVisible();
 
-  // Delete the custom dish for good.
-  await page.getByRole("button", { name: "Xoá Canh chua nhà làm" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Xoá" }).click();
-  expect(await dishCount(page)).toBe(73);
+    await page.getByRole("link", { name: "Món ăn" }).click();
+    await expect(page.getByRole("searchbox", { name: "Tìm món" })).toBeVisible();
+    expect(await dishCount(page)).toBe(SEED_DISHES.length);
+    await expect(page.getByText("Món nhà làm")).toHaveCount(0);
+    await expect(page.getByText("Bản sửa cũ")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Xem công thức Bắp cải luộc" })).toBeVisible();
+    await expect(page.getByRole("button", { name: `Xem công thức ${caiThia.name}` })).toBeVisible();
 
-  // Edits persist across reloads.
-  await flushWrites(page);
-  await page.reload();
-  await expect(page.getByText(/^73 món$/)).toBeVisible();
+    await page.getByRole("link", { name: "Yêu thích" }).click();
+    await expect(page.getByRole("heading", { name: "Món cũ của nhà" })).toBeVisible();
+    await expect(page.getByText("(đã xoá)")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Dùng lại" })).toBeDisabled();
+  });
+
+  test("leaves the old data untouched in storage", async ({ page }) => {
+    await seedDevice(page, oldDevice());
+    await expect(menuNames(page).first()).toBeVisible();
+    // Do things that make the app save: tick an item, cook, then reload.
+    await page.getByRole("checkbox").first().click();
+    await page.getByRole("button", { name: "Đã nấu hôm nay" }).click();
+    await flushWrites(page);
+    await page.reload();
+    await expect(menuNames(page).first()).toBeVisible();
+    await flushWrites(page);
+    expect((await readPersonal(page)).user).toEqual(legacyUser);
+  });
 });
 
 test("the dish bank filters by group and Chay", async ({ page }) => {
@@ -177,13 +209,25 @@ test("save a favorite and use it again", async ({ page }) => {
 test.describe("catalog refresh", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("a catalog correction from the server reaches the app, and the user's own edits win", async ({ page }) => {
+  test("a catalog correction reaches every device, even one that once edited that dish", async ({ page }) => {
     // Serve a newer catalog in which one dish was renamed (as if corrected centrally).
     await page.route("**/api/v1/catalog", async (route) => {
       const dishes = SEED_DISHES.map((dish) =>
         dish.name === "Bắp cải luộc" ? { ...dish, name: "Bắp cải luộc (đã sửa trung tâm)" } : dish,
       ).map((dish) => ({ retired: false, ...dish }));
       await route.fulfill({ json: { version: 2, dishes }, headers: { ETag: '"catalog-v2"' } });
+    });
+
+    // This device holds an old local edit of that very dish.
+    const original = SEED_DISHES.find((dish) => dish.name === "Bắp cải luộc")!;
+    await seedDevice(page, {
+      schemaVersion: 1,
+      user: { customDishes: [], overrides: { [original.id]: { ...original, name: "Bản sửa của tôi" } }, hiddenIds: [] },
+      history: [],
+      favorites: [],
+      todayMenu: null,
+      ticks: {},
+      chayFilter: false,
     });
 
     // First view shows the bundled seed; the refreshed catalog is cached for the next view.
@@ -193,15 +237,7 @@ test.describe("catalog refresh", () => {
     await flushWrites(page);
     await page.reload();
     await expect(page.getByText("Bắp cải luộc (đã sửa trung tâm)")).toBeVisible();
-
-    // The user's own edit wins over the catalog's version of the same dish.
-    await page.getByRole("button", { name: "Sửa Bắp cải luộc (đã sửa trung tâm)" }).click();
-    await page.getByLabel("Tên món").fill("Bắp cải của tôi");
-    await page.getByRole("button", { name: "Lưu món" }).click();
-    await flushWrites(page);
-    await page.reload();
-    await expect(page.getByText("Bắp cải của tôi")).toBeVisible();
-    await expect(page.getByText("Bắp cải luộc (đã sửa trung tâm)")).toHaveCount(0);
+    await expect(page.getByText("Bản sửa của tôi")).toHaveCount(0);
   });
 });
 

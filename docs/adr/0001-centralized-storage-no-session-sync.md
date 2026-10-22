@@ -1,3 +1,5 @@
+> **Trạng thái: đã bị thay thế bởi [ADR-0005](0005-personal-data-stays-on-the-device.md).** Ý tưởng lưu dữ liệu của một hộ gia đình tập trung bị bỏ; giữ lại để ghi nhận lịch sử.
+
 # Backend là nơi lưu tập trung, không có cơ chế đồng bộ giữa các phiên
 
 App hiện chỉ lưu `localStorage` (mất dữ liệu khi xoá cache, không chia sẻ được giữa các thiết bị trong nhà). Ta quyết định thêm backend để dữ liệu của một Hộ gia đình được lưu tập trung, truy cập qua một mã/link hộ gia đình không cần tài khoản cá nhân.

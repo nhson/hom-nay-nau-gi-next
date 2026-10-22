@@ -1,11 +1,11 @@
 import { formatDayMonth } from "./dates";
-import { hasOverride, type ResolvedCatalog } from "./catalog";
+import type { ResolvedCatalog } from "./catalog";
 import { isMenuCooked, latestHistory, resolveDishNames } from "./history";
 import { sortIdsByCategoryOrder } from "./menu";
 import type { PersonalState } from "./personal";
 import { CATEGORY_ORDER } from "./selection";
 import { buildShoppingList, type ShoppingItem } from "./shopping";
-import type { Category, Dish, MealType, Menu, UserCatalogState } from "./types";
+import type { Category, Dish, MealType, Menu } from "./types";
 
 /** Today's dishes, resolved, in display order (fixed Xào -> Canh -> Món mặn for Bữa cơm 3 món). */
 export function menuDishes(menu: Menu | null, resolvable: readonly Dish[]): Dish[] {
@@ -53,12 +53,6 @@ export function selectToday(state: PersonalState, catalog: ResolvedCatalog, toda
 
 export type BankFilter = "all" | Category | "buatomonuoc";
 
-export interface BankRow {
-  dish: Dish;
-  /** A catalog dish the user has edited on this device. */
-  edited: boolean;
-}
-
 const BANK_GROUP_ORDER: readonly string[] = [...CATEGORY_ORDER, "buatomonuoc"];
 
 function bankGroup(dish: Dish): number {
@@ -73,11 +67,10 @@ export function foldText(text: string): string {
 /** The dish bank: pickable dishes, filtered, sorted by group then name (Vietnamese collation). */
 export function selectDishBank(
   catalog: ResolvedCatalog,
-  user: UserCatalogState,
   filter: BankFilter,
   chayOnly: boolean,
   query = "",
-): BankRow[] {
+): Dish[] {
   const needle = foldText(query);
   return catalog.pickable
     .filter((dish) => {
@@ -87,8 +80,7 @@ export function selectDishBank(
       if (filter === "buatomonuoc") return dish.mealType === "buatomonuoc";
       return dish.category === filter;
     })
-    .sort((a, b) => bankGroup(a) - bankGroup(b) || a.name.localeCompare(b.name, "vi"))
-    .map((dish) => ({ dish, edited: hasOverride(user, dish.id) }));
+    .sort((a, b) => bankGroup(a) - bankGroup(b) || a.name.localeCompare(b.name, "vi"));
 }
 
 export interface FavoriteRow {
