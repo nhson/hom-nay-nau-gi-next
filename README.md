@@ -9,7 +9,7 @@ This is a ground-up rebuild of the original single-file app
 rebuild reaches parity).
 
 - **Spec:** [issue #1](https://github.com/nhson/hom-nay-nau-gi-next/issues/1)
-- **Vocabulary:** [CONTEXT.md](CONTEXT.md) — use these terms exactly (Hộ gia đình, Nhóm món, Kiểu bữa ăn, Chay, Vùng miền)
+- **Vocabulary:** [CONTEXT.md](CONTEXT.md) — use these terms exactly (Quản trị viên, Danh mục món, Nhóm món, Kiểu bữa ăn, Chay, Vùng miền)
 - **Decisions:** [docs/adr](docs/adr)
 
 **Live:** https://hom-nay-nau-gi-next.vercel.app · health: `/api/v1/health`
