@@ -2,9 +2,9 @@
 
 ## Current Objective
 
-- Goal: Phase 2: the iPhone install hint and the admin page are live; feat-015 (Giao diện theme switch, issue #25) is implemented and awaiting approval and merge.
-- Current status: `main` is live and healthy; branch `feat/theme-switch` holds the theme switch (PR to open after the owner approves the screenshots).
-- Branch / commit: `feat/theme-switch`
+- Goal: Phase 2 features shipped: the iPhone install hint (feat-013), the admin page (feat-014) and the Giao diện theme switch (feat-015).
+- Current status: `main` is live and healthy; no PRs open besides state updates.
+- Branch / commit: `main`
 
 ## Completed This Session
 
@@ -39,4 +39,4 @@
 
 ## Recommended Next Step
 
-- Open the theme-switch PR once the owner approves the screenshots; after merge, the owner checks the installed iPhone app status bar colour. Then ask what to build next.
+- Ask the owner what to build next and run the workflow in `docs/workflow.md` (grill, spec, implement). Owner check still open: a VoiceOver pass on /admin. The install hint and the theme switch were verified on a real iPhone.

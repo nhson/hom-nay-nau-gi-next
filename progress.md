@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-10-22
-**Active Feature:** feat-015 Giao diện switch (issue #25, branch `feat/theme-switch`): implemented and reviewed; screenshots shown for approval, then PR
+**Active Feature:** none. Phase 2 so far: the iPhone install hint, the admin page and the Giao diện (theme) switch are live
 
 ## Status
 
@@ -16,12 +16,12 @@
 - [x] Phase 1 documentation merged (PR #10) and tagged/released `phase-1`: `docs/phase-1.md`, `docs/features.md`, `docs/parity-checklist.md`
 - [x] Admin page decisions grilled and recorded (PR #18): ADR-0004 (database is the catalog source of truth), ADR-0005 (personal data stays on the device; Hộ gia đình dropped), glossary Quản trị viên / Món đã ẩn
 - [x] feat-014 admin page live (PR #23, issue #22): sign-in, list, add/edit, hide/show, export; migration 0001 applied; the owner saved a real edit and the public catalog went to v2
-- [x] feat-015 implemented on `feat/theme-switch`: Sáng / Tối / Theo thiết bị switch in the app header, the admin top bar and the sign-in page (glossary: Giao diện); `./init.sh` green
+- [x] feat-015 Giao diện switch live (PR #26, issue #25): Sáng / Tối / Theo thiết bị in the app header, the admin top bar and the sign-in page
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
 
-- [ ] Owner checks still open: the install hint on a real iPhone (Safari and Chrome), and a short VoiceOver pass on /admin
+- [ ] Owner check still open: a short VoiceOver pass on /admin. (The install hint and the theme switch, including the installed app status bar colour, were checked on a real iPhone.)
 
 ### What's Next
 
