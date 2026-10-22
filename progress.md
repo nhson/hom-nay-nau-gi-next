@@ -12,6 +12,7 @@
 - [x] Phase 1 rebuild shipped and live (slices 1 to 6, production setup, food/recipe UI refresh); see `feature_list.json` for evidence
 - [x] Neon database connected to the new Vercel project only, migrated and seeded (catalog v1, 73 dishes); the unused second database was deleted
 - [x] Git-triggered deploys verified: PR gets a preview, merge to `main` deploys to production
+- [x] Món ăn is a read-only recipe library (PR #16, issue #15, ADR-0003); live
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
@@ -20,7 +21,7 @@
 
 ### What's Next
 
-0. Review and merge the PR for issue #15 (branch `feat/read-only-dish-catalog`); then mark feat-012 done in `feature_list.json`
+0. Grill the admin page for dish content (`/grill-with-docs`); the dish library is read-only until it exists
 1. Merge PR #10 when the owner says so; then (only if asked) tag/release "Phase 1"
 2. Owner brings the first Phase 2 enhancement; capture it in `feature_list.json` (feat-010) and, if bigger than a tweak, write a spec issue first
 3. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
