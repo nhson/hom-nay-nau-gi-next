@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-10-22
-**Active Feature:** feat-014 admin page (issue #22, branch `feat/admin-page`): implemented, reviewed, PR to open
+**Active Feature:** none. Phase 2 so far: the iPhone install hint and the admin page are live
 
 ## Status
 
@@ -15,18 +15,18 @@
 - [x] Món ăn is a read-only recipe library (PR #16, issue #15, ADR-0003); live
 - [x] Phase 1 documentation merged (PR #10) and tagged/released `phase-1`: `docs/phase-1.md`, `docs/features.md`, `docs/parity-checklist.md`
 - [x] Admin page decisions grilled and recorded (PR #18): ADR-0004 (database is the catalog source of truth), ADR-0005 (personal data stays on the device; Hộ gia đình dropped), glossary Quản trị viên / Món đã ẩn
-- [x] feat-014 implemented on `feat/admin-page`: /admin (sign-in, list, add/edit, hide/show, export), admin API, atomic saves, seed only for an empty catalog; `./init.sh` green (327 unit/contract, 61 Playwright)
+- [x] feat-014 admin page live (PR #23, issue #22): sign-in, list, add/edit, hide/show, export; migration 0001 applied; the owner saved a real edit and the public catalog went to v2
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
 
-- [ ] feat-014 awaiting the owner: merge, set ADMIN_PASSPHRASE and ADMIN_SESSION_SECRET in Vercel, make one real edit, check it on a phone. Also still open: check the install hint on a real iPhone (feat-013)
+- [ ] Owner checks still open: the install hint on a real iPhone (Safari and Chrome), and a short VoiceOver pass on /admin
 
 ### What's Next
 
-1. Owner merges the admin PR; sets the two Vercel settings (ask before touching hosting); one real edit on production, then reopen the app on a phone to see it. Do a short VoiceOver pass on /admin
-2. Prove the single-statement saves against the real Neon driver (contract tests only run PGlite); a read-only check or a Neon branch avoids touching production data
-3. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
+1. Prove the single-statement saves are fine on the real Neon driver beyond the first edit (they worked for one real save); nothing further needed unless something fails
+2. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
+3. Next feature: run `/grill-with-docs` for the owner's next idea (candidates: sort and preview toggle on /admin, which were deferred)
 
 ## Blockers / Risks
 

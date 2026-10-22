@@ -2,9 +2,9 @@
 
 ## Current Objective
 
-- Goal: feat-014, the admin page for the Danh mục món (issue #22), implemented and reviewed; the owner still has to merge and configure it.
-- Current status: `main` is live and healthy; branch `feat/admin-page` holds the admin page (PR to open); the iPhone install hint (feat-013) is live and awaits a real-device check.
-- Branch / commit: `feat/admin-page`
+- Goal: Phase 2 features shipped so far: the iPhone install hint (feat-013) and the admin page for the Danh mục món (feat-014).
+- Current status: `main` is live and healthy; no PRs open; the admin page works in production (the owner saved a real edit; catalog v2).
+- Branch / commit: `main`
 
 ## Completed This Session
 
@@ -14,7 +14,7 @@
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
-| Unit + contract | `corepack pnpm test` | 327 passed | on `feat/admin-page` |
+| Unit + contract | `corepack pnpm test` | 327 passed | on `main` |
 | Browser + a11y | `corepack pnpm test:e2e` | 61 passed | needs a prior build; admin journeys use a fake admin API (CI has no database) |
 | Lint / types / build | `./init.sh` | all green | run before relying on this |
 
@@ -39,4 +39,4 @@
 
 ## Recommended Next Step
 
-- Open the admin PR if not open, wait for the owner to merge, then help configure ADMIN_PASSPHRASE / ADMIN_SESSION_SECRET and verify one real edit end to end.
+- Ask the owner what to build next and run the workflow in `docs/workflow.md` (grill, spec, implement). The owner still has to check the install hint on a real iPhone and do a VoiceOver pass on /admin.

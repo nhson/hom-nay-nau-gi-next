@@ -137,8 +137,8 @@
       "dependencies": [
         "feat-012"
       ],
-      "status": "in-progress",
-      "evidence": "Branch feat/admin-page, issue #22. ./init.sh green: lint, typecheck, 327 unit/contract tests (domain rules; admin API contract on PGlite incl. auth, lockout, atomic saves, concurrent creates), build, 61 Playwright tests (admin journeys against a fake admin API + axe on phone and desktop, light and dark). Code review (Standards and Spec) run and fixed. NOT yet verified: the single-statement saves against the real Neon HTTP driver, and a real production edit (needs ADMIN_PASSPHRASE and ADMIN_SESSION_SECRET set in Vercel by the owner)."
+      "status": "done",
+      "evidence": "PR #23 merged (Closes #22): ./init.sh green (327 unit/contract, 61 Playwright incl. axe on phone and desktop, light and dark); code review run and fixed. Live on production: migration 0001 applied; the owner signed in at /admin and saved a real edit, and the public catalog moved to v2 (73 dishes). Still to check by hand: VoiceOver pass on /admin."
     }
   ]
 }
