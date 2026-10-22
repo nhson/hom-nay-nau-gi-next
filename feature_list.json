@@ -99,6 +99,16 @@
       ],
       "status": "not-started",
       "evidence": ""
+    },
+    {
+      "id": "feat-012",
+      "name": "Món ăn becomes a read-only recipe library",
+      "description": "Remove add, edit, delete, restore and reset of dishes; the dish catalog is read-only on devices (Danh mục món, ADR-0003). Spec: issue #15. Branch: feat/read-only-dish-catalog.",
+      "dependencies": [
+        "feat-008"
+      ],
+      "status": "done",
+      "evidence": "PR #16 merged (Closes #15): 197 unit/contract tests, 20 Playwright tests (incl. axe) green; code-review run and fixed; live on production (Món ăn shows no add/edit/delete controls)"
     }
   ]
 }

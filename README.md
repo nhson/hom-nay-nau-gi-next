@@ -9,7 +9,7 @@ This is a ground-up rebuild of the original single-file app
 rebuild reaches parity).
 
 - **Spec:** [issue #1](https://github.com/nhson/hom-nay-nau-gi-next/issues/1)
-- **Vocabulary:** [CONTEXT.md](CONTEXT.md) — use these terms exactly (Hộ gia đình, Nhóm món, Kiểu bữa ăn, Chay, Vùng miền)
+- **Vocabulary:** [CONTEXT.md](CONTEXT.md) — use these terms exactly (Quản trị viên, Danh mục món, Nhóm món, Kiểu bữa ăn, Chay, Vùng miền)
 - **Decisions:** [docs/adr](docs/adr)
 
 **Live:** https://hom-nay-nau-gi-next.vercel.app · health: `/api/v1/health`
@@ -26,8 +26,8 @@ Next.js (App Router, TypeScript) · Tailwind CSS · Zod · Drizzle + Neon Postgr
 All business rules live in a **framework-free domain core** (`src/domain`) that runs unchanged in the
 browser and in tests. An ESLint rule forbids it from importing React, Next.js, the DB, Zod, the
 browser, or anything outside the folder. The server will only serve a read-only dish catalog; user
-data (custom dishes, history, favorites, today's menu, shopping ticks) lives on the device and is
-merged with the catalog by dish `id`.
+data (history, favorites, today's menu, shopping ticks) lives on the device and refers to catalog
+dishes by `id`. The dish catalog is read-only on devices (see ADR-0003).
 
 ## Develop
 

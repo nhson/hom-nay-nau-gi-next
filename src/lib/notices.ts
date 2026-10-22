@@ -14,8 +14,6 @@ export function noticeMessage(notice: Notice): string {
       return "Chưa có món Bữa 1 món nào phù hợp";
     case "cooked":
       return "Đã ghi nhận thực đơn hôm nay!";
-    case "dish-saved":
-      return "Đã lưu món ăn!";
     case "favorite-saved":
       return "Đã lưu vào yêu thích!";
     case "favorite-applied":

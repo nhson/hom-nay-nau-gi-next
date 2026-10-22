@@ -43,14 +43,5 @@ export interface Favorite {
   savedAt: number;
 }
 
-/** On-device customizations layered over the server catalog, merged by dish id. */
-export interface UserCatalogState {
-  customDishes: Dish[];
-  /** Full replacement of a catalog dish, keyed by catalog id. */
-  overrides: Record<string, Dish>;
-  /** Catalog dishes the user deleted (hidden on this device only). */
-  hiddenIds: string[];
-}
-
 /** Returns a number in [0, 1). Injected so tests are deterministic. */
 export type Rng = () => number;

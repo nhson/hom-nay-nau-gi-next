@@ -14,7 +14,6 @@ describe("normalizePersonalState", () => {
   it("round-trips a valid current-version state", () => {
     const state = {
       ...EMPTY_PERSONAL_STATE,
-      user: { customDishes: [dish({ id: "custom:1" })], overrides: { x1: dish({ id: "x1" }) }, hiddenIds: ["x2"] },
       history: [{ date: "2026-10-13", dishIds: ["x1"], mealType: "buacom" as const }],
       favorites: [{ id: "f1", name: "Tối nay", dishIds: ["x1"], mealType: "buacom" as const, savedAt: 5 }],
       todayMenu: { date: "2026-10-14", dishIds: ["x1"], mealType: "buacom" as const },
@@ -32,35 +31,44 @@ describe("normalizePersonalState", () => {
 
   it("drops malformed entries instead of throwing", () => {
     const result = normalizePersonalState({
-      user: {
-        customDishes: [dish({ id: "custom:ok" }), { id: "broken" }, null],
-        overrides: { good: dish({ id: "ignored" }), bad: { name: 1 } },
-        hiddenIds: ["a", 7],
-      },
       history: [{ date: "2026-10-13", dishIds: ["a"] }, { date: 5 }, "nope"],
       favorites: [{ id: "f", name: "n", dishIds: ["a"] }, { id: "g" }],
       todayMenu: { date: 3 },
       ticks: { a: true, b: false, c: "yes" },
     });
-    expect(result.user.customDishes.map((d) => d.id)).toEqual(["custom:ok"]);
-    expect(Object.keys(result.user.overrides)).toEqual(["good"]);
-    expect(result.user.overrides.good.id).toBe("good");
-    expect(result.user.hiddenIds).toEqual([]);
     expect(result.history).toEqual([{ date: "2026-10-13", dishIds: ["a"], mealType: "buacom" }]);
     expect(result.favorites).toEqual([{ id: "f", name: "n", dishIds: ["a"], savedAt: 0 }]);
     expect(result.todayMenu).toBeNull();
     expect(result.ticks).toEqual({ a: true });
   });
+});
 
-  it("rejects a dish whose category contradicts its meal type", () => {
-    const result = normalizePersonalState({
-      user: {
-        customDishes: [
-          dish({ id: "c1", mealType: "buatomonuoc", category: "xao" }),
-          dish({ id: "c2", mealType: "buacom", category: null }),
-        ],
-      },
+describe("old per-device dish data (custom, edited, hidden dishes)", () => {
+  const legacy = {
+    customDishes: [dish({ id: "custom:1", name: "Món nhà làm" })],
+    overrides: { x1: dish({ id: "x1", name: "Bản sửa" }) },
+    hiddenIds: ["x2"],
+  };
+
+  it("is carried through untouched, so the next save writes it back and it is not erased", () => {
+    const once = normalizePersonalState({ chayFilter: true, user: legacy });
+    expect(once.user).toEqual(legacy);
+    // Persist and reload twice: still identical.
+    const twice = normalizePersonalState(JSON.parse(JSON.stringify(once)));
+    expect(twice.user).toEqual(legacy);
+  });
+
+  it("is carried even when it is malformed: it is never interpreted", () => {
+    expect(normalizePersonalState({ user: "garbage" }).user).toBe("garbage");
+    expect(normalizePersonalState({ user: { customDishes: [{ id: "broken" }] } }).user).toEqual({
+      customDishes: [{ id: "broken" }],
     });
-    expect(result.user.customDishes).toEqual([]);
+  });
+
+  it("is absent when nothing was stored, and does not affect any other field", () => {
+    expect(normalizePersonalState({}).user).toBeUndefined();
+    const withLegacy = normalizePersonalState({ chayFilter: true, ticks: { a: true }, user: legacy });
+    expect(withLegacy.chayFilter).toBe(true);
+    expect(withLegacy.ticks).toEqual({ a: true });
   });
 });

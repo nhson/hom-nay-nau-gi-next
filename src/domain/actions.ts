@@ -1,17 +1,10 @@
-import {
-  addCustomDish,
-  deleteDish,
-  makeCustomDishId,
-  resetDish,
-  restoreDish,
-  saveDish,
-  type ResolvedCatalog,
-} from "./catalog";
+import type { ResolvedCatalog } from "./catalog";
 import { applyFavorite, createFavorite, deleteFavorite } from "./favorites";
 import { recordCooked } from "./history";
 import {
   generateBuaComMenu,
   generateMonNuocMenu,
+  hasMissingDish,
   isMenuStale,
   rerollMonNuoc,
   rerollSlot,
@@ -19,7 +12,7 @@ import {
 import { eventsFor, type AnalyticsEvent } from "./analytics";
 import type { PersonalState } from "./personal";
 import { buildShoppingList, pruneTicks, setTick } from "./shopping";
-import type { Category, Dish, Menu, Rng } from "./types";
+import type { Category, Menu, Rng } from "./types";
 
 export type Action =
   /** Open / return to the app: generate a fresh menu if today has none. */
@@ -30,11 +23,6 @@ export type Action =
   | { type: "toggle-chay" }
   | { type: "mark-cooked" }
   | { type: "set-tick"; key: string; checked: boolean }
-  /** `id: null` adds a custom dish; otherwise edits that dish (a catalog dish becomes an override). */
-  | { type: "save-dish"; id: string | null; dish: Omit<Dish, "id"> }
-  | { type: "delete-dish"; id: string }
-  | { type: "restore-dish"; id: string }
-  | { type: "reset-dish"; id: string }
   | { type: "save-favorite"; name: string }
   | { type: "use-favorite"; id: string }
   | { type: "delete-favorite"; id: string };
@@ -45,18 +33,15 @@ export type Notice =
   | { code: "no-alternative" }
   | { code: "no-one-dish" }
   | { code: "cooked" }
-  | { code: "dish-saved" }
   | { code: "favorite-saved" }
   | { code: "favorite-applied" }
   | { code: "no-menu-to-save" }
   | { code: "favorite-unavailable" };
 
 export interface ActionContext {
-  /** The user's view of the catalog (edits and deletions applied). */
+  /** The Danh mục món as published by the server (read-only on a device). */
   catalog: ResolvedCatalog;
-  /** The server catalog as received, before the user's edits: tells catalog dishes from custom ones. */
-  catalogDishes: readonly Dish[];
-  /** Unique string for new custom dishes and favorites (injected: the domain has no crypto). */
+  /** Unique string for new favorites (injected: the domain has no crypto). */
   newId: () => string;
   /** Epoch milliseconds. */
   now: number;
@@ -113,7 +98,10 @@ export function reduce(state: PersonalState, action: Action, ctx: ActionContext)
 function apply(state: PersonalState, action: Action, ctx: ActionContext): StepResult {
   switch (action.type) {
     case "ensure-today":
-      return isMenuStale(state.todayMenu, ctx.today) ? riceMenu(state, ctx) : { state };
+      // A menu naming a dish that no longer exists is replaced too, so it never shows half-empty.
+      return isMenuStale(state.todayMenu, ctx.today) || hasMissingDish(state.todayMenu, ctx.catalog.resolvable)
+        ? riceMenu(state, ctx)
+        : { state };
 
     case "random-menu":
       // Always a Bữa cơm 3 món: Bữa 1 món is only ever a deliberate choice.
@@ -159,22 +147,6 @@ function apply(state: PersonalState, action: Action, ctx: ActionContext): StepRe
 
     case "set-tick":
       return { state: { ...state, ticks: setTick(state.ticks, action.key, action.checked) } };
-
-    case "save-dish": {
-      const user = action.id
-        ? saveDish(state.user, ctx.catalogDishes, { ...action.dish, id: action.id })
-        : addCustomDish(state.user, { ...action.dish, id: makeCustomDishId(ctx.newId()) });
-      return { state: { ...state, user }, notice: { code: "dish-saved" } };
-    }
-
-    case "delete-dish":
-      return { state: { ...state, user: deleteDish(state.user, ctx.catalogDishes, action.id) } };
-
-    case "restore-dish":
-      return { state: { ...state, user: restoreDish(state.user, action.id) } };
-
-    case "reset-dish":
-      return { state: { ...state, user: resetDish(state.user, action.id) } };
 
     case "save-favorite": {
       if (!state.todayMenu) return { state, notice: { code: "no-menu-to-save" } };

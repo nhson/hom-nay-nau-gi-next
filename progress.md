@@ -2,8 +2,8 @@
 
 ## Current State
 
-**Last Updated:** 2026-10-15
-**Active Feature:** feat-010 (Phase 2 enhancement, to be specified by the owner)
+**Last Updated:** 2026-10-22
+**Active Feature:** none. Next: iPhone install hint (spec issue #19), then the admin page for the dish catalog
 
 ## Status
 
@@ -12,17 +12,19 @@
 - [x] Phase 1 rebuild shipped and live (slices 1 to 6, production setup, food/recipe UI refresh); see `feature_list.json` for evidence
 - [x] Neon database connected to the new Vercel project only, migrated and seeded (catalog v1, 73 dishes); the unused second database was deleted
 - [x] Git-triggered deploys verified: PR gets a preview, merge to `main` deploys to production
-- [x] Phase 1 documentation merged (PR #10): `docs/phase-1.md`, `docs/features.md`, `docs/parity-checklist.md`
+- [x] Món ăn is a read-only recipe library (PR #16, issue #15, ADR-0003); live
+- [x] Phase 1 documentation merged (PR #10) and tagged/released `phase-1`: `docs/phase-1.md`, `docs/features.md`, `docs/parity-checklist.md`
+- [x] Admin page decisions grilled and recorded (PR #18): ADR-0004 (database is the catalog source of truth), ADR-0005 (personal data stays on the device; Hộ gia đình dropped), glossary Quản trị viên / Món đã ẩn
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
 
-- [ ] Nothing in flight; waiting for the owner's first Phase 2 enhancement
+- [ ] Nothing in flight
 
 ### What's Next
 
-1. (Only if the owner asks) tag/release "Phase 1" on `main`
-2. Owner brings the first Phase 2 enhancement; capture it in `feature_list.json` (feat-010) and, if bigger than a tweak, write a spec issue first
+1. `/implement #19`: iPhone install hint (iOS has no install prompt; real-device test failed to install)
+2. Write the admin page spec (`/to-spec`; decisions are settled in ADR-0004/0005 and the grill summary) and implement it; the dish library is read-only until it exists
 3. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
 
 ## Blockers / Risks
