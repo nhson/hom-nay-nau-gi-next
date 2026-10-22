@@ -43,7 +43,7 @@ journeys, incl. axe accessibility scans) · Vercel (hosting, previews, Web Analy
 - **Deliberate change from the legacy app:** a new local day regenerates the menu on open.
 - **Analytics:** the 12 legacy event names and properties are preserved. `view_recipe` never carries
   the name of a dish the user wrote.
-- **Out of scope for v1, by decision:** Household (F16–F20), weekly planner, importing old
+- **Out of scope for v1, by decision:** Household (F16–F20, dropped: ADR-0005), weekly planner, importing old
   `localStorage` data, i18n (see [features.md](features.md)).
 
 ## State of the platform
@@ -73,7 +73,8 @@ journeys, incl. axe accessibility scans) · Vercel (hosting, previews, Web Analy
 Not decided: these are the deferred or open items, to pick from when Phase 2 is scoped.
 
 - Custom domain and a friendlier public name (switching address resets on-device data: consider export/import first).
-- Household / sharing across family devices (F16–F20, N4) and importing legacy data (N5).
+- Importing legacy data (N5). Household / sharing across devices (F16–F20, N4) is dropped (ADR-0005).
+- Admin page for the dish catalog (specified in a grill session; see ADR-0004).
 - Measuring the north-star metric (N7): upgrade analytics, or count events ourselves anonymously.
 - Weekly menu planner (F28, N9) and i18n (N10).
 - Dish photos or a better visual identity per dish.
