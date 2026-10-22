@@ -19,7 +19,7 @@
 
 ### What's In Progress
 
-- [ ] Nothing in flight
+- [ ] Nothing in flight (feature workflow merged in PR #14: loop in `docs/workflow.md`)
 
 ### What's Next
 
