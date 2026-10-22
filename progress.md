@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-10-22
-**Active Feature:** none. Next: the admin page for the dish catalog (UI prototype first, approval before code)
+**Active Feature:** feat-014 admin page (issue #22, branch `feat/admin-page`): implemented, reviewed, PR to open
 
 ## Status
 
@@ -15,19 +15,23 @@
 - [x] Món ăn is a read-only recipe library (PR #16, issue #15, ADR-0003); live
 - [x] Phase 1 documentation merged (PR #10) and tagged/released `phase-1`: `docs/phase-1.md`, `docs/features.md`, `docs/parity-checklist.md`
 - [x] Admin page decisions grilled and recorded (PR #18): ADR-0004 (database is the catalog source of truth), ADR-0005 (personal data stays on the device; Hộ gia đình dropped), glossary Quản trị viên / Món đã ẩn
+- [x] feat-014 implemented on `feat/admin-page`: /admin (sign-in, list, add/edit, hide/show, export), admin API, atomic saves, seed only for an empty catalog; `./init.sh` green (327 unit/contract, 61 Playwright)
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
 
-- [ ] Owner to check the install hint on a real iPhone (Safari and Chrome) after the feat-013 deploy; nothing else in flight
+- [ ] feat-014 awaiting the owner: merge, set ADMIN_PASSPHRASE and ADMIN_SESSION_SECRET in Vercel, make one real edit, check it on a phone. Also still open: check the install hint on a real iPhone (feat-013)
 
 ### What's Next
 
-1. Admin page: prototype the UI with `/ui-ux-pro-max`, get approval, write the spec (`/to-spec`), then `/implement`
-2. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
+1. Owner merges the admin PR; sets the two Vercel settings (ask before touching hosting); one real edit on production, then reopen the app on a phone to see it. Do a short VoiceOver pass on /admin
+2. Prove the single-statement saves against the real Neon driver (contract tests only run PGlite); a read-only check or a Neon branch avoids touching production data
+3. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
 
 ## Blockers / Risks
 
+- [ ] Admin sign-in lock key is the first X-Forwarded-For address; on Vercel the platform sets it. Off Vercel a client could choose its own key, and a missing header shares one bucket
+- [ ] The admin redirect to sign-in happens in the browser after a session check (the page shell is static), not as a server redirect; nothing private is in the shell
 - [ ] The offline Playwright journey (`works offline once opened`) is flaky in CI (failed twice on one run, passed on re-run): re-run before suspecting the change
 
 - [ ] Custom analytics events are not visible on Vercel Hobby (owner chose to stay): the north-star metric (mark_cooked/week) is unobservable

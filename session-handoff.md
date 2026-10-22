@@ -2,9 +2,9 @@
 
 ## Current Objective
 
-- Goal: Phase 1 is complete and live; harness initialised so Phase 2 can start cleanly.
-- Current status: `main` is deployed and healthy; no PRs open; Phase 1 docs (#10) and the harness (#12) are merged.
-- Branch / commit: `main` (harness from PR #12)
+- Goal: feat-014, the admin page for the Danh mục món (issue #22), implemented and reviewed; the owner still has to merge and configure it.
+- Current status: `main` is live and healthy; branch `feat/admin-page` holds the admin page (PR to open); the iPhone install hint (feat-013) is live and awaits a real-device check.
+- Branch / commit: `feat/admin-page`
 
 ## Completed This Session
 
@@ -14,16 +14,17 @@
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
-| Unit + contract | `corepack pnpm test` | 212 passed | on `main` |
-| Browser + a11y | `corepack pnpm test:e2e` | 18 passed | needs a prior build |
-| Lint / types / build | `./init.sh` | see progress.md | run before relying on this |
+| Unit + contract | `corepack pnpm test` | 327 passed | on `feat/admin-page` |
+| Browser + a11y | `corepack pnpm test:e2e` | 61 passed | needs a prior build; admin journeys use a fake admin API (CI has no database) |
+| Lint / types / build | `./init.sh` | all green | run before relying on this |
 
 ## Files Changed
 
-- `CLAUDE.md`, `feature_list.json`, `progress.md`, `session-handoff.md`, `init.sh` (new, PR #12)
+- Admin: `src/domain/dish-rules.ts`, `src/server/admin/*`, `src/app/api/v1/admin/*`, `src/app/(admin)/*`, `src/components/admin/*`, `src/lib/admin-api.ts`, migration `0001_admin_login_attempts`; user app moved into `src/app/(app)`; `e2e/admin*.ts`; docs (README, CLAUDE.md, ADR-0003 note, features)
 
 ## Decisions Made
 
+- The database is the catalog source of truth (ADR-0004); each save is one SQL statement (dish + version bump) so it is atomic on the Neon HTTP driver
 - Harness file is `CLAUDE.md` (Claude Code); no `AGENTS.md` because Next.js dev writes its own untracked one
 
 ## Blockers / Risks
@@ -38,4 +39,4 @@
 
 ## Recommended Next Step
 
-- Ask the owner for the first Phase 2 enhancement and record it as feat-010.
+- Open the admin PR if not open, wait for the owner to merge, then help configure ADMIN_PASSPHRASE / ADMIN_SESSION_SECRET and verify one real edit end to end.

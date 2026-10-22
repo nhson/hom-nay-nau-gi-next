@@ -129,6 +129,16 @@
       ],
       "status": "done",
       "evidence": "PR #20 merged (Closes #19): 214 unit/contract + 27 Playwright tests (incl. axe) green, code-review run and fixed; live on production (apple-mobile-web-app-capable present). Still to check by hand: the hint and Thêm vào MH chính on a real iPhone (Safari and Chrome)"
+    },
+    {
+      "id": "feat-014",
+      "name": "Admin page for the Danh mục món",
+      "description": "A /admin area where the one Quản trị viên signs in and adds, edits, hides, shows and exports dishes; the database is the source of truth (ADR-0004). Spec: issue #22. Design: docs/design/admin-prototype.html (approved). Branch: feat/admin-page.",
+      "dependencies": [
+        "feat-012"
+      ],
+      "status": "in-progress",
+      "evidence": "Branch feat/admin-page, issue #22. ./init.sh green: lint, typecheck, 327 unit/contract tests (domain rules; admin API contract on PGlite incl. auth, lockout, atomic saves, concurrent creates), build, 61 Playwright tests (admin journeys against a fake admin API + axe on phone and desktop, light and dark). Code review (Standards and Spec) run and fixed. NOT yet verified: the single-statement saves against the real Neon HTTP driver, and a real production edit (needs ADMIN_PASSPHRASE and ADMIN_SESSION_SECRET set in Vercel by the owner)."
     }
   ]
 }

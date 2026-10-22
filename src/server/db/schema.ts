@@ -35,6 +35,17 @@ export const dishes = pgTable(
   ],
 );
 
+/**
+ * Failed admin sign-ins per client, so repeated wrong passwords lock that client out for a while.
+ * Holds only a network-address key and a counter; the row is deleted on a successful sign-in.
+ */
+export const adminLoginAttempts = pgTable("admin_login_attempts", {
+  key: text("key").primaryKey(),
+  failures: integer("failures").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** One row. `version` increases only when seed content changes (drives the API's ETag). */
 export const catalogMeta = pgTable(
   "catalog_meta",

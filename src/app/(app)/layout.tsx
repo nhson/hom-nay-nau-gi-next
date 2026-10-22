@@ -1,25 +1,12 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, Fraunces } from "next/font/google";
 import { AppProvider } from "@/components/app-provider";
 import { AppShell } from "@/components/app-shell";
 import { PwaProvider } from "@/components/pwa-provider";
 import { UpdatePrompt } from "@/components/update-prompt";
 import { Toaster } from "@/components/ui/sonner";
-import "./globals.css";
-
-const beVietnam = Be_Vietnam_Pro({
-  variable: "--font-be-vietnam",
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin", "vietnamese"],
-  display: "swap",
-});
+import { beVietnam, fraunces } from "../fonts";
+import "../globals.css";
 
 export const metadata: Metadata = {
   title: "Hôm nay nấu gì?",

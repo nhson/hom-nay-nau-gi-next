@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Dish } from "@/domain";
 import { dish as fixture } from "@/domain/testing";
@@ -7,7 +8,7 @@ import { createTestDb, errorText } from "@/server/testing/db";
 import { createHealthHandlers } from "@/server/health/handlers";
 import { apiErrorSchema, catalogResponseSchema, healthResponseSchema } from "@/shared/schemas";
 import { createCatalogHandlers } from "./handlers";
-import { applySeed, readCatalog } from "./repository";
+import { applySeed, readCatalog, seedEmptyCatalog } from "./repository";
 
 // The catalog API contract: real handlers -> Zod -> Drizzle -> real migrations on in-memory
 // Postgres (PGlite). No network, no shared state.
@@ -141,6 +142,32 @@ describe("catalog versioning (applySeed)", () => {
   it("rejects duplicate ids before touching the database", async () => {
     await expect(applySeed(ctx.db, [fixture({ id: "a" }), fixture({ id: "a" })])).rejects.toThrow(/Duplicate/);
     expect(await readCatalog(ctx.db)).toBeNull();
+  });
+});
+
+describe("seeding is only for an empty catalog (ADR-0004: the database is the source of truth)", () => {
+  it("fills a catalog that has never been seeded", async () => {
+    const result = await seedEmptyCatalog(ctx.db, SEED_DISHES);
+    expect(result).toMatchObject({ status: "seeded", version: 1, added: SEED_DISHES.length });
+    expect((await readCatalog(ctx.db))?.dishes).toHaveLength(SEED_DISHES.length);
+  });
+
+  it("refuses to touch a catalog that already has dishes, leaving admin edits alone", async () => {
+    await applySeed(ctx.db, SEED_DISHES);
+    await ctx.db.update(dishesTable).set({ name: "Tên do quản trị viên sửa" }).where(eq(dishesTable.id, "x1"));
+
+    const result = await seedEmptyCatalog(ctx.db, SEED_DISHES);
+
+    expect(result).toEqual({ status: "refused", dishes: SEED_DISHES.length });
+    const catalog = await readCatalog(ctx.db);
+    expect(catalog?.version).toBe(1);
+    expect(catalog?.dishes.find((d) => d.id === "x1")?.name).toBe("Tên do quản trị viên sửa");
+  });
+
+  it("also refuses when only hidden dishes remain", async () => {
+    await applySeed(ctx.db, SEED_DISHES);
+    await ctx.db.update(dishesTable).set({ retired: true });
+    expect((await seedEmptyCatalog(ctx.db, SEED_DISHES)).status).toBe("refused");
   });
 });
 

@@ -5,8 +5,9 @@ export function errorResponse(
   code: ApiErrorCode,
   message: string,
   headers: HeadersInit = {},
+  extra: Omit<ApiError["error"], "code" | "message"> = {},
 ): Response {
-  const body: ApiError = { error: { code, message } };
+  const body: ApiError = { error: { code, message, ...extra } };
   return Response.json(body, { status, headers: { "Cache-Control": "no-store", ...headers } });
 }
 

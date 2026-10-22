@@ -74,7 +74,7 @@ Not decided: these are the deferred or open items, to pick from when Phase 2 is 
 
 - Custom domain and a friendlier public name (switching address resets on-device data: consider export/import first).
 - Importing legacy data (N5). Household / sharing across devices (F16–F20, N4) is dropped (ADR-0005).
-- Admin page for the dish catalog (specified in a grill session; see ADR-0004).
+- Admin page for the dish catalog (built in Phase 2: issue #22, ADR-0004).
 - Measuring the north-star metric (N7): upgrade analytics, or count events ourselves anonymously.
 - Weekly menu planner (F28, N9) and i18n (N10).
 - Dish photos or a better visual identity per dish.

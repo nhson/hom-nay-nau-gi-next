@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { applySeed } from "@/server/catalog/repository";
+import { seedEmptyCatalog } from "@/server/catalog/repository";
 import * as schema from "@/server/db/schema";
 import { SEED_DISHES } from "@/seed/dishes";
 
@@ -12,12 +12,16 @@ async function main() {
   }
   const pool = new Pool({ connectionString: url });
   try {
-    const result = await applySeed(drizzle(pool, { schema }), SEED_DISHES);
-    console.log(
-      result.changed
-        ? `Catalog updated to version ${result.version}: ${result.added} added, ${result.updated} updated, ${result.retired} retired.`
-        : `Catalog already up to date (version ${result.version}).`,
-    );
+    const result = await seedEmptyCatalog(drizzle(pool, { schema }), SEED_DISHES);
+    if (result.status === "refused") {
+      console.error(
+        `Refusing to seed: the catalog already has ${result.dishes} dishes. The database is the source of truth ` +
+          "(manage dishes in /admin); the seed only bootstraps an empty catalog (ADR-0004).",
+      );
+      process.exitCode = 1;
+      return;
+    }
+    console.log(`Catalog seeded: version ${result.version}, ${result.added} dishes.`);
   } finally {
     await pool.end();
   }
