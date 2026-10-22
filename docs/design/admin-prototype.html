@@ -80,7 +80,7 @@
   .name{font-weight:600}
   .sub{font-size:12px;color:var(--muted-foreground);font-weight:400}
   .tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--muted);border:1px solid var(--border)}
-  .tag.chay{background:var(--ok-tint);color:var(--cat-xao);border-color:transparent}
+  .tag.chay,.tag.ok{background:var(--ok-tint);color:var(--primary);border-color:transparent}
   .tag.hid{background:var(--muted);color:var(--muted-foreground)}
   .actions{display:flex;gap:6px;justify-content:flex-end}
   .empty{padding:56px 20px;text-align:center;color:var(--muted-foreground)}
@@ -90,7 +90,8 @@
     .topbar{padding:10px 14px}.stage{padding:20px 14px 60px}
     .stats{margin-left:0;width:100%}.stat{flex:1}
     table,thead,tbody,tr,td{display:block}
-    thead{display:none}
+    thead{display:block;position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+    .btn.sm,.seg2 button{min-height:44px!important}.btn.sm{min-width:44px}
     tbody tr{padding:12px 14px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:6px 10px}
     td{padding:0;border:0}
     td.c-time,td.c-upd,td.c-region{display:none}
@@ -151,18 +152,25 @@
   .pv-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted-foreground);margin-bottom:10px}
   .pv ul,.pv ol{margin:6px 0 12px;padding-left:20px;font-size:14px;line-height:1.55}
   .invalid{border-color:var(--destructive)!important}
+  .alert ul{margin:6px 0 0;padding-left:18px}.alert a{color:inherit;font-weight:600;text-underline-offset:3px}
+  .alert[tabindex="-1"]:focus-visible{outline:3px solid var(--destructive);outline-offset:3px}
+  .spin{width:16px;height:16px;border-radius:99px;border:2px solid currentColor;border-right-color:transparent;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
   .err{display:flex;gap:6px;color:var(--destructive);font-size:13px;margin:6px 0 0;align-items:flex-start}
 
   /* dialog + toast */
-  .scrim{position:absolute;inset:0;background:rgba(20,18,12,.5);display:none;place-items:center;z-index:20;padding:16px}
-  .scrim.open{display:grid}
-  .dialog{background:var(--card);border-radius:20px;padding:24px;max-width:440px;width:100%;border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+  dialog.dialog{padding:24px;border-radius:20px;background:var(--card);color:var(--foreground);border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.35);max-width:440px;width:calc(100% - 32px)}
+  dialog.dialog::backdrop{background:rgba(20,18,12,.55)}
   .dialog h3{margin:0 0 8px;font:600 21px Fraunces,serif}
   .dialog p{margin:0 0 6px;font-size:14px;line-height:1.55;color:var(--muted-foreground)}
   .dialog ul{margin:8px 0 18px;padding-left:18px;font-size:14px;line-height:1.6;color:var(--muted-foreground)}
-  .dialog .foot{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
-  .toast{position:absolute;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--foreground);color:var(--background);padding:12px 18px;border-radius:14px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:30;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px)}
-  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .dialog ul:empty{display:none}
+  .dialog .foot{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--foreground);color:var(--background);padding:8px 8px 8px 18px;border-radius:14px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:30;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px)}
+  .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .toast-x{width:44px;height:44px;border:0;background:transparent;color:inherit;border-radius:12px;display:grid;place-items:center;cursor:pointer;opacity:.8}
+  .toast-x:hover{opacity:1;background:color-mix(in oklab,var(--background) 18%,transparent)}
+  .toast{z-index:2147483000}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
   .view{display:none}.view.on{display:block}
   [hidden]{display:none!important}
@@ -184,6 +192,7 @@
   <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
 </svg>
 
@@ -197,6 +206,7 @@
   </span>
   <span class="seg" role="group" aria-label="Kích thước"><button data-vp="desktop" aria-pressed="true">Máy tính</button><button data-vp="phone" aria-pressed="false">Điện thoại</button></span>
   <span class="seg" role="group" aria-label="Giao diện"><button data-th="light" aria-pressed="true">Sáng</button><button data-th="dark" aria-pressed="false">Tối</button></span>
+  <label class="seg" style="padding:6px 12px;gap:8px;align-items:center;cursor:pointer;display:inline-flex"><input type="checkbox" id="sim"> Mô phỏng lỗi mạng khi lưu</label>
   <small>Bấm thử: lọc, tìm, Sửa, Ẩn món, Xuất JSON. Trong form Sửa món, bật “Món chay” rồi gõ “tỏi” vào nguyên liệu.</small>
 </div>
 
@@ -227,7 +237,7 @@
   <!-- LIST -->
   <main class="view on" id="v-list"><div class="stage">
     <div class="page-title">
-      <div><h2>Danh mục món</h2><p>Mọi thay đổi có hiệu lực ngay trên máy của mọi người ở lần mở app kế tiếp.</p></div>
+      <div><h2 id="page-h" tabindex="-1">Danh mục món</h2><p>Mọi thay đổi có hiệu lực ngay trên máy của mọi người ở lần mở app kế tiếp.</p></div>
       <div class="stats"><div class="stat"><b id="s-all">0</b><span>Tổng số món</span></div><div class="stat"><b id="s-vis">0</b><span>Đang dùng</span></div><div class="stat"><b id="s-hid">0</b><span>Đã ẩn</span></div></div>
     </div>
     <div class="card">
@@ -236,9 +246,9 @@
         <span id="chips" style="display:contents"></span>
         <button class="btn turmeric" id="add" style="margin-left:auto"><svg class="ico"><use href="#i-plus"/></svg>Thêm món</button>
       </div>
-      <table>
-        <thead><tr><th>Món</th><th>Nhóm món</th><th>Vùng miền</th><th class="c-time">Thời gian</th><th class="c-upd">Cập nhật</th><th>Trạng thái</th><th></th></tr></thead>
-        <tbody id="rows"></tbody>
+      <table role="table" aria-label="Danh mục món">
+        <thead role="rowgroup"><tr role="row"><th role="columnheader">Món</th><th role="columnheader">Nhóm món</th><th role="columnheader" class="c-region">Vùng miền</th><th role="columnheader" class="c-time">Thời gian</th><th role="columnheader" class="c-upd">Cập nhật</th><th role="columnheader">Trạng thái</th><th role="columnheader"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Thao tác</span></th></tr></thead>
+        <tbody id="rows" role="rowgroup"></tbody>
       </table>
       <div class="empty" id="empty" hidden><b>Không có món nào khớp</b>Thử bỏ bớt bộ lọc, hoặc tìm bằng từ ngắn hơn như “canh” hay “cá”.<div style="margin-top:14px"><button class="btn outline" id="reset">Xoá bộ lọc</button></div></div>
     </div>
@@ -252,7 +262,8 @@
     </div>
     <div class="editor">
       <form class="card" id="form" novalidate>
-        <div class="alert" id="errbox" hidden style="margin:20px 20px 0"><svg class="ico"><use href="#i-alert"/></svg><div id="errtext"></div></div>
+        <div class="alert" id="errbox" role="alert" tabindex="-1" hidden style="margin:20px 20px 0"><svg class="ico"><use href="#i-alert"/></svg><div><b id="errhead">Chưa lưu được. Cần sửa:</b><ul id="errlist"></ul></div></div>
+        <div class="alert" id="failbox" role="alert" tabindex="-1" hidden style="margin:20px 20px 0"><svg class="ico"><use href="#i-alert"/></svg><div style="flex:1"><b>Không lưu được.</b> Mạng đang gián đoạn. Những gì bạn nhập vẫn còn ở đây.<div style="margin-top:8px"><button type="button" class="btn outline sm" id="retry">Thử lại</button></div></div></div>
         <div class="section">
           <h3>Thông tin chính</h3>
           <div style="margin-bottom:14px"><label for="f-name">Tên món</label><input class="field" id="f-name" value="" placeholder="Ví dụ: Canh chua cá lóc"><div class="err" id="e-name" hidden><svg class="ico" style="width:16px;height:16px"><use href="#i-alert"/></svg><span></span></div></div>
@@ -279,13 +290,13 @@
     </div>
   </div></main>
 
-  <div class="scrim" id="scrim" role="presentation"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="d-title">
-    <h3 id="d-title">Ẩn món này?</h3>
+  <dialog class="dialog" id="dlg" aria-labelledby="d-title">
+    <h3 id="d-title"></h3>
     <p id="d-lead"></p>
     <ul id="d-list"></ul>
-    <div class="foot"><button class="btn outline" id="d-cancel">Giữ lại</button><button class="btn danger" id="d-ok"><svg class="ico"><use href="#i-eye-off"/></svg>Ẩn món</button></div>
-  </div></div>
-  <div class="toast" id="toast" role="status"><svg class="ico"><use href="#i-check"/></svg><span id="toast-t"></span></div>
+    <div class="foot"><button class="btn outline" id="d-cancel" type="button">Giữ lại</button><button class="btn danger" id="d-ok" type="button"></button></div>
+  </dialog>
+  <div class="toast" id="toast" role="status"><svg class="ico"><use href="#i-check"/></svg><span id="toast-t"></span><button class="toast-x" id="toast-x" aria-label="Đóng thông báo"><svg class="ico"><use href="#i-close"/></svg></button></div>
 </div>
 
 <div class="notes">
@@ -322,12 +333,12 @@ function chips(){
 function render(){
   chips();
   const list=DISHES.filter(d=>(filt==="all"||groupOf(d)===filt)&&(!chay||d.chay)&&(!onlyHidden||d.hidden)&&(!q||fold(d.name).includes(fold(q))));
-  $("#rows").innerHTML=list.map(d=>`<tr class="${d.hidden?"hidden-dish":""}">
-    <td class="c-name"><div class="name">${d.name}</div><div class="sub">Mã ${d.id}<span class="only-narrow">${d.region?" · "+REGION[d.region]:""}</span></div></td>
-    <td class="c-group"><span class="tag"><span class="dot group-${groupOf(d)}"></span>${groupName(d)}</span> ${d.chay?'<span class="tag chay">Chay</span>':""}</td>
-    <td class="c-region">${REGION[d.region]}</td><td class="c-time">${d.time?d.time+" phút":"—"}</td><td class="c-upd">${d.upd}</td>
-    <td class="c-status">${d.hidden?'<span class="tag hid">Đã ẩn</span>':'<span class="tag" style="background:var(--ok-tint);border-color:transparent;color:var(--cat-xao)">Đang dùng</span>'}</td>
-    <td class="c-act"><div class="actions"><button class="btn outline sm" data-edit="${d.id}"><svg class="ico"><use href="#i-edit"/></svg>Sửa</button>
+  $("#rows").innerHTML=list.map(d=>`<tr role="row" class="${d.hidden?"hidden-dish":""}">
+    <td role="cell" class="c-name"><div class="name">${d.name}</div><div class="sub">Mã ${d.id}<span class="only-narrow">${d.region?" · "+REGION[d.region]:""}</span></div></td>
+    <td role="cell" class="c-group"><span class="tag"><span class="dot group-${groupOf(d)}"></span>${groupName(d)}</span> ${d.chay?'<span class="tag chay">Chay</span>':""}</td>
+    <td role="cell" class="c-region">${REGION[d.region]}</td><td role="cell" class="c-time">${d.time?d.time+" phút":"—"}</td><td role="cell" class="c-upd">${d.upd}</td>
+    <td role="cell" class="c-status">${d.hidden?'<span class="tag hid">Đã ẩn</span>':'<span class="tag ok">Đang dùng</span>'}</td>
+    <td role="cell" class="c-act"><div class="actions"><button class="btn outline sm" data-edit="${d.id}"><svg class="ico"><use href="#i-edit"/></svg>Sửa</button>
     <button class="btn ghost sm" data-toggle="${d.id}"><svg class="ico"><use href="#${d.hidden?"i-eye":"i-eye-off"}"/></svg>${d.hidden?"Hiện lại":"Ẩn"}</button></div></td></tr>`).join("");
   $("#empty").hidden=list.length>0;
   $("#s-all").textContent=DISHES.length;$("#s-hid").textContent=DISHES.filter(d=>d.hidden).length;$("#s-vis").textContent=DISHES.filter(d=>!d.hidden).length;
@@ -340,47 +351,82 @@ function show(v){
   if(v==="new")openEdit(null);
   if(v==="list")render();
 }
-function toast(t){$("#toast-t").textContent=t;$("#toast").classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>$("#toast").classList.remove("show"),3200)}
+function toast(t){
+  $("#toast-t").textContent=t;$("#toast").classList.add("show");arm();
+}
+function arm(){clearTimeout(toast.t);toast.t=setTimeout(()=>$("#toast").classList.remove("show"),6000)}
+$("#toast").addEventListener("mouseenter",()=>clearTimeout(toast.t));
+$("#toast").addEventListener("mouseleave",arm);
+$("#toast").addEventListener("focusin",()=>clearTimeout(toast.t));
+$("#toast").addEventListener("focusout",arm);
+$("#toast-x").onclick=()=>$("#toast").classList.remove("show");
 
-/* editor */
-let E={ing:[],steps:[],mt:"buacom"};
+/* ---------- dialog (native <dialog>: focus trap, inert page, Esc, focus returns to the opener) ---------- */
+let onOk=null;
+function openDialog({title,lead,items=[],cancel,ok,okClass="danger",okIcon,action}){
+  $("#d-title").textContent=title;$("#d-lead").textContent=lead||"";
+  $("#d-list").innerHTML=items.map(i=>`<li>${i}</li>`).join("");
+  $("#d-cancel").textContent=cancel;
+  $("#d-ok").className="btn "+okClass;
+  $("#d-ok").innerHTML=(okIcon?`<svg class="ico"><use href="#${okIcon}"/></svg>`:"")+ok;
+  onOk=action;$("#dlg").showModal();$("#d-cancel").focus();
+}
+$("#d-cancel").onclick=()=>$("#dlg").close();
+$("#d-ok").onclick=()=>{const f=onOk;$("#dlg").close();f&&f()};
+
+/* ---------- editor ---------- */
+let E={ing:[],steps:[],mt:"buacom"},base="",submitted=false;
+const fields=()=>JSON.stringify({n:$("#f-name").value,mt:E.mt,c:$("#f-cat").value,r:$("#f-region").value,t:$("#f-time").value,ch:$("#f-chay").checked,i:E.ing,s:E.steps});
+const dirty=()=>base!==""&&fields()!==base;
 function openEdit(id){
   cur=id;const d=id?DISHES.find(x=>x.id===id):{name:"",mt:"buacom",cat:"xao",chay:false,region:"",time:"",ing:[""],steps:[""]};
   $("#e-title").textContent=id?"Sửa món":"Thêm món";
   $("#e-sub").textContent=id?`Mã món ${d.id} · cập nhật ${d.upd}/2026`:"Mã món sẽ tự đặt (ví dụ x13).";
   $("#f-name").value=d.name;$("#f-cat").value=d.cat||"xao";$("#f-region").value=d.region;$("#f-time").value=d.time||"";$("#f-chay").checked=d.chay;
-  E={ing:[...d.ing],steps:[...d.steps],mt:d.mt};
-  setMt();rows();validate(true);
+  E={ing:[...d.ing],steps:[...d.steps],mt:d.mt};submitted=false;
+  $("#errbox").hidden=true;$("#failbox").hidden=true;setSaving(false);
+  setMt();rows();validate();base=fields();
 }
 function setMt(){
   $("#mt-buacom").setAttribute("aria-pressed",E.mt==="buacom");$("#mt-bowl").setAttribute("aria-pressed",E.mt==="buatomonuoc");
   $("#f-cat").disabled=E.mt==="buatomonuoc";$("#cat-hint").textContent=E.mt==="buatomonuoc"?"Bữa 1 món không có Nhóm món.":"Mỗi bữa cơm 3 món lấy đúng 1 món từ mỗi Nhóm món.";
 }
 function rows(){
-  $("#ing").innerHTML=E.ing.map((v,i)=>`<div class="row"><input class="field" data-i="${i}" data-k="ing" value="${v.replace(/"/g,"&quot;")}" placeholder="Ví dụ: Cà chua 2 quả" aria-label="Nguyên liệu ${i+1}"><button type="button" class="iconbtn" data-del="ing:${i}" aria-label="Xoá nguyên liệu ${i+1}"><svg class="ico"><use href="#i-trash"/></svg></button></div>`).join("");
-  $("#steps").innerHTML=E.steps.map((v,i)=>`<div class="row step-row" style="align-items:flex-start"><span class="stepn" style="margin-top:9px">${i+1}</span><textarea class="field" data-i="${i}" data-k="steps" rows="2" aria-label="Bước ${i+1}" placeholder="Mô tả bước ${i+1}">${v}</textarea>
+  $("#ing").innerHTML=E.ing.map((v,i)=>`<div><div class="row"><input class="field" id="ing-${i}" data-i="${i}" data-k="ing" value="${v.replace(/"/g,"&quot;")}" placeholder="Ví dụ: Cà chua 2 quả" aria-label="Nguyên liệu ${i+1}" aria-describedby="ing-${i}-e"><button type="button" class="iconbtn" data-del="ing:${i}" aria-label="Xoá nguyên liệu ${i+1}"><svg class="ico"><use href="#i-trash"/></svg></button></div><div class="err" id="ing-${i}-e" hidden></div></div>`).join("");
+  $("#steps").innerHTML=E.steps.map((v,i)=>`<div><div class="row step-row" style="align-items:flex-start"><span class="stepn" style="margin-top:9px">${i+1}</span><textarea class="field" id="step-${i}" data-i="${i}" data-k="steps" rows="2" aria-label="Bước ${i+1}" aria-describedby="step-${i}-e" placeholder="Mô tả bước ${i+1}">${v}</textarea>
    <div class="mv" style="display:grid;gap:4px"><button type="button" class="iconbtn" style="height:30px" data-mv="${i}:-1" aria-label="Chuyển bước ${i+1} lên" ${i===0?"disabled":""}><svg class="ico"><use href="#i-up"/></svg></button><button type="button" class="iconbtn" style="height:30px" data-mv="${i}:1" aria-label="Chuyển bước ${i+1} xuống" ${i===E.steps.length-1?"disabled":""}><svg class="ico"><use href="#i-down"/></svg></button></div>
-   <button type="button" class="iconbtn" data-del="steps:${i}" aria-label="Xoá bước ${i+1}"><svg class="ico"><use href="#i-trash"/></svg></button></div>`).join("");
+   <button type="button" class="iconbtn" data-del="steps:${i}" aria-label="Xoá bước ${i+1}"><svg class="ico"><use href="#i-trash"/></svg></button></div><div class="err" id="step-${i}-e" hidden></div></div>`).join("");
 }
 const hasToi=s=>/\btỏi\b/i.test(s);
-function validate(quiet){
-  const name=$("#f-name").value.trim(),chayOn=$("#f-chay").checked;
-  $("#chay-text").textContent=chayOn?"Món chay (không dùng tỏi)":"Không phải món chay";
-  let errs=[];
-  const dup=DISHES.some(d=>d.id!==cur&&fold(d.name)===fold(name)&&name);
-  const en=$("#e-name");en.hidden=!dup&&!(!name&&!quiet);en.querySelector("span").textContent=dup?"Đã có món tên này (không phân biệt hoa thường, dấu).":"Nhập tên món.";
-  $("#f-name").classList.toggle("invalid",!en.hidden);
-  if(!name&&!quiet||dup)errs.push(dup?"Tên món bị trùng.":"Thiếu tên món.");
+/* every problem, with the field it belongs to */
+function problems(){
+  const out=[],name=$("#f-name").value.trim(),chayOn=$("#f-chay").checked;
+  if(!name)out.push({id:"f-name",msg:"Nhập tên món.",inline:"f-name",soft:true});
+  else if(DISHES.some(d=>d.id!==cur&&fold(d.name)===fold(name)))out.push({id:"f-name",msg:"Tên món bị trùng: đã có món tên này (không phân biệt hoa thường, dấu).",inline:"f-name"});
+  if(!E.ing.some(v=>v.trim()))out.push({id:"ing-0",msg:"Cần ít nhất một nguyên liệu.",soft:true});
   if(chayOn){
-    const bad=[...E.ing.map((v,i)=>[`nguyên liệu ${i+1}`,v]),...E.steps.map((v,i)=>[`bước ${i+1}`,v])].filter(([,v])=>hasToi(v));
-    if(bad.length)errs.push(`<b>Món chay không được dùng tỏi.</b> Có “tỏi” ở ${bad.map(b=>b[0]).join(", ")}. Dùng hành boa-rô thay thế, hoặc tắt “Món chay”.`);
-    document.querySelectorAll("[data-k]").forEach(el=>{const bad=hasToi(el.value)&&chayOn;el.classList.toggle("invalid",bad)});
-  }else document.querySelectorAll("[data-k]").forEach(el=>el.classList.remove("invalid"));
-  if(!E.ing.some(v=>v.trim()))errs.push("Cần ít nhất một nguyên liệu.");
-  const box=$("#errbox");box.hidden=!errs.length||quiet&&!errs.some(e=>e.includes("tỏi"));
-  $("#errtext").innerHTML=errs.join("<br>");
-  $("#save").disabled=errs.length>0;
+    E.ing.forEach((v,i)=>hasToi(v)&&out.push({id:"ing-"+i,msg:`Nguyên liệu ${i+1} có “tỏi”: món chay không được dùng tỏi. Dùng hành boa-rô, hoặc tắt “Món chay”.`,inline:"ing-"+i+"-e"}));
+    E.steps.forEach((v,i)=>hasToi(v)&&out.push({id:"step-"+i,msg:`Bước ${i+1} có “tỏi”: món chay không được dùng tỏi.`,inline:"step-"+i+"-e"}));
+  }
+  return out;
+}
+/* Inline errors show as you type for rule breaks (tỏi, duplicate); "missing" errors wait for a submit attempt. */
+function validate(){
+  $("#chay-text").textContent=$("#f-chay").checked?"Món chay (không dùng tỏi)":"Không phải món chay";
+  const ps=problems();
+  document.querySelectorAll("#form .invalid").forEach(e=>e.classList.remove("invalid"));
+  document.querySelectorAll("#form .err").forEach(e=>{e.hidden=true});
+  ps.filter(p=>!p.soft||submitted).forEach(p=>{
+    const el=document.getElementById(p.id);el&&el.classList.add("invalid");
+    const slot=document.getElementById(p.inline||(p.id==="f-name"?"e-name":""));
+    if(slot){slot.hidden=false;(slot.querySelector("span")||slot).textContent=p.msg}
+  });
+  if(!$("#errbox").hidden)fillSummary(ps);
   preview();
+}
+function fillSummary(ps){
+  if(!ps.length){$("#errbox").hidden=true;return}
+  $("#errlist").innerHTML=ps.map(p=>`<li><a href="#${p.id}" data-focus="${p.id}">${p.msg}</a></li>`).join("");
 }
 function preview(){
   const mt=E.mt==="buatomonuoc"?"Bữa 1 món":CATS[$("#f-cat").value];
@@ -389,13 +435,52 @@ function preview(){
   $("#pv-ing").innerHTML=E.ing.filter(Boolean).map(v=>`<li>${v}</li>`).join("");
   $("#pv-steps").innerHTML=E.steps.filter(Boolean).map(v=>`<li>${v}</li>`).join("");
 }
+function setSaving(on){
+  const b=$("#save");b.disabled=on;
+  b.innerHTML=on?'<span class="spin" aria-hidden="true"></span>Đang lưu…':'<svg class="ico"><use href="#i-check"/></svg>Lưu và đăng';
+  $("#cancel").disabled=on;
+}
+function doSave(){
+  $("#failbox").hidden=true;setSaving(true);
+  setTimeout(()=>{
+    if($("#sim").checked){setSaving(false);$("#failbox").hidden=false;$("#failbox").focus();return}
+    version++;$("#ver").textContent="Danh mục v"+version;base=fields();
+    show("list");toast(`Đã lưu và đăng. Danh mục lên v${version}.`);$("#page-h").focus();
+  },900);
+}
+$("#form").addEventListener("submit",e=>{
+  e.preventDefault();submitted=true;
+  const ps=problems();validate();
+  if(ps.length){$("#errbox").hidden=false;fillSummary(ps);$("#errbox").focus();return}
+  $("#errbox").hidden=true;doSave();
+});
+$("#retry").onclick=doSave;
+function leave(){
+  if(!dirty())return show("list");
+  openDialog({title:"Bỏ thay đổi chưa lưu?",lead:"Bạn đã sửa món này nhưng chưa bấm Lưu và đăng.",cancel:"Ở lại sửa",ok:"Bỏ thay đổi",okIcon:"i-trash",action:()=>show("list")});
+}
+
+/* ---------- list actions ---------- */
+function askToggle(id){
+  const d=DISHES.find(x=>x.id===id);
+  const done=(hide)=>{d.hidden=hide;version++;render();$("#ver").textContent="Danh mục v"+version;
+    const again=document.querySelector(`[data-toggle="${id}"]`);again&&again.focus();
+    toast(hide?`Đã ẩn “${d.name}”. Danh mục lên v${version}.`:`Đã hiện lại “${d.name}”. Danh mục lên v${version}.`)};
+  if(d.hidden)return done(false);
+  openDialog({title:`Ẩn “${d.name}”?`,lead:"Món không bị xoá, chỉ ngừng xuất hiện với người dùng:",
+    items:["Không còn được gợi ý và không hiện ở tab Món ăn.","Thực đơn hôm nay đang có món này vẫn giữ nguyên tới ngày mai.","Lịch sử và yêu thích trên máy mọi người vẫn hiện đúng tên món.","Bạn có thể hiện lại bất cứ lúc nào."],
+    cancel:"Giữ lại",ok:"Ẩn món",okIcon:"i-eye-off",action:()=>done(true)});
+}
+
+/* ---------- events ---------- */
 document.addEventListener("input",e=>{
   const t=e.target;if(t.dataset&&t.dataset.k){E[t.dataset.k][+t.dataset.i]=t.value}
-  if(t.closest("#form"))validate(false);
+  if(t.closest("#form"))validate();
   if(t.id==="q"){q=t.value;render()}
 });
-document.addEventListener("change",e=>{if(e.target.closest("#form"))validate(false)});
+document.addEventListener("change",e=>{if(e.target.closest("#form"))validate()});
 document.addEventListener("click",e=>{
+  const a=e.target.closest("a[data-focus]");if(a){e.preventDefault();const t=document.getElementById(a.dataset.focus);t&&(t.scrollIntoView({block:"center"}),t.focus());return}
   const b=e.target.closest("button");if(!b)return;
   if(b.dataset.go)return show(b.dataset.go);
   if(b.dataset.vp){$("#shell").classList.toggle("phone",b.dataset.vp==="phone");document.querySelectorAll("[data-vp]").forEach(x=>x.setAttribute("aria-pressed",x===b));return}
@@ -403,39 +488,23 @@ document.addEventListener("click",e=>{
   if(b.dataset.f){filt=b.dataset.f;return render()}
   if("chay" in b.dataset){chay=!chay;return render()}
   if("hid" in b.dataset){onlyHidden=!onlyHidden;return render()}
-  if(b.dataset.edit){return show2("edit",b.dataset.edit)}
+  if(b.dataset.edit){cur=b.dataset.edit;return show("edit")}
   if(b.dataset.toggle)return askToggle(b.dataset.toggle);
-  if(b.dataset.del){const[k,i]=b.dataset.del.split(":");E[k].splice(+i,1);if(!E[k].length)E[k].push("");rows();return validate(false)}
-  if(b.dataset.mv){const[i,d]=b.dataset.mv.split(":").map(Number);[E.steps[i],E.steps[i+d]]=[E.steps[i+d],E.steps[i]];rows();return validate(false)}
+  if(b.dataset.del){const[k,i]=b.dataset.del.split(":");E[k].splice(+i,1);if(!E[k].length)E[k].push("");rows();return validate()}
+  if(b.dataset.mv){const[i,d]=b.dataset.mv.split(":").map(Number);[E.steps[i],E.steps[i+d]]=[E.steps[i+d],E.steps[i]];rows();return validate()}
   switch(b.id){
-    case"add":return show2("new");case"back":case"cancel":return show("list");
-    case"ing-add":E.ing.push("");rows();return validate(true);
-    case"step-add":E.steps.push("");rows();return validate(true);
-    case"mt-buacom":E.mt="buacom";setMt();return validate(false);
-    case"mt-bowl":E.mt="buatomonuoc";setMt();return validate(false);
+    case"add":cur=null;return show("new");case"back":case"cancel":return leave();
+    case"ing-add":E.ing.push("");rows();return validate();
+    case"step-add":E.steps.push("");rows();return validate();
+    case"mt-buacom":E.mt="buacom";setMt();return validate();
+    case"mt-bowl":E.mt="buatomonuoc";setMt();return validate();
     case"reset":filt="all";chay=false;onlyHidden=false;q="";$("#q").value="";return render();
     case"export":return toast("Đã tải danh-muc-mon-2026-10-22.json (73 món, gồm cả món đã ẩn)");
     case"logout":return show("login");
     case"signin":return show("list");
     case"lock":$("#lockmsg").hidden=false;b.disabled=true;$("#signin").disabled=true;return;
-    case"d-cancel":return closeDialog();
   }
 });
-function show2(v,id){cur=id||null;show(v)}
-let pending=null;
-function askToggle(id){
-  const d=DISHES.find(x=>x.id===id);pending=d;
-  if(d.hidden){d.hidden=false;version++;render();$("#ver").textContent="Danh mục v"+version;return toast(`Đã hiện lại “${d.name}”. Danh mục lên v${version}.`)}
-  $("#d-title").textContent=`Ẩn “${d.name}”?`;
-  $("#d-lead").textContent="Món không bị xoá, chỉ ngừng xuất hiện với người dùng:";
-  $("#d-list").innerHTML="<li>Không còn được gợi ý và không hiện ở tab Món ăn.</li><li>Thực đơn hôm nay đang có món này vẫn giữ nguyên tới ngày mai.</li><li>Lịch sử và yêu thích trên máy mọi người vẫn hiện đúng tên món.</li><li>Bạn có thể hiện lại bất cứ lúc nào.</li>";
-  $("#scrim").classList.add("open");$("#d-ok").focus();
-}
-function closeDialog(){$("#scrim").classList.remove("open");pending=null}
-$("#d-ok").onclick=()=>{pending.hidden=true;version++;const n=pending.name;closeDialog();render();$("#ver").textContent="Danh mục v"+version;toast(`Đã ẩn “${n}”. Danh mục lên v${version}.`)};
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDialog()});
-$("#form").addEventListener("submit",e=>{e.preventDefault();validate(false);if($("#save").disabled)return;
-  version++;$("#ver").textContent="Danh mục v"+version;toast(`Đã lưu và đăng. Danh mục lên v${version}.`);show("list")});
 render();
 </script>
 </body>
