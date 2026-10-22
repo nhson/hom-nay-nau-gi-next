@@ -31,17 +31,20 @@ const barColours = (page: Page) =>
     })),
   );
 
+/** The device setting, with reduced motion so colours are read after any fade. */
+const device = (page: Page, colorScheme: "light" | "dark") => page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
 
 test.describe("Theo thiết bị (the default) follows the device", () => {
   test("light device, dark device, and a device that changes while the app is open", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await device(page, "light");
     await openApp(page);
     expect(await background(page)).toBe(LIGHT);
 
-    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await device(page, "dark");
     await expect.poll(() => background(page)).toBe(DARK);
   });
 });
@@ -49,7 +52,7 @@ test.describe("Theo thiết bị (the default) follows the device", () => {
 test.describe("choosing a theme", () => {
   test("Tối on a light device survives a reload and is the same in the admin", async ({ page }) => {
     await installFakeAdmin(page, { signedIn: true });
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await device(page, "light");
     await openApp(page);
     await choose(page, "Tối");
     await expect.poll(() => background(page)).toBe(DARK);
@@ -64,7 +67,7 @@ test.describe("choosing a theme", () => {
   });
 
   test("Sáng on a dark device survives a reload", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await device(page, "dark");
     await openApp(page);
     await choose(page, "Sáng");
     await expect.poll(() => background(page)).toBe(LIGHT);
@@ -74,31 +77,45 @@ test.describe("choosing a theme", () => {
   });
 
   test("going back to Theo thiết bị follows the device again", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await device(page, "light");
     await openApp(page);
     await choose(page, "Tối");
     await expect.poll(() => background(page)).toBe(DARK);
     await choose(page, "Theo thiết bị");
     await expect.poll(() => background(page)).toBe(LIGHT);
-    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await device(page, "dark");
     await expect.poll(() => background(page)).toBe(DARK);
   });
 
-  test("the chosen theme is already there at the first paint, so there is no flash", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
-    await page.addInitScript(() => {
-      localStorage.setItem("giao-dien", "dark");
-      document.addEventListener("DOMContentLoaded", () => {
-        (window as unknown as { __first: string | null }).__first = document.documentElement.getAttribute("data-theme");
-      });
+  for (const [where, path] of [
+    ["the app", "/"],
+    ["the admin", "/admin/login"],
+  ] as const) {
+    test(`the chosen theme is painted by the page itself, before any script bundle runs (${where})`, async ({ page }) => {
+      await device(page, "light");
+      await page.addInitScript(() => localStorage.setItem("giao-dien", "dark"));
+      // Block every script bundle: only the tiny inline script in the HTML can apply the theme, so if the
+      // page is already dark, it was dark at first paint, not after the app started.
+      await page.route(/\/_next\/static\/.*\.js/, (route) => route.abort());
+      await page.goto(path);
+      expect(await page.evaluate(() => document.documentElement.getAttribute("data-theme"))).toBe("dark");
+      expect(await background(page)).toBe(DARK);
     });
-    await page.goto("/");
-    await expect(menuNames(page).first()).toBeVisible();
-    expect(await page.evaluate(() => (window as unknown as { __first: string | null }).__first)).toBe("dark");
+  }
+
+  test("the choice is kept on the device under one key, and 'Theo thiết bị' stores the device-following value", async ({ page }) => {
+    await openApp(page);
+    const stored = () => page.evaluate(() => localStorage.getItem("giao-dien"));
+    await choose(page, "Tối");
+    expect(await stored()).toBe("dark");
+    await choose(page, "Sáng");
+    expect(await stored()).toBe("light");
+    await choose(page, "Theo thiết bị");
+    expect(await stored()).toBe("system");
   });
 
   test("the phone's status and address bar follow the choice, then the device again", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await device(page, "light");
     await openApp(page);
     await choose(page, "Tối");
     await expect.poll(async () => (await barColours(page)).every((m) => m.content === DARK_BAR)).toBe(true);
@@ -110,8 +127,17 @@ test.describe("choosing a theme", () => {
       .toEqual([`dark:${DARK_BAR}`, `light:${LIGHT_BAR}`]);
   });
 
+  test("the bar colour keeps following the choice after moving to another screen", async ({ page }) => {
+    await device(page, "light");
+    await openApp(page);
+    await choose(page, "Tối");
+    await page.getByRole("link", { name: "Món ăn" }).click();
+    await expect(page.getByRole("searchbox", { name: "Tìm món" })).toBeVisible();
+    expect((await barColours(page)).every((m) => m.content === DARK_BAR)).toBe(true);
+  });
+
   test("the native form controls follow the choice", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await device(page, "light");
     await openApp(page);
     await choose(page, "Tối");
     await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)).toBe("dark");
@@ -125,25 +151,34 @@ test.describe("the control", () => {
     expect(box?.width).toBeGreaterThanOrEqual(44);
     expect(box?.height).toBeGreaterThanOrEqual(44);
 
+    await expect(switchButton(page).locator("svg.lucide-monitor")).toBeVisible();
     await switchButton(page).click();
     const options = page.getByRole("menuitemradio");
     await expect(options).toHaveText(["Sáng", "Tối", "Theo thiết bị"]);
     await expect(page.getByRole("menuitemradio", { name: "Theo thiết bị" })).toHaveAttribute("aria-checked", "true");
     await page.keyboard.press("Escape");
     await choose(page, "Tối");
+    await expect(switchButton(page).locator("svg.lucide-moon")).toBeVisible();
     await switchButton(page).click();
     await expect(page.getByRole("menuitemradio", { name: "Tối" })).toHaveAttribute("aria-checked", "true");
+    await page.keyboard.press("Escape");
+    await choose(page, "Sáng");
+    await expect(switchButton(page).locator("svg.lucide-sun")).toBeVisible();
   });
 
   test("works with the keyboard: open, arrows, Enter, Esc, and focus comes back", async ({ page }) => {
-    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await device(page, "light");
     await openApp(page);
     await switchButton(page).focus();
     await page.keyboard.press("Enter");
     await expect(page.getByRole("menu")).toBeVisible();
+    // Wait until focus is inside the menu (it moves there just after opening), then go to the first option.
+    await expect(page.getByRole("menuitemradio").and(page.locator(":focus"))).toHaveCount(1);
+    await page.keyboard.press("Home");
+    await expect(page.getByRole("menuitemradio", { name: "Sáng" })).toBeFocused();
     await page.keyboard.press("ArrowDown");
-    await page.keyboard.press("ArrowDown");
-    await page.keyboard.press("Enter"); // the second option: Tối
+    await expect(page.getByRole("menuitemradio", { name: "Tối" })).toBeFocused();
+    await page.keyboard.press("Enter");
     await expect.poll(() => background(page)).toBe(DARK);
     await expect(switchButton(page)).toBeFocused();
 
@@ -169,12 +204,12 @@ test.describe("the control", () => {
   });
 
   test("keeps the choice on the device: no request, no change to the saved history and favorites", async ({ page }) => {
-    const requests: string[] = [];
-    page.on("request", (request) => requests.push(request.url()));
+    const sent: { method: string; url: string; body: string | null }[] = [];
+    page.on("request", (request) => sent.push({ method: request.method(), url: request.url(), body: request.postData() }));
     await openApp(page);
     await flushWrites(page);
     const before = await readPersonal(page);
-    const seen = requests.length;
+    const seen = sent.length;
 
     await choose(page, "Tối");
     await choose(page, "Sáng");
@@ -182,7 +217,12 @@ test.describe("the control", () => {
     await flushWrites(page);
 
     expect(await readPersonal(page)).toEqual(before);
-    expect(requests.slice(seen).filter((url) => url.includes("/api/") || /theme|giao/i.test(url))).toEqual([]);
+    // Nothing is sent anywhere: no API call, no write, no request that carries the choice
+    // (background page prefetches and the menu's own code arriving are not "sending").
+    const leaks = sent.slice(seen).filter(
+      ({ method, url, body }) => method !== "GET" || body !== null || url.includes("/api/") || /giao-dien|theme/i.test(`${url}${body ?? ""}`),
+    );
+    expect(leaks).toEqual([]);
   });
 });
 
@@ -194,7 +234,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       );
 
     test.beforeEach(async ({ page }) => {
-      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+      await device(page, colorScheme);
     });
 
     test("the app", async ({ page }) => {

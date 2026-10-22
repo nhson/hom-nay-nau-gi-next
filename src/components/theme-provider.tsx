@@ -1,9 +1,9 @@
 "use client";
 
-import { ThemeProvider as NextThemes, useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
-import { BAR_COLOUR, THEME_STORAGE_KEY } from "@/lib/theme";
+import { ThemeProvider as NextThemes } from "next-themes";
+import type { ReactNode } from "react";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
+import { BarColourSync } from "./bar-colour-sync";
 
 /**
  * Giao diện. The theme is an attribute on the root element, set before the page paints (so no flash)
@@ -17,24 +17,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       {children}
     </NextThemes>
   );
-}
-
-/**
- * The page declares a light and a dark bar colour for the device setting. When the person picks a
- * theme, both follow the pick; "Theo thiết bị" restores the per-device pair. Re-applied after each
- * navigation because the framework may rewrite its head tags.
- */
-function BarColourSync() {
-  const { theme, resolvedTheme } = useTheme();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    const chosen = theme === "light" || theme === "dark" ? theme : null;
-    for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
-      const forDark = (meta.media ?? "").includes("dark");
-      meta.content = BAR_COLOUR[chosen ?? (forDark ? "dark" : "light")];
-    }
-  }, [theme, resolvedTheme, pathname]);
-
-  return null;
 }
