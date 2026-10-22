@@ -5,7 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { validateDish, type Category, type DishDraft, type DishProblem, type MealType, type Region } from "@/domain";
+import {
+  cleanLines,
+  mergeProblems,
+  parseMinutes,
+  validateDish,
+  waitsForSubmit,
+  type Category,
+  type DishDraft,
+  type DishProblem,
+  type MealType,
+  type Region,
+} from "@/domain";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -54,23 +65,17 @@ const fromDish = (dish: AdminDish): FormState => ({
 });
 
 function toDraft(form: FormState): DishDraft {
-  const time = form.time.trim();
   return {
     mealType: form.mealType,
     category: form.mealType === "buacom" ? form.category : null,
     chay: form.chay,
     region: form.region === "" ? null : form.region,
     name: form.name,
-    time: time === "" ? null : Number(time),
+    time: parseMinutes(form.time),
     ingredients: form.ingredients,
     steps: form.steps,
   };
 }
-
-/** "Required" problems wait for a submit attempt; the rest (tỏi, duplicate name...) show as you type. */
-const isSoft = (problem: DishProblem) => problem.code === "name-required" || problem.code === "ingredients-required";
-
-const sameProblem = (a: DishProblem, b: DishProblem) => a.code === b.code && a.field === b.field && a.index === b.index;
 
 const draftKey = (id: string | null) => `admin-draft:${id ?? "new"}`;
 
@@ -141,12 +146,12 @@ export function DishFormScreen({ id }: { id: string | null }) {
   }, [dirty]);
 
   const draft = useMemo(() => toDraft(form), [form]);
-  const problems = useMemo<DishProblem[]>(() => {
-    const own = validateDish(draft, all ?? [], id ?? undefined);
-    return [...own, ...serverProblems.filter((extra) => !own.some((p) => sameProblem(p, extra)))];
-  }, [draft, all, id, serverProblems]);
+  const problems = useMemo<DishProblem[]>(
+    () => mergeProblems(validateDish(draft, all ?? [], id ?? undefined), serverProblems),
+    [draft, all, id, serverProblems],
+  );
 
-  const shown = problems.filter((problem) => submitted || !isSoft(problem));
+  const shown = problems.filter((problem) => submitted || !waitsForSubmit(problem));
   const errorsFor = (field: DishProblem["field"]) => {
     const map = new Map<number, string>();
     for (const problem of shown) if (problem.field === field) map.set(problem.index ?? 0, problemMessage(problem));
@@ -247,41 +252,35 @@ export function DishFormScreen({ id }: { id: string | null }) {
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
         <form onSubmit={save} noValidate className="rounded-2xl border bg-card">
           {summaryOpen && problems.length > 0 && (
-            <div ref={summaryRef} role="alert" tabIndex={-1} className="m-5 mb-0 flex gap-2.5 rounded-xl border border-destructive/35 bg-destructive/10 p-3.5 text-sm text-destructive outline-none focus-visible:ring-3 focus-visible:ring-destructive/40">
-              <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-              <div>
-                <b>Chưa lưu được. Cần sửa:</b>
-                <ul className="mt-1.5 list-disc space-y-1 pl-5">
-                  {problems.map((problem, i) => (
-                    <li key={i}>
-                      <a
-                        href={`#${problemFieldId(problem)}`}
-                        className="font-semibold underline underline-offset-3"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          focusField(problemFieldId(problem));
-                        }}
-                      >
-                        {problemMessage(problem)}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <AlertBox ref={summaryRef}>
+              <b>Chưa lưu được. Cần sửa:</b>
+              <ul className="mt-1.5 list-disc space-y-1 pl-5">
+                {problems.map((problem, i) => (
+                  <li key={i}>
+                    <a
+                      href={`#${problemFieldId(problem)}`}
+                      className="font-semibold underline underline-offset-3"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        focusField(problemFieldId(problem));
+                      }}
+                    >
+                      {problemMessage(problem)}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </AlertBox>
           )}
           {saveFailed && (
-            <div ref={failRef} role="alert" tabIndex={-1} className="m-5 mb-0 flex gap-2.5 rounded-xl border border-destructive/35 bg-destructive/10 p-3.5 text-sm text-destructive outline-none">
-              <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-              <div>
-                <b>Không lưu được.</b> Mạng đang gián đoạn. Những gì bạn nhập vẫn còn ở đây.
-                <div className="mt-2">
-                  <Button type="button" variant="outline" size="sm" className="h-9 max-md:h-11" onClick={() => save()}>
-                    Thử lại
-                  </Button>
-                </div>
+            <AlertBox ref={failRef}>
+              <b>Không lưu được.</b> Mạng đang gián đoạn. Những gì bạn nhập vẫn còn ở đây.
+              <div className="mt-2">
+                <Button type="button" variant="outline" size="sm" className="h-9 max-md:h-11" onClick={() => save()}>
+                  Thử lại
+                </Button>
               </div>
-            </div>
+            </AlertBox>
           )}
 
           <section className="space-y-4 border-b p-5">
@@ -456,9 +455,23 @@ export function DishFormScreen({ id }: { id: string | null }) {
   );
 }
 
+/** A problem or failure message that takes focus when it appears, so it is announced and reachable. */
+function AlertBox({ ref, children }: { ref: React.Ref<HTMLDivElement>; children: React.ReactNode }) {
+  return (
+    <div
+      ref={ref}
+      role="alert"
+      tabIndex={-1}
+      className="m-5 mb-0 flex gap-2.5 rounded-xl border border-destructive/35 bg-destructive/10 p-3.5 text-sm text-destructive outline-none focus-visible:ring-3 focus-visible:ring-destructive/40"
+    >
+      <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+      <div>{children}</div>
+    </div>
+  );
+}
+
 /** The dish as people will see it in the app (the same recipe component). */
 function Preview({ form, className }: { form: FormState; className?: string }) {
-  const lines = (values: string[]) => values.map((value) => value.trim()).filter(Boolean);
   const style = groupStyle(groupOf({ category: form.mealType === "buacom" ? form.category : null }));
   return (
     <aside aria-label="Xem trước" className={cn("sticky top-20 rounded-2xl border bg-card p-5", className)}>
@@ -472,7 +485,7 @@ function Preview({ form, className }: { form: FormState; className?: string }) {
         {form.chay && <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">Chay</span>}
         {form.time.trim() !== "" && <span>{form.time.trim()} phút</span>}
       </p>
-      <Recipe dish={{ ingredients: lines(form.ingredients), steps: lines(form.steps) }} />
+      <Recipe dish={{ ingredients: cleanLines(form.ingredients), steps: cleanLines(form.steps) }} />
     </aside>
   );
 }

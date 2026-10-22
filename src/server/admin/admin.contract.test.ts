@@ -1,8 +1,13 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import type { DishDraft } from "@/domain";
+import { bowl, dish } from "@/domain/testing";
+import { createCatalogHandlers } from "@/server/catalog/handlers";
+import { applySeed, readCatalog } from "@/server/catalog/repository";
 import { createTestDb } from "@/server/testing/db";
-import { apiErrorSchema } from "@/shared/schemas";
+import { adminCatalogResponseSchema, adminDishResponseSchema, apiErrorSchema, catalogResponseSchema } from "@/shared/schemas";
 import { createAdminKit, PASSPHRASE } from "./admin-test-kit";
+import { createDish as insertDish, setRetired as flipRetired, updateDish as rewriteDish } from "./repository";
 
 // The admin API contract: real handlers -> Zod -> Drizzle -> real migrations on in-memory Postgres.
 
@@ -175,10 +180,6 @@ describe("the session", () => {
 // Managing the Danh mục món
 // ---------------------------------------------------------------------------------------------
 
-import { bowl, dish } from "@/domain/testing";
-import { applySeed } from "@/server/catalog/repository";
-import { createCatalogHandlers } from "@/server/catalog/handlers";
-import { adminCatalogResponseSchema, catalogResponseSchema } from "@/shared/schemas";
 
 const FIXTURE = [
   dish({ id: "x1", name: "Rau muống xào", category: "xao" }),
@@ -481,5 +482,89 @@ describe("exporting the catalog", () => {
     const body = catalogResponseSchema.parse(await response.json());
     expect(body.dishes).toHaveLength(FIXTURE.length);
     expect(body.dishes.find((d) => d.id === "t1")?.retired).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Review follow-ups
+// ---------------------------------------------------------------------------------------------
+
+describe("what a save answers", () => {
+  it("is always a dish the admin page can read, including when nothing had to change", async () => {
+    const { k, cookie } = await seeded();
+    const created = await k.handlers.createDish(k.request("/dishes", { method: "POST", cookie, body: draft() }));
+    const edited = await k.handlers.updateDish(k.request("/dishes/x1", { method: "PUT", cookie, body: draft({ name: "Rau muống xào" }) }), "x1");
+    const hidden = await k.handlers.setHidden(k.request("/dishes/x2", { method: "PATCH", cookie, body: { retired: true } }), "x2");
+    const already = await k.handlers.setHidden(k.request("/dishes/x2", { method: "PATCH", cookie, body: { retired: true } }), "x2");
+    for (const response of [created, edited, hidden, already]) {
+      expect(response.status).toBeLessThan(300);
+      const body = adminDishResponseSchema.parse(await response.json());
+      expect(Number.isNaN(Date.parse(body.dish.updatedAt))).toBe(false);
+    }
+  });
+
+  it("echoes what was stored, and the dish's real hidden state after an edit", async () => {
+    const { k, cookie } = await seeded();
+    await k.handlers.setHidden(k.request("/dishes/m1", { method: "PATCH", cookie, body: { retired: true } }), "m1");
+    const response = await k.handlers.updateDish(k.request("/dishes/m1", { method: "PUT", cookie, body: draft({ category: "man", name: " Cá kho tộ ngon ", ingredients: [" Cá ", ""] }) }), "m1");
+    expect(adminDishResponseSchema.parse(await response.json()).dish).toMatchObject({
+      id: "m1", name: "Cá kho tộ ngon", ingredients: ["Cá"], retired: true,
+    });
+  });
+});
+
+describe("who may call, in what order", () => {
+  it("answers 401, not 403, to a write with no session, whatever else is missing", async () => {
+    await applySeed(ctx.db, FIXTURE);
+    const k = kit();
+    const response = await k.handlers.createDish(k.request("/dishes", { method: "POST", body: draft(), origin: null }));
+    expect(response.status).toBe(401);
+  });
+
+  it("answers a typed 500, not a framework error, when the database fails during sign-in", async () => {
+    const broken = createAdminKit(() => {
+      throw new Error("database down");
+    });
+    const response = await broken.handlers.login(broken.request("/session", { method: "POST", body: { passphrase: PASSPHRASE } }));
+    expect(response.status).toBe(500);
+    expect(await errorOf(response)).toMatchObject({ code: "internal_error" });
+  });
+});
+
+describe("a save is all or nothing", () => {
+  // A draft the database itself refuses (a Bữa cơm 3 món with no Nhóm món), bypassing the API's checks.
+  const impossible: DishDraft = { mealType: "buacom", category: null, chay: false, region: null, name: "Không hợp lệ", time: null, ingredients: ["a"], steps: [] };
+  const versionNow = async () => (await readCatalog(ctx.db))?.version;
+
+  it("a refused insert leaves neither a dish nor a new version", async () => {
+    await applySeed(ctx.db, FIXTURE);
+    await expect(insertDish(ctx.db, "x9", impossible)).rejects.toThrow();
+    expect(await versionNow()).toBe(1);
+    expect((await readCatalog(ctx.db))?.dishes.some((d) => d.id === "x9")).toBe(false);
+  });
+
+  it("a refused update leaves the old dish and the old version", async () => {
+    await applySeed(ctx.db, FIXTURE);
+    await expect(rewriteDish(ctx.db, "x1", impossible)).rejects.toThrow();
+    expect(await versionNow()).toBe(1);
+    expect((await readCatalog(ctx.db))?.dishes.find((d) => d.id === "x1")?.name).toBe("Rau muống xào");
+  });
+
+  it("hiding a dish that does not exist publishes nothing", async () => {
+    await applySeed(ctx.db, FIXTURE);
+    expect(await flipRetired(ctx.db, "zz9", true)).toBeNull();
+    expect(await versionNow()).toBe(1);
+  });
+});
+
+describe("two people adding a dish at the same moment", () => {
+  it("both succeed with different ids, instead of one failing on the clash", async () => {
+    const { k, cookie } = await seeded();
+    const add = (name: string) => k.handlers.createDish(k.request("/dishes", { method: "POST", cookie, body: draft({ name }) }));
+    const [a, b, c] = await Promise.all([add("Món A"), add("Món B"), add("Món C")]);
+    expect([a.status, b.status, c.status]).toEqual([201, 201, 201]);
+    const ids = [a, b, c].map(async (r) => (await r.json()).dish.id);
+    expect(new Set(await Promise.all(ids)).size).toBe(3);
+    expect((await publicBody()).dishes).toHaveLength(FIXTURE.length + 3);
   });
 });

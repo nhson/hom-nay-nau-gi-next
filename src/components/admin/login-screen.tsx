@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { adminApi, AdminApiError } from "@/lib/admin-api";
+import { LOCK_MINUTES, SESSION_DAYS } from "@/shared/admin-policy";
 
 /** Only ever send the person back somewhere inside the admin. */
 function safeNext(next: string | null): string {
@@ -62,7 +63,7 @@ export function LoginScreen() {
                 {problem.kind === "wrong" && "Mật khẩu không đúng."}
                 {problem.kind === "locked" && (
                   <>
-                    <b>Tạm khoá 15 phút.</b> Đã nhập sai nhiều lần liên tiếp.
+                    <b>Tạm khoá {LOCK_MINUTES} phút.</b> Đã nhập sai nhiều lần liên tiếp.
                     {problem.until && ` Thử lại sau ${clock(problem.until)}.`}
                   </>
                 )}
@@ -81,7 +82,7 @@ export function LoginScreen() {
             className="mt-1.5 h-12"
             required
           />
-          <p className="mt-1.5 text-[0.8125rem] text-muted-foreground">Đăng nhập được giữ 7 ngày trên thiết bị này.</p>
+          <p className="mt-1.5 text-[0.8125rem] text-muted-foreground">Đăng nhập được giữ {SESSION_DAYS} ngày trên thiết bị này.</p>
           <Button type="submit" size="lg" className="mt-5 w-full" disabled={busy || passphrase === ""}>
             {busy ? "Đang đăng nhập…" : "Đăng nhập"}
           </Button>

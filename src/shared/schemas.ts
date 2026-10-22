@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DISH_PROBLEM_CODES } from "@/domain/dish-rules";
 
 // Shared by the Route Handlers (outgoing) and the client (incoming), so server and client cannot
 // drift and a bad payload can never reach the on-device store.
@@ -67,15 +68,7 @@ export const API_ERROR_CODES = [
 
 /** One thing wrong with a submitted dish: the rule that failed and where (the UI words it). */
 export const dishIssueSchema = z.object({
-  code: z.enum([
-    "name-required",
-    "name-duplicate",
-    "category-required",
-    "category-not-allowed",
-    "ingredients-required",
-    "time-invalid",
-    "chay-toi",
-  ]),
+  code: z.enum(DISH_PROBLEM_CODES),
   field: z.enum(["name", "category", "ingredients", "steps", "time"]),
   index: z.number().int().min(0).optional(),
 });

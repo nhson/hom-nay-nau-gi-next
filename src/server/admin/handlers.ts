@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { dishIdPrefix, nextDishId, normalizeDraft, validateDish } from "@/domain";
+import { dishIdPrefix, nextDishId, normalizeDraft, validateDish, type DishDraft } from "@/domain";
 import { errorResponse } from "@/server/api/responses";
-import { readAdminCatalog, readCatalog, type Db } from "@/server/catalog/repository";
+import { readAdminCatalog, readCatalog, type AdminDish, type Db } from "@/server/catalog/repository";
 import { adminCatalogResponseSchema, catalogResponseSchema, dishDraftSchema } from "@/shared/schemas";
 import type { AdminConfig } from "./config";
-import { createDish, setRetired, updateDish } from "./repository";
+import { createDish, isUniqueViolation, setRetired, updateDish, type Saved } from "./repository";
 import {
   clearedSessionCookie,
   createSessionToken,
@@ -75,12 +75,7 @@ export function createAdminHandlers(deps: AdminDeps) {
       : errorResponse(401, "unauthorized", "Sign in to continue.");
   }
 
-  async function login(request: Request): Promise<Response> {
-    const config = deps.getConfig();
-    if (!config) return unavailable();
-    const blocked = checkWrite(request);
-    if (blocked) return blocked;
-
+  async function signIn(request: Request, config: AdminConfig): Promise<Response> {
     let body: z.infer<typeof loginBody>;
     try {
       body = loginBody.parse(await request.json());
@@ -99,7 +94,7 @@ export function createAdminHandlers(deps: AdminDeps) {
       const nowLocked = await recordFailure(db, key, current);
       return nowLocked
         ? lockedResponse(nowLocked, current)
-        : errorResponse(401, "invalid_credentials", "Mật khẩu không đúng.");
+        : errorResponse(401, "invalid_credentials", "Wrong password.");
     }
 
     await clearFailures(db, key);
@@ -107,6 +102,19 @@ export function createAdminHandlers(deps: AdminDeps) {
       { ok: true },
       { headers: { "Set-Cookie": sessionCookie(createSessionToken(config.sessionSecret, current), isSecure(request)) } },
     );
+  }
+
+  async function login(request: Request): Promise<Response> {
+    const config = deps.getConfig();
+    if (!config) return unavailable();
+    const blocked = checkWrite(request);
+    if (blocked) return blocked;
+    try {
+      return await signIn(request, config);
+    } catch (error) {
+      console.error("admin sign-in failed", error);
+      return errorResponse(500, "internal_error", "Something went wrong. Please try again.");
+    }
   }
 
   function lockedResponse(until: Date, current: Date): Response {
@@ -139,7 +147,8 @@ export function createAdminHandlers(deps: AdminDeps) {
     return async (request: Request): Promise<Response> => {
       const config = deps.getConfig();
       if (!config) return unavailable();
-      const denied = (write ? checkWrite(request) : null) ?? requireAdmin(request, config);
+      // Who you are first (401), then whether the request came from our own page (403).
+      const denied = requireAdmin(request, config) ?? (write ? checkWrite(request) : null);
       if (denied) return denied;
       try {
         return await handle(request, deps.getDb());
@@ -174,25 +183,44 @@ export function createAdminHandlers(deps: AdminDeps) {
     });
   });
 
+  const badDish = () =>
+    errorResponse(400, "bad_request", "Send a dish: mealType, category, chay, region, name, time, ingredients, steps.");
+
+  /** The dish as stored: what was submitted, plus the facts only the database knows. */
+  const stored = (id: string, draft: DishDraft, saved: Saved): AdminDish => ({
+    id,
+    ...draft,
+    retired: saved.retired,
+    updatedAt: saved.updatedAt,
+  });
+
   const createDishHandler = guarded(true, async (request, db) => {
     const input = await readJson(request, dishDraftSchema);
-    if (!input) return errorResponse(400, "bad_request", "Send a dish: mealType, category, chay, region, name, time, ingredients, steps.");
-    const catalog = await readCatalog(db);
-    if (!catalog) return catalogUnavailable();
-
+    if (!input) return badDish();
     const draft = normalizeDraft(input);
-    const issues = validateDish(draft, catalog.dishes);
-    if (issues.length > 0) return validationFailed(issues);
 
-    const id = nextDishId(dishIdPrefix(draft), catalog.dishes.map((dish) => dish.id));
-    const published = await createDish(db, id, draft);
-    return published ? json(published, { status: 201 }) : catalogUnavailable();
+    // Two people adding at the same moment can pick the same next id: the loser reads again and takes the next one.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const catalog = await readCatalog(db);
+      if (!catalog) return catalogUnavailable();
+      const issues = validateDish(draft, catalog.dishes);
+      if (issues.length > 0) return validationFailed(issues);
+
+      const id = nextDishId(dishIdPrefix(draft), catalog.dishes.map((dish) => dish.id));
+      try {
+        const saved = await createDish(db, id, draft);
+        return saved ? json({ version: saved.version, dish: stored(id, draft, saved) }, { status: 201 }) : catalogUnavailable();
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error;
+      }
+    }
+    return errorResponse(500, "internal_error", "Something went wrong. Please try again.");
   });
 
   const updateDishHandler = (request: Request, id: string) =>
     guarded(true, async (req, db) => {
       const input = await readJson(req, dishDraftSchema);
-      if (!input) return errorResponse(400, "bad_request", "Send a dish: mealType, category, chay, region, name, time, ingredients, steps.");
+      if (!input) return badDish();
       const catalog = await readCatalog(db);
       if (!catalog) return catalogUnavailable();
       if (!catalog.dishes.some((dish) => dish.id === id)) return notFound();
@@ -201,23 +229,27 @@ export function createAdminHandlers(deps: AdminDeps) {
       const issues = validateDish(draft, catalog.dishes, id);
       if (issues.length > 0) return validationFailed(issues);
 
-      const published = await updateDish(db, id, draft);
-      return published ? json(published) : notFound();
+      const saved = await updateDish(db, id, draft);
+      return saved ? json({ version: saved.version, dish: stored(id, draft, saved) }) : notFound();
     })(request);
 
   const setHiddenHandler = (request: Request, id: string) =>
     guarded(true, async (req, db) => {
       const input = await readJson(req, hiddenBody);
       if (!input) return errorResponse(400, "bad_request", "Send { retired: true | false }.");
-      const catalog = await readCatalog(db);
+      const catalog = await readAdminCatalog(db);
       if (!catalog) return catalogUnavailable();
       const current = catalog.dishes.find((dish) => dish.id === id);
       if (!current) return notFound();
       // Already in that state: nothing to publish, so no new catalog version.
-      if ((current.retired ?? false) === input.retired) return json({ version: catalog.version, dish: current });
+      if (current.retired === input.retired) return json({ version: catalog.version, dish: current });
 
-      const published = await setRetired(db, id, input.retired);
-      return published ? json(published) : notFound();
+      const saved = await setRetired(db, id, input.retired);
+      if (saved) return json({ version: saved.version, dish: { ...current, retired: saved.retired, updatedAt: saved.updatedAt } });
+      // Someone else changed it in between: report what is there now.
+      const fresh = await readAdminCatalog(db);
+      const dish = fresh?.dishes.find((item) => item.id === id);
+      return fresh && dish ? json({ version: fresh.version, dish }) : notFound();
     })(request);
 
   const notFound = () => errorResponse(404, "not_found", "No dish with that id.");

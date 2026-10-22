@@ -125,9 +125,13 @@ test.describe("the dish list", () => {
     await page.getByRole("button", { name: "Ẩn món" }).click();
     await expect(toast(page, "Đã ẩn “Canh chua cá lóc”. Danh mục lên v13.")).toBeVisible();
     expect(fake.dishes.find((d) => d.id === "c3")?.retired).toBe(true);
+    // Focus stays on that row's button (now "Hiện lại"), never dropped to the page.
+    const show = page.getByRole("button", { name: /^Hiện lại Canh chua cá lóc/ });
+    await expect(show).toBeFocused();
 
-    await page.getByRole("button", { name: /^Hiện lại Canh chua cá lóc/ }).click();
+    await show.click();
     await expect(toast(page, "Đã hiện lại “Canh chua cá lóc”. Danh mục lên v14.")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Ẩn Canh chua cá lóc/ })).toBeFocused();
     expect(fake.dishes.find((d) => d.id === "c3")?.retired).toBe(false);
   });
 });

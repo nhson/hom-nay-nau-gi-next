@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  cleanLines,
+  DISH_PROBLEM_CODES,
   dishIdPrefix,
   mentionsToi,
+  mergeProblems,
   nextDishId,
   normalizeDraft,
+  parseMinutes,
   validateDish,
+  waitsForSubmit,
   type DishDraft,
+  type DishProblem,
 } from "./dish-rules";
 
 function draft(overrides: Partial<DishDraft> = {}): DishDraft {
@@ -160,5 +166,65 @@ describe("nextDishId", () => {
 
   it("ignores ids that are not prefix + number", () => {
     expect(nextDishId("x", ["xa", "x", "x2b", "x4"])).toBe("x5");
+  });
+});
+
+describe("cleanLines", () => {
+  it("trims each line and drops the blank ones, keeping order", () => {
+    expect(cleanLines([" Cà chua ", "", "  ", "Hành"])).toEqual(["Cà chua", "Hành"]);
+  });
+});
+
+describe("parseMinutes", () => {
+  it.each([
+    ["25", 25],
+    [" 25 ", 25],
+    ["", null],
+    ["   ", null],
+  ])("%j -> %j", (text, expected) => {
+    expect(parseMinutes(text)).toBe(expected);
+  });
+
+  it.each(["abc", "2,5", "1e2x"])("keeps %j as not-a-number so validation rejects it", (text) => {
+    expect(Number.isNaN(parseMinutes(text))).toBe(true);
+    expect(validateDish(draft({ time: parseMinutes(text) }), [])).toEqual([{ code: "time-invalid", field: "time" }]);
+  });
+});
+
+describe("which problems wait for a submit attempt", () => {
+  const problem = (code: DishProblem["code"]): DishProblem => ({ code, field: "name" });
+
+  it("only the missing-content ones do: an empty form is not an error until you try to save", () => {
+    expect(waitsForSubmit(problem("name-required"))).toBe(true);
+    expect(waitsForSubmit(problem("ingredients-required"))).toBe(true);
+  });
+
+  it.each(["name-duplicate", "category-required", "category-not-allowed", "time-invalid", "chay-toi"] as const)(
+    "%s shows as soon as it happens",
+    (code) => {
+      expect(waitsForSubmit(problem(code))).toBe(false);
+    },
+  );
+
+  it("covers every rule there is", () => {
+    for (const code of DISH_PROBLEM_CODES) expect(typeof waitsForSubmit(problem(code))).toBe("boolean");
+  });
+});
+
+describe("mergeProblems", () => {
+  const a: DishProblem = { code: "chay-toi", field: "ingredients", index: 1 };
+  const b: DishProblem = { code: "name-duplicate", field: "name" };
+
+  it("adds what the server reported on top of what the page found, without repeating", () => {
+    expect(mergeProblems([a], [a, b])).toEqual([a, b]);
+  });
+
+  it("treats the same rule on a different line as a different problem", () => {
+    const other: DishProblem = { code: "chay-toi", field: "ingredients", index: 2 };
+    expect(mergeProblems([a], [other])).toEqual([a, other]);
+  });
+
+  it("keeps the page's own problems when the server reported none", () => {
+    expect(mergeProblems([a, b], [])).toEqual([a, b]);
   });
 });

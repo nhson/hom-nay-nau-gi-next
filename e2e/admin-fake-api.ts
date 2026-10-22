@@ -1,4 +1,5 @@
 import type { Page, Route } from "@playwright/test";
+import { dishIdPrefix, nextDishId, normalizeDraft } from "../src/domain/dish-rules";
 
 /** The right password for the fake; "khoa" makes the fake answer as if 5 wrong tries had locked sign-in. */
 export const GOOD_PASSWORD = "mat-khau-dung";
@@ -29,12 +30,6 @@ export function seedDishes(): FakeDish[] {
     { id: "m8", mealType: "buacom", category: "man", chay: true, region: "bac", name: "Đậu hũ sốt cà chua", time: 20, ingredients: ["Đậu hũ 3 miếng", "Cà chua 3 quả"], steps: ["Chiên đậu hũ", "Rim cà chua"], retired: false, updatedAt: stamp(15) },
     { id: "t2", mealType: "buatomonuoc", category: null, chay: false, region: "bac", name: "Phở bò", time: 60, ingredients: ["Bánh phở", "Thịt bò"], steps: ["Ninh xương"], retired: false, updatedAt: stamp(1) },
   ];
-}
-
-/** What the real server stores: a trimmed name and no blank ingredient or step lines. */
-function clean<T extends { name: string; ingredients: string[]; steps: string[] }>(draft: T): T {
-  const keep = (lines: string[]) => lines.map((line) => line.trim()).filter(Boolean);
-  return { ...draft, name: draft.name.trim(), ingredients: keep(draft.ingredients), steps: keep(draft.steps) };
 }
 
 export interface FakeAdmin {
@@ -93,10 +88,9 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
 
     const id = decodeURIComponent(path.split("/")[2] ?? "");
     if (path === "/dishes" && method === "POST") {
-      const draft = clean(request.postDataJSON() as Omit<FakeDish, "id" | "retired" | "updatedAt">);
-      const prefix = draft.mealType === "buatomonuoc" ? "t" : draft.category === "canh" ? "c" : draft.category === "man" ? "m" : "x";
-      const next = Math.max(0, ...fake.dishes.filter((d) => d.id.startsWith(prefix)).map((d) => Number(d.id.slice(1)))) + 1;
-      const dish = { ...draft, id: `${prefix}${next}`, retired: false, updatedAt: new Date().toISOString() };
+      const draft = normalizeDraft(request.postDataJSON());
+      const id = nextDishId(dishIdPrefix(draft), fake.dishes.map((d) => d.id));
+      const dish = { ...draft, id, retired: false, updatedAt: new Date().toISOString() };
       fake.dishes.push(dish);
       fake.version += 1;
       return json(route, 201, { version: fake.version, dish });
@@ -104,7 +98,7 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
     const index = fake.dishes.findIndex((d) => d.id === id);
     if (index < 0) return error(route, 404, "not_found");
     if (method === "PUT") {
-      fake.dishes[index] = { ...fake.dishes[index], ...clean(request.postDataJSON() as Omit<FakeDish, "id" | "retired" | "updatedAt">), updatedAt: new Date().toISOString() };
+      fake.dishes[index] = { ...fake.dishes[index], ...normalizeDraft(request.postDataJSON()), updatedAt: new Date().toISOString() };
       fake.version += 1;
       return json(route, 200, { version: fake.version, dish: fake.dishes[index] });
     }

@@ -13,14 +13,18 @@ export interface DishDraft {
   steps: string[];
 }
 
-export type DishProblemCode =
-  | "name-required"
-  | "name-duplicate"
-  | "category-required"
-  | "category-not-allowed"
-  | "ingredients-required"
-  | "time-invalid"
-  | "chay-toi";
+/** Every rule a dish can break. One list, so the API schema and the UI wording cannot drift from it. */
+export const DISH_PROBLEM_CODES = [
+  "name-required",
+  "name-duplicate",
+  "category-required",
+  "category-not-allowed",
+  "ingredients-required",
+  "time-invalid",
+  "chay-toi",
+] as const;
+
+export type DishProblemCode = (typeof DISH_PROBLEM_CODES)[number];
 
 /** What is wrong and where; the wording lives in the UI. `index` is the line within `ingredients` / `steps`. */
 export interface DishProblem {
@@ -37,10 +41,31 @@ export function mentionsToi(text: string): boolean {
   return /(?<![\p{L}\p{M}])tỏi(?![\p{L}\p{M}])/iu.test(text.normalize("NFC"));
 }
 
+/** Trims each line and drops the blank ones. */
+export function cleanLines(lines: readonly string[]): string[] {
+  return lines.map((line) => line.trim()).filter((line) => line !== "");
+}
+
 /** Trims the name and drops blank ingredient and step lines: what is actually stored. */
 export function normalizeDraft(draft: DishDraft): DishDraft {
-  const keep = (lines: string[]) => lines.map((line) => line.trim()).filter((line) => line !== "");
-  return { ...draft, name: draft.name.trim(), ingredients: keep(draft.ingredients), steps: keep(draft.steps) };
+  return { ...draft, name: draft.name.trim(), ingredients: cleanLines(draft.ingredients), steps: cleanLines(draft.steps) };
+}
+
+/** Minutes typed into a form: empty is "no time"; anything that is not a number stays NaN so validation rejects it. */
+export function parseMinutes(text: string): number | null {
+  const trimmed = text.trim();
+  return trimmed === "" ? null : Number(trimmed);
+}
+
+/** "Missing" problems wait until the person tries to save; the rest are worth showing as they type. */
+export function waitsForSubmit(problem: DishProblem): boolean {
+  return problem.code === "name-required" || problem.code === "ingredients-required";
+}
+
+/** The page's own problems plus any the server also reported, each once. */
+export function mergeProblems(own: readonly DishProblem[], reported: readonly DishProblem[]): DishProblem[] {
+  const same = (a: DishProblem, b: DishProblem) => a.code === b.code && a.field === b.field && a.index === b.index;
+  return [...own, ...reported.filter((extra) => !own.some((problem) => same(problem, extra)))];
 }
 
 /**
@@ -92,14 +117,16 @@ export function validateDish(
   return problems;
 }
 
+export type DishIdPrefix = "x" | "c" | "m" | "t";
+
 /** The legacy id prefix: x / c / m for the three Nhóm món, t for Bữa 1 món. */
-export function dishIdPrefix(draft: Pick<DishDraft, "mealType" | "category">): "x" | "c" | "m" | "t" {
+export function dishIdPrefix(draft: Pick<DishDraft, "mealType" | "category">): DishIdPrefix {
   if (draft.mealType === "buatomonuoc") return "t";
   return draft.category === "canh" ? "c" : draft.category === "man" ? "m" : "x";
 }
 
 /** The next free id for a prefix: one more than the highest existing number. */
-export function nextDishId(prefix: string, existingIds: readonly string[]): string {
+export function nextDishId(prefix: DishIdPrefix, existingIds: readonly string[]): string {
   const pattern = new RegExp(`^${prefix}(\\d+)$`);
   let highest = 0;
   for (const id of existingIds) {

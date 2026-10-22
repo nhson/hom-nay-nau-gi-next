@@ -2,8 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import type { Db } from "@/server/catalog/repository";
 import { adminLoginAttempts } from "@/server/db/schema";
 
-export const MAX_FAILURES = 5;
-export const LOCK_MINUTES = 15;
+import { LOCK_MINUTES, MAX_FAILURES } from "@/shared/admin-policy";
 
 /** When the client may try again, or null if it is not locked. */
 export async function lockedUntil(db: Db, key: string, now: Date): Promise<Date | null> {

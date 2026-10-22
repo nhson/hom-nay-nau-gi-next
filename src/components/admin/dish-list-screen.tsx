@@ -257,10 +257,11 @@ export function DishListScreen() {
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
+  // The term comes before its value in the markup; the value is shown above it.
   return (
-    <div className="min-w-24 rounded-2xl border bg-card px-3.5 py-2 max-md:flex-1">
-      <dd className="font-display text-xl font-semibold">{value}</dd>
+    <div className="flex min-w-24 flex-col-reverse rounded-2xl border bg-card px-3.5 py-2 max-md:flex-1">
       <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="font-display text-xl font-semibold">{value}</dd>
     </div>
   );
 }
@@ -328,12 +329,12 @@ function DishRow({
             <span className="sr-only"> {dish.name}</span>
           </Link>
           {hidden ? (
-            <Button variant="ghost" size="sm" className={rowButton} disabled={busy} onClick={onShow}>
+            <Button variant="ghost" size="sm" className={rowButton} aria-disabled={busy || undefined} onClick={() => !busy && onShow()}>
               <Eye aria-hidden /> Hiện lại
               <span className="sr-only"> {dish.name}</span>
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" className={rowButton} disabled={busy} onClick={(event) => onHide(event.currentTarget)}>
+            <Button variant="ghost" size="sm" className={rowButton} aria-disabled={busy || undefined} onClick={(event) => !busy && onHide(event.currentTarget)}>
               <EyeOff aria-hidden /> Ẩn
               <span className="sr-only"> {dish.name}</span>
             </Button>

@@ -1,7 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { SESSION_DAYS } from "@/shared/admin-policy";
 
 export const SESSION_COOKIE = "admin_session";
-export const SESSION_SECONDS = 7 * 24 * 60 * 60;
+export const SESSION_SECONDS = SESSION_DAYS * 24 * 60 * 60;
 
 const sign = (secret: string, payload: string) =>
   createHmac("sha256", secret).update(payload).digest("base64url");
