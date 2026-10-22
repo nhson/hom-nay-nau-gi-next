@@ -71,7 +71,7 @@ Dropped by decision: personal data stays on the device and the term "Hộ gia đ
 
 | ID | Feature | Status |
 |---|---|---|
-| N1 | Installable PWA, works offline | ✅ offline covered by Playwright; install confirmed on a real phone |
+| N1 | Installable PWA, works offline | ✅ offline covered by Playwright. Android/desktop use the browser's own install prompt; iPhone/iPad have none, so Hôm nay shows a one-time install hint (issue #19). A real-iPhone install still needs checking after deploy |
 | N2 | Structured data on Postgres | ✅ Neon via the Vercel Marketplace; Drizzle migrations |
 | N3 | Typed, validated, versioned API | 🟡 Zod schemas on both sides, typed errors, ETag + catalog version. ⛔ **No rate limiting** (read-only, CDN-cached endpoint) |
 | N4 | Official Household feature | ⛔ dropped (ADR-0005) |

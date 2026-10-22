@@ -10,3 +10,4 @@ export * from "./personal";
 export * from "./actions";
 export * from "./selectors";
 export * from "./analytics";
+export * from "./install-hint";

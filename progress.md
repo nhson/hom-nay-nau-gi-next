@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-10-22
-**Active Feature:** none. Next: iPhone install hint (spec issue #19), then the admin page for the dish catalog
+**Active Feature:** feat-013 iPhone install hint (issue #19, branch `feat/ios-install-hint`). Next: the admin page for the dish catalog
 
 ## Status
 
@@ -19,7 +19,7 @@
 
 ### What's In Progress
 
-- [ ] Nothing in flight (feature workflow merged in PR #14: loop in `docs/workflow.md`)
+- [ ] feat-013: iPhone install hint implemented on `feat/ios-install-hint` (domain tests, Playwright incl. axe, UI prototype approved: option B); PR to open after code review
 
 ### What's Next
 

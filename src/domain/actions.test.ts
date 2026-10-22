@@ -240,3 +240,23 @@ describe("ensure-today with a menu that references a dish which no longer exists
     expect(reduce(before, { type: "ensure-today" }, ctx()).state).toBe(before);
   });
 });
+
+describe("dismiss-install-hint", () => {
+  it("remembers the dismissal and leaves the rest of the state alone", () => {
+    const menu = { date: TODAY, dishIds: ["x1", "c1", "m1"], mealType: "buacom" as const };
+    const before = stateWith({ todayMenu: menu, chayFilter: true, ticks: { hành: true } });
+    const { state } = reduce(before, { type: "dismiss-install-hint" }, ctx());
+    expect(state).toEqual({ ...before, installHintDismissed: true });
+  });
+
+  it("changes nothing when it was already dismissed", () => {
+    const before = stateWith({ installHintDismissed: true });
+    expect(reduce(before, { type: "dismiss-install-hint" }, ctx()).state).toBe(before);
+  });
+
+  it("emits no analytics event and no notice", () => {
+    const result = reduce(stateWith(), { type: "dismiss-install-hint" }, ctx());
+    expect(result.events).toEqual([]);
+    expect(result.notice).toBeUndefined();
+  });
+});

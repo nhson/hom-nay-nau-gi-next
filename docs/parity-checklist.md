@@ -44,7 +44,7 @@ Legend: **E2E** = Playwright journey in `e2e/`, **Unit** = Vitest in `src/`.
 2. Decide the domain cutover; then update product principle #3 ("no framework, no build step") in the old repo's `pm/context/product.md`.
 3. Optional: protect `main` so CI must pass before merge; revisit analytics visibility if the north-star metric (`mark_cooked` per week) matters (needs Vercel Pro or our own event counting).
 
-Done: Vercel project linked to GitHub, Neon provisioned/migrated/seeded, Web Analytics enabled, install on a real phone.
+Done: Vercel project linked to GitHub, Neon provisioned/migrated/seeded, Web Analytics enabled, install on a real phone (Android/desktop; iPhone needs the install hint from issue #19 and a re-check).
 
 ## Notes on deliberate differences
 
