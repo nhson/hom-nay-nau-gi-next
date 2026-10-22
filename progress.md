@@ -19,7 +19,7 @@
 
 ### What's In Progress
 
-- [ ] feat-013: iPhone install hint implemented on `feat/ios-install-hint` (domain tests, Playwright incl. axe, UI prototype approved: option B); PR to open after code review
+- [ ] feat-013: iPhone install hint implemented on `feat/ios-install-hint` (domain tests, Playwright incl. axe, UI prototype approved: option B); code review done and fixed; PR to open. After deploy: check the hint and "Thêm vào MH chính" on a real iPhone (Safari and Chrome), since automated tests only emulate the user agent
 
 ### What's Next
 

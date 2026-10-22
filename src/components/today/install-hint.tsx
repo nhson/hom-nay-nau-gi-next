@@ -7,11 +7,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useApp } from "../app-provider";
 
-interface BrowserState {
-  platform: InstallPlatform;
-  standalone: boolean;
-}
-
 const STANDALONE_QUERY = "(display-mode: standalone)";
 
 function subscribe(onChange: () => void) {
@@ -20,23 +15,18 @@ function subscribe(onChange: () => void) {
   return () => query.removeEventListener("change", onChange);
 }
 
-/** A primitive snapshot ("ios:tab") so React can compare it; null on the server (no window to ask). */
-function getSnapshot(): string {
-  const platform = detectInstallPlatform({
-    userAgent: navigator.userAgent,
-    maxTouchPoints: navigator.maxTouchPoints,
-  });
-  // `navigator.standalone` is iOS's own flag, set when launched from the Home Screen.
-  const standalone =
-    window.matchMedia(STANDALONE_QUERY).matches || (navigator as { standalone?: boolean }).standalone === true;
-  return `${platform}:${standalone ? "standalone" : "tab"}`;
-}
+const getPlatform = (): InstallPlatform | null =>
+  detectInstallPlatform({ userAgent: navigator.userAgent, maxTouchPoints: navigator.maxTouchPoints });
 
-function useBrowserState(): BrowserState | null {
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => null);
-  if (snapshot === null) return null;
-  const [platform, mode] = snapshot.split(":");
-  return { platform: platform as InstallPlatform, standalone: mode === "standalone" };
+// `navigator.standalone` is iOS's own flag, set when launched from the Home Screen.
+const getStandalone = () =>
+  window.matchMedia(STANDALONE_QUERY).matches || (navigator as { standalone?: boolean }).standalone === true;
+
+/** What the browser says about itself; null on the server and during hydration (there is no window to ask). */
+function useBrowserFacts(): { platform: InstallPlatform; standalone: boolean } | null {
+  const platform = useSyncExternalStore(subscribe, getPlatform, () => null);
+  const standalone = useSyncExternalStore(subscribe, getStandalone, () => false);
+  return platform === null ? null : { platform, standalone };
 }
 
 /** A tiny stand-in for an iOS button, so people can recognise the icon they are told to tap. */
@@ -57,7 +47,7 @@ function Glyph({ children }: { children: React.ReactNode }) {
  */
 export function InstallHint() {
   const { ready, state, dispatch } = useApp();
-  const browser = useBrowserState();
+  const browser = useBrowserFacts();
   const [open, setOpen] = useState(false);
   const bodyId = useId();
 

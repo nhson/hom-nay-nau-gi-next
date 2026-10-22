@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   title: "Hôm nay nấu gì?",
   applicationName: "Hôm nay nấu gì?",
   appleWebApp: { capable: true, title: "Nấu gì?", statusBarStyle: "default" },
-  // Next emits only the unprefixed `mobile-web-app-capable`; iOS before 16.4 needs Apple's own tag to open the installed app without browser chrome.
+  // Next emits only the unprefixed tag; iOS before 16.4 needs Apple's to open the installed app standalone.
   other: { "apple-mobile-web-app-capable": "yes" },
   description:
     "Gợi ý bữa cơm gia đình mỗi ngày: 3 món hoặc 1 món, kèm cách nấu và danh sách đi chợ.",

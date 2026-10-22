@@ -45,10 +45,24 @@ test.describe("on an iPhone browser tab", () => {
     await page.reload();
     await expect(menuNames(page).first()).toBeVisible();
     await expect(hint(page)).toBeHidden();
+    expect((await readPersonal(page)).installHintDismissed).toBe(true);
   });
 
-  test("is not shown once the app runs from the Home Screen", async ({ page }) => {
+  test("is not shown once the app runs from the Home Screen (iOS flag)", async ({ page }) => {
     await page.addInitScript(() => Object.defineProperty(navigator, "standalone", { value: true }));
+    await openToday(page);
+    await expect(hint(page)).toBeHidden();
+  });
+
+  test("is not shown in standalone display mode (media query)", async ({ page }) => {
+    // Playwright cannot emulate display-mode, so answer that one query the way an installed app would.
+    await page.addInitScript(() => {
+      const real = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) =>
+        query === "(display-mode: standalone)"
+          ? ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} } as unknown as MediaQueryList)
+          : real(query);
+    });
     await openToday(page);
     await expect(hint(page)).toBeHidden();
   });
@@ -65,7 +79,8 @@ test.describe("on an iPhone browser tab", () => {
   }
 });
 
-test("Android and desktop browsers never see it", async ({ page }) => {
+// The phone project is a Pixel 7: an Android Chrome user agent.
+test("Android browsers never see it", async ({ page }) => {
   await openToday(page);
   await expect(hint(page)).toBeHidden();
 });
