@@ -39,4 +39,4 @@
 
 ## Recommended Next Step
 
-- Ask the owner what to build next and run the workflow in `docs/workflow.md` (grill, spec, implement). Owner checks still open: the installed iPhone app (install hint, status bar colour) and a VoiceOver pass on /admin.
+- Ask the owner what to build next and run the workflow in `docs/workflow.md` (grill, spec, implement). Owner check still open: a VoiceOver pass on /admin. The install hint and the theme switch were verified on a real iPhone.

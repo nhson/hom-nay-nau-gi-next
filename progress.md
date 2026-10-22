@@ -21,7 +21,7 @@
 
 ### What's In Progress
 
-- [ ] Owner checks still open: the install hint and the theme switch on a real iPhone (incl. the installed app status bar colour), and a short VoiceOver pass on /admin
+- [ ] Owner check still open: a short VoiceOver pass on /admin. (The install hint and the theme switch, including the installed app status bar colour, were checked on a real iPhone.)
 
 ### What's Next
 

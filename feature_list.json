@@ -128,7 +128,7 @@
         "feat-008"
       ],
       "status": "done",
-      "evidence": "PR #20 merged (Closes #19): 214 unit/contract + 27 Playwright tests (incl. axe) green, code-review run and fixed; live on production (apple-mobile-web-app-capable present). Still to check by hand: the hint and Thêm vào MH chính on a real iPhone (Safari and Chrome)"
+      "evidence": "PR #20 merged (Closes #19): 214 unit/contract + 27 Playwright tests (incl. axe) green, code-review run and fixed; live on production (apple-mobile-web-app-capable present). Checked by the owner on a real iPhone (Safari and Chrome): the hint and Thêm vào MH chính work"
     },
     {
       "id": "feat-014",
@@ -148,7 +148,7 @@
         "feat-014"
       ],
       "status": "done",
-      "evidence": "PR #26 merged (Closes #25): ./init.sh green (327 unit, 81 Playwright incl. 20 new in e2e/theme.spec.ts and axe with the menu open in both themes); code review run and fixed; live on production (the page carries the theme script and the Giao diện button). Still to check by hand: the installed iPhone app's status bar colour."
+      "evidence": "PR #26 merged (Closes #25): ./init.sh green (327 unit, 81 Playwright incl. 20 new in e2e/theme.spec.ts and axe with the menu open in both themes); code review run and fixed; live on production (the page carries the theme script and the Giao diện button). Checked by the owner on a real iPhone, including the installed app's status bar colour following the choice."
     }
   ]
 }
