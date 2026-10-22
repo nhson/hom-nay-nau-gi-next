@@ -31,3 +31,7 @@ _Avoid_: Món đã xoá, món ngừng dùng.
 **Quản trị viên**:
 Người duy nhất được đăng nhập vào app: chủ của app, có toàn quyền cập nhật **Danh mục món** (thêm, sửa, ẩn, hiện lại món) qua trang quản trị. Không có vai trò hay phân quyền, không có tài khoản cho người dùng thường: mọi người còn lại chỉ là người dùng ẩn danh, đọc Danh mục món và giữ dữ liệu cá nhân trên chính thiết bị của mình.
 _Avoid_: User, Account, Tài khoản, Người dùng, Admin (trong chữ hiển thị cho người dùng) — app không có khái niệm tài khoản người dùng.
+
+**Giao diện**:
+Cách app hiện màu: **Sáng**, **Tối** hoặc **Theo thiết bị** (mặc định, theo cài đặt sáng/tối của máy). Người dùng chọn bằng nút "Giao diện" ở thanh đầu trang của app và của trang quản trị; lựa chọn lưu trên từng thiết bị, dùng chung cho cả app và trang quản trị, không gửi lên máy chủ và không thuộc dữ liệu cá nhân (lịch sử, yêu thích). Khi chọn Sáng hoặc Tối, cả màu thanh trạng thái/thanh địa chỉ và ô nhập liệu cũng theo lựa chọn đó.
+_Avoid_: Chế độ tối, Dark mode, Theme — dùng "Giao diện" và ba giá trị trên.
