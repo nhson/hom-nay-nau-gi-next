@@ -127,8 +127,8 @@
       "dependencies": [
         "feat-008"
       ],
-      "status": "in-progress",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PR #20 merged (Closes #19): 214 unit/contract + 27 Playwright tests (incl. axe) green, code-review run and fixed; live on production (apple-mobile-web-app-capable present). Still to check by hand: the hint and Thêm vào MH chính on a real iPhone (Safari and Chrome)"
     }
   ]
 }

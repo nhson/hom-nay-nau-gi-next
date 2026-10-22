@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-10-22
-**Active Feature:** feat-013 iPhone install hint (issue #19, branch `feat/ios-install-hint`). Next: the admin page for the dish catalog
+**Active Feature:** none. Next: the admin page for the dish catalog (UI prototype first, approval before code)
 
 ## Status
 
@@ -19,15 +19,16 @@
 
 ### What's In Progress
 
-- [ ] feat-013: iPhone install hint implemented on `feat/ios-install-hint` (domain tests, Playwright incl. axe, UI prototype approved: option B); code review done and fixed; PR to open. After deploy: check the hint and "Thêm vào MH chính" on a real iPhone (Safari and Chrome), since automated tests only emulate the user agent
+- [ ] Owner to check the install hint on a real iPhone (Safari and Chrome) after the feat-013 deploy; nothing else in flight
 
 ### What's Next
 
-1. `/implement #19`: iPhone install hint (iOS has no install prompt; real-device test failed to install)
-2. Write the admin page spec (`/to-spec`; decisions are settled in ADR-0004/0005 and the grill summary) and implement it; the dish library is read-only until it exists
-3. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
+1. Admin page: prototype the UI with `/ui-ux-pro-max`, get approval, write the spec (`/to-spec`), then `/implement`
+2. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
 
 ## Blockers / Risks
+
+- [ ] The offline Playwright journey (`works offline once opened`) is flaky in CI (failed twice on one run, passed on re-run): re-run before suspecting the change
 
 - [ ] Custom analytics events are not visible on Vercel Hobby (owner chose to stay): the north-star metric (mark_cooked/week) is unobservable
 - [ ] No branch protection: Vercel deploys in parallel with CI
