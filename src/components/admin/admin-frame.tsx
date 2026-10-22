@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { Button, buttonVariants } from "@/components/ui/button";
 import { adminApi, AdminApiError, EXPORT_URL } from "@/lib/admin-api";
 import { cn } from "@/lib/utils";
+import { ThemeSwitch } from "../theme-switch";
 
 interface AdminContextValue {
   /** The catalog version as last seen by this page (shown in the top bar). */
@@ -97,6 +98,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
             <LogOut aria-hidden />
             <span className="max-md:sr-only">Đăng xuất</span>
           </Button>
+          <ThemeSwitch />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-3.5 pt-6 pb-16 md:px-6 md:pt-8">{children}</main>

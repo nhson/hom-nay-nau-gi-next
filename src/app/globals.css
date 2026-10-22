@@ -2,8 +2,11 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Theme follows the system setting (no manual toggle), so `dark:` is the media query. */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/*
+ * Giao diện: the theme is the `data-theme` attribute on <html>, set before first paint from the person's
+ * choice (Sáng, Tối) or the device (Theo thiết bị): see ThemeProvider. `dark:` follows that attribute.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -76,34 +79,38 @@
   --cat-bowl: #3d6a8a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #181d17;
-    --foreground: #f1ecdd;
-    --card: #212720;
-    --card-foreground: #f1ecdd;
-    --popover: #212720;
-    --popover-foreground: #f1ecdd;
-    --primary: #7cae9b;
-    --primary-foreground: #12211c;
-    --secondary: #262c24;
-    --secondary-foreground: #f1ecdd;
-    --muted: #262c24;
-    --muted-foreground: #a39c89;
-    --accent: #262c24;
-    --accent-foreground: #f1ecdd;
-    --destructive: #e08066;
-    --border: #333a30;
-    --input: #333a30;
-    --ring: #7cae9b;
-    --turmeric: #e9a94e;
-    --turmeric-foreground: #20160a;
-    --turmeric-text: #e9a94e;
-    --cat-xao: #86c595;
-    --cat-canh: #e3b25a;
-    --cat-man: #ee8f72;
-    --cat-bowl: #86b4d8;
-  }
+/* Dark palette. `color-scheme` makes native controls and scrollbars match the theme. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #181d17;
+  --foreground: #f1ecdd;
+  --card: #212720;
+  --card-foreground: #f1ecdd;
+  --popover: #212720;
+  --popover-foreground: #f1ecdd;
+  --primary: #7cae9b;
+  --primary-foreground: #12211c;
+  --secondary: #262c24;
+  --secondary-foreground: #f1ecdd;
+  --muted: #262c24;
+  --muted-foreground: #a39c89;
+  --accent: #262c24;
+  --accent-foreground: #f1ecdd;
+  --destructive: #e08066;
+  --border: #333a30;
+  --input: #333a30;
+  --ring: #7cae9b;
+  --turmeric: #e9a94e;
+  --turmeric-foreground: #20160a;
+  --turmeric-text: #e9a94e;
+  --cat-xao: #86c595;
+  --cat-canh: #e3b25a;
+  --cat-man: #ee8f72;
+  --cat-bowl: #86b4d8;
 }
 
 @layer base {
@@ -112,6 +119,7 @@
   }
   html {
     @apply font-sans;
+    /* Until the theme attribute is set (it is, before first paint), native controls follow the device as before. */
     color-scheme: light dark;
   }
   body {

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { BAR_COLOUR } from "@/lib/theme";
 import { beVietnam, fraunces } from "../fonts";
 import "../globals.css";
 
@@ -15,17 +17,19 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbf7ee" },
-    { media: "(prefers-color-scheme: dark)", color: "#181d17" },
+    { media: "(prefers-color-scheme: light)", color: BAR_COLOUR.light },
+    { media: "(prefers-color-scheme: dark)", color: BAR_COLOUR.dark },
   ],
 };
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="vi" className={`${beVietnam.variable} ${fraunces.variable} h-full`}>
+    <html lang="vi" className={`${beVietnam.variable} ${fraunces.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full">
-        {children}
-        <Toaster position="bottom-center" duration={6000} closeButton />
+        <ThemeProvider>
+          {children}
+          <Toaster position="bottom-center" duration={6000} closeButton />
+        </ThemeProvider>
       </body>
     </html>
   );

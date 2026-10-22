@@ -4,7 +4,9 @@ import { AppProvider } from "@/components/app-provider";
 import { AppShell } from "@/components/app-shell";
 import { PwaProvider } from "@/components/pwa-provider";
 import { UpdatePrompt } from "@/components/update-prompt";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { BAR_COLOUR } from "@/lib/theme";
 import { beVietnam, fraunces } from "../fonts";
 import "../globals.css";
 
@@ -23,23 +25,25 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbf7ee" },
-    { media: "(prefers-color-scheme: dark)", color: "#181d17" },
+    { media: "(prefers-color-scheme: light)", color: BAR_COLOUR.light },
+    { media: "(prefers-color-scheme: dark)", color: BAR_COLOUR.dark },
   ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="vi" className={`${beVietnam.variable} ${fraunces.variable} h-full`}>
+    <html lang="vi" className={`${beVietnam.variable} ${fraunces.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full">
-        <PwaProvider>
-          <AppProvider>
-            <AppShell>{children}</AppShell>
-            <Toaster position="top-center" />
-            <UpdatePrompt />
-            <Analytics />
-          </AppProvider>
-        </PwaProvider>
+        <ThemeProvider>
+          <PwaProvider>
+            <AppProvider>
+              <AppShell>{children}</AppShell>
+              <Toaster position="top-center" />
+              <UpdatePrompt />
+              <Analytics />
+            </AppProvider>
+          </PwaProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
