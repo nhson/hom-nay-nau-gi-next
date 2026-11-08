@@ -3,8 +3,8 @@
 ## Current Objective
 
 - Goal: feat-016 (spec #30), Món chờ duyệt + tải ảnh công thức: AI-read recipe photos wait on a Chờ duyệt tab until the Quản trị viên approves them.
-- Current status: built and verified on `feat/review-queue`; PR open with base `grill/recipe-review-queue` (it retargets to `main` once PR #29 merges). Not merged.
-- Branch / commit: `feat/review-queue`
+- Current status: live. PR #32 merged (a4b34fb), migration 0002 applied to production, `OPENROUTER_API_KEY` set; Next.js upgraded to 16.4.5 (PR #33). Only the owner's real-photo check remains.
+- Branch / commit: `main`; next feature is feat-017 (spec #31)
 
 ## Completed This Session
 
