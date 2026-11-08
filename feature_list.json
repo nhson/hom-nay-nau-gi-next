@@ -158,7 +158,7 @@
         "feat-014"
       ],
       "status": "done",
-      "evidence": "./init.sh green on feat/review-queue: 395 unit/contract (25 new domain tests in pending-dish.test.ts, 43 new in review.contract.test.ts with a fake RecipeReader), build, 94 Playwright (13 new in e2e/review.spec.ts: upload -> edit -> Lưu -> Duyệt journey, Bỏ, failure messages, axe light+dark at phone width). Screens checked in light and dark at phone width. Not yet: real OpenRouter call (no key yet), migration 0002 on production, PR merge."
+      "evidence": "./init.sh green on feat/review-queue: 395 unit/contract (25 new domain tests in pending-dish.test.ts, 43 new in review.contract.test.ts with a fake RecipeReader), build, 94 Playwright (13 new in e2e/review.spec.ts: upload -> edit -> Lưu -> Duyệt journey, Bỏ, failure messages, axe light+dark at phone width). Screens checked in light and dark at phone width. Not yet: real OpenRouter call (no key yet), migration 0002 on production, PR merge. PR #32 merged (Closes #30) after a two-axis code review (no blocking findings); CI green; migration 0002_pending_dishes applied to production (owner-approved); production health ok, catalog still v2, /api/v1/admin/pending answers 401 without a session; OPENROUTER_API_KEY set in Production. Real-photo check on a phone still to do."
     },
     {
       "id": "feat-017",
@@ -175,8 +175,8 @@
       "name": "Next.js security upgrade (16.4.0 → 16.4.5)",
       "description": "Small tweak: next and eslint-config-next 16.4.0 → 16.4.5 (latest patch) to clear the known security advisory; next build stopped with SecurityFatalError on 16.4.0. No code changes.",
       "dependencies": [],
-      "status": "in-progress",
-      "evidence": "./init.sh green on the branch: lint, typecheck, 327 unit/contract, build (twice, no SecurityFatalError), 81 Playwright."
+      "status": "done",
+      "evidence": "PR #33 merged: ./init.sh green (327 unit, 81 Playwright), build twice with no SecurityFatalError; main on Next.js 16.4.5."
     },
     {
       "id": "feat-019",
