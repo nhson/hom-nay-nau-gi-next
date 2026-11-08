@@ -56,3 +56,37 @@ export const catalogMeta = pgTable(
   },
   (t) => [check("catalog_meta_singleton", sql`${t.id} = 1`)],
 );
+
+/**
+ * Món chờ duyệt (ADR-0006): dishes an AI model proposed, waiting for the Quản trị viên. Never read by
+ * the public catalog or the export. The draft columns are deliberately looser than `dishes` (a proposal
+ * may be incomplete); Duyệt runs the full dish rules. Warnings are derived when read, never stored.
+ */
+export const pendingDishes = pgTable(
+  "pending_dishes",
+  {
+    id: text("id").primaryKey(),
+    /** `photo`: Ảnh tải lên. `agent`: Tác nhân thu thập (spec B). */
+    sourceKind: text("source_kind").notNull(),
+    /** The page the dish came from (agent only). */
+    sourceUrl: text("source_url"),
+    /** The model that produced it, as OpenRouter reported it. */
+    model: text("model"),
+    mealType: text("meal_type").notNull(),
+    category: text("category"),
+    chay: boolean("chay").notNull().default(false),
+    region: text("region"),
+    name: text("name").notNull().default(""),
+    timeMinutes: integer("time_minutes"),
+    ingredients: text("ingredients").array().notNull(),
+    steps: text("steps").array().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("pending_dishes_source_kind_valid", sql`${t.sourceKind} in ('photo', 'agent')`),
+    check("pending_dishes_meal_type_valid", sql`${t.mealType} in ('buacom', 'buatomonuoc')`),
+    check("pending_dishes_category_valid", sql`${t.category} is null or ${t.category} in ('xao', 'canh', 'man')`),
+    check("pending_dishes_region_valid", sql`${t.region} is null or ${t.region} in ('bac', 'trung', 'nam')`),
+  ],
+);

@@ -3,7 +3,11 @@ import {
   adminCatalogResponseSchema,
   adminDishResponseSchema,
   apiErrorSchema,
+  pendingDishResponseSchema,
+  pendingListResponseSchema,
   type AdminCatalogResponse,
+  type PendingDish,
+  type PendingListResponse,
   type AdminDishResponse,
   type DishIssue,
 } from "@/shared/schemas";
@@ -70,5 +74,27 @@ export const adminApi = {
     return adminDishResponseSchema.parse(
       await call(`/dishes/${encodeURIComponent(id)}`, { method: "PATCH", body: { retired } }),
     );
+  },
+
+  // Món chờ duyệt
+  async listPending(): Promise<PendingListResponse> {
+    return pendingListResponseSchema.parse(await call("/pending"));
+  },
+  /** `photos` are data URLs, already shrunk on this device. */
+  async readPhotos(photos: string[]): Promise<PendingDish> {
+    return pendingDishResponseSchema.parse(await call("/pending/photos", { method: "POST", body: { photos } })).pending;
+  },
+  async getPending(id: string): Promise<PendingDish> {
+    return pendingDishResponseSchema.parse(await call(`/pending/${encodeURIComponent(id)}`)).pending;
+  },
+  async updatePending(id: string, draft: DishDraft): Promise<PendingDish> {
+    return pendingDishResponseSchema.parse(await call(`/pending/${encodeURIComponent(id)}`, { method: "PUT", body: draft })).pending;
+  },
+  async discardPending(id: string): Promise<void> {
+    await call(`/pending/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+  /** Duyệt: publishes the (edited) draft as a dish. */
+  async approvePending(id: string, draft: DishDraft): Promise<AdminDishResponse> {
+    return adminDishResponseSchema.parse(await call(`/pending/${encodeURIComponent(id)}/approve`, { method: "POST", body: draft }));
   },
 };

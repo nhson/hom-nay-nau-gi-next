@@ -17,7 +17,7 @@ export interface Saved {
  * response needs, so nothing is read after the commit that could fail and misreport a saved change.
  */
 
-const lines = (values: string[]) => sql`ARRAY(
+export const lines = (values: string[]) => sql`ARRAY(
   SELECT line FROM jsonb_array_elements_text(${JSON.stringify(values)}::jsonb) WITH ORDINALITY AS t(line, n) ORDER BY n
 )`;
 
@@ -25,7 +25,7 @@ const bump = sql`UPDATE catalog_meta SET version = version + 1, updated_at = now
   WHERE id = 1 AND EXISTS (SELECT 1 FROM changed) RETURNING version`;
 
 /** Runs the statement; null when nothing was published (the dish or the catalog was not there). */
-async function publish(db: Db, statement: ReturnType<typeof sql>): Promise<Saved | null> {
+export async function publish(db: Db, statement: ReturnType<typeof sql>): Promise<Saved | null> {
   const result = await db.execute(statement);
   const rows = (Array.isArray(result) ? result : result.rows) as {
     version: number | string;

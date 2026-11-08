@@ -1,4 +1,5 @@
 import { createAdminHandlers, type AdminConfig } from "./handlers";
+import type { RecipeReader } from "./recipe-reader";
 import type { Db } from "@/server/catalog/repository";
 
 export const PASSPHRASE = "correct horse battery staple";
@@ -6,9 +7,18 @@ export const SESSION_SECRET = "s".repeat(48);
 export const START = Date.UTC(2026, 9, 22, 3, 0, 0);
 
 /** Test harness: admin handlers over a test database with a controllable clock. */
-export function createAdminKit(getDb: () => Db, config: AdminConfig | null = { passphrase: PASSPHRASE, sessionSecret: SESSION_SECRET }) {
+export function createAdminKit(
+  getDb: () => Db,
+  config: AdminConfig | null = { passphrase: PASSPHRASE, sessionSecret: SESSION_SECRET },
+  reader?: RecipeReader,
+) {
   let nowMs = START;
-  const handlers = createAdminHandlers({ getDb, getConfig: () => config, now: () => new Date(nowMs) });
+  const handlers = createAdminHandlers({
+    getDb,
+    getConfig: () => config,
+    now: () => new Date(nowMs),
+    getReader: reader ? () => reader : undefined,
+  });
 
   function request(
     path: string,

@@ -2,6 +2,7 @@
 
 import { Download, LogOut } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,6 +16,9 @@ interface AdminContextValue {
   setVersion: (version: number) => void;
   /** The session is gone: go to sign-in and come back to this page afterwards. */
   requireLogin: () => void;
+  /** How many Món chờ duyệt are waiting (the Chờ duyệt tab badge); null until known. */
+  pendingCount: number | null;
+  setPendingCount: (count: number) => void;
 }
 
 const AdminContext = createContext<AdminContextValue | null>(null);
@@ -33,6 +37,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [status, setStatus] = useState<Status>("checking");
   const [version, setVersion] = useState<number | null>(null);
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
 
   const requireLogin = useCallback(() => {
     router.replace(`/admin/login?next=${encodeURIComponent(pathname)}`);
@@ -53,7 +58,23 @@ export function AdminFrame({ children }: { children: ReactNode }) {
     };
   }, [requireLogin]);
 
-  const value = useMemo(() => ({ version, setVersion, requireLogin }), [version, requireLogin]);
+  // The badge count. A failure only leaves the badge out; the tab itself still works.
+  useEffect(() => {
+    if (status !== "ready") return;
+    let cancelled = false;
+    adminApi
+      .listPending()
+      .then((result) => !cancelled && setPendingCount(result.items.length))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
+  const value = useMemo(
+    () => ({ version, setVersion, requireLogin, pendingCount, setPendingCount }),
+    [version, requireLogin, pendingCount],
+  );
 
   if (status === "unavailable") {
     return <Notice title="Trang quản trị chưa được bật" text="Chưa cài mật khẩu quản trị cho trang web này." />;
@@ -100,9 +121,40 @@ export function AdminFrame({ children }: { children: ReactNode }) {
           </Button>
           <ThemeSwitch />
         </div>
+        <nav aria-label="Trang quản trị" className="mx-auto flex max-w-6xl gap-1 px-3.5 md:px-6">
+          <Tab href="/admin" current={!pathname.startsWith("/admin/review")}>
+            Danh mục món
+          </Tab>
+          <Tab href="/admin/review" current={pathname.startsWith("/admin/review")}>
+            Chờ duyệt
+            {pendingCount !== null && pendingCount > 0 && (
+              <>
+                <span aria-hidden className="ml-1.5 inline-grid min-w-5 place-items-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">
+                  {pendingCount}
+                </span>
+                <span className="sr-only">: {pendingCount} món đang chờ</span>
+              </>
+            )}
+          </Tab>
+        </nav>
       </header>
       <main className="mx-auto max-w-6xl px-3.5 pt-6 pb-16 md:px-6 md:pt-8">{children}</main>
     </AdminContext.Provider>
+  );
+}
+
+function Tab({ href, current, children }: { href: string; current: boolean; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-current={current ? "page" : undefined}
+      className={cn(
+        "inline-flex h-11 items-center border-b-2 px-3 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        current ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+    </Link>
   );
 }
 
