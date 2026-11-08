@@ -2,8 +2,8 @@
 
 ## Current State
 
-**Last Updated:** 2026-10-22
-**Active Feature:** none. Phase 2 so far: the iPhone install hint, the admin page and the Giao diện (theme) switch are live
+**Last Updated:** 2026-11-08
+**Active Feature:** feat-016 Món chờ duyệt + tải ảnh công thức (spec #30), built on `feat/review-queue`, PR open, not merged. Spec B (#31, feat-017) is next
 
 ## Status
 
@@ -17,17 +17,22 @@
 - [x] Admin page decisions grilled and recorded (PR #18): ADR-0004 (database is the catalog source of truth), ADR-0005 (personal data stays on the device; Hộ gia đình dropped), glossary Quản trị viên / Món đã ẩn
 - [x] feat-014 admin page live (PR #23, issue #22): sign-in, list, add/edit, hide/show, export; migration 0001 applied; the owner saved a real edit and the public catalog went to v2
 - [x] feat-015 Giao diện switch live (PR #26, issue #25): Sáng / Tối / Theo thiết bị in the app header, the admin top bar and the sign-in page
+- [x] Phase 2 ideas grilled (PR #29): Món chờ duyệt, Nguồn công thức, Tác nhân thu thập; ADR-0006 (AI dishes wait for review), ADR-0007 (allowed sources, free models via OpenRouter); specs #30 (A) and #31 (B)
+- [x] feat-016 built (spec #30): Chờ duyệt tab, photo upload read by a free OpenRouter model, warnings, Lưu / Duyệt / Bỏ; `./init.sh` green (395 unit, 94 Playwright)
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
 
-- [ ] Nothing in flight
+- [ ] feat-016 PR (base `grill/recipe-review-queue`, retargets to `main` after PR #29 merges): owner review, then merge
+- [ ] Before feat-016 works in production: owner adds `OPENROUTER_API_KEY` in Vercel; migration `0002_pending_dishes` applied to production (`db:migrate`, owner approval) after merge; one real photo read on a phone
 
 ### What's Next
 
-1. Prove the single-statement saves are fine on the real Neon driver beyond the first edit (they worked for one real save); nothing further needed unless something fails
-2. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
-3. Next feature: run `/grill-with-docs` for the owner's next idea (candidates: sort and preview toggle on /admin, which were deferred)
+1. feat-016: merge, apply migration 0002, add the OpenRouter key, try a real photo (check the free model reads Vietnamese well)
+2. feat-017 (spec #31): Tác nhân thu thập, reusing the Món chờ duyệt table and the RecipeReader port
+3. Prove the single-statement saves are fine on the real Neon driver beyond the first edit (they worked for one real save); nothing further needed unless something fails
+4. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
+5. Later: grill push notifications (spec C); run `/grill-with-docs` for the owner's next idea (candidates: sort and preview toggle on /admin, which were deferred)
 
 ## Blockers / Risks
 
@@ -35,6 +40,9 @@
 - [ ] The admin redirect to sign-in happens in the browser after a session check (the page shell is static), not as a server redirect; nothing private is in the shell
 - [ ] One-off: the admin accessibility check "edit form after a failed submit (light)" failed once during a full `./init.sh` right after a build and then passed 10/10 reruns; if it recurs, capture the violation text
 - [ ] The offline Playwright journey (`works offline once opened`) is flaky in CI (failed twice on one run, passed on re-run): re-run before suspecting the change
+
+- [ ] Next.js 16.4.0 reports a known security advisory: `next build` stops on every other run with `SecurityFatalError` and a `next upgrade --agent=security` nudge, then passes on retry. `./init.sh` may need a second run. Upgrade Next.js as its own small change
+- [ ] Free OpenRouter models change often and are capped (about 50 calls a day without credit); a model id can disappear. Change `OPENROUTER_MODELS` or the default list in `openrouter-reader.ts`
 
 - [ ] Custom analytics events are not visible on Vercel Hobby (owner chose to stay): the north-star metric (mark_cooked/week) is unobservable
 - [ ] No branch protection: Vercel deploys in parallel with CI

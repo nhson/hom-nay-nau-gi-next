@@ -153,12 +153,12 @@
     {
       "id": "feat-016",
       "name": "Món chờ duyệt + tải ảnh công thức (spec A)",
-      "description": "Chờ duyệt tab on /admin: upload 1–4 recipe photos, a free OpenRouter model turns them into a Món chờ duyệt with derived warnings; Lưu / Duyệt / Bỏ; Duyệt reuses the add-dish save in one statement. Spec: issue #30. ADR-0006, ADR-0007. Needs OPENROUTER_API_KEY in Vercel (owner).",
+      "description": "Chờ duyệt tab on /admin: upload 1–4 recipe photos, a free OpenRouter model turns them into a Món chờ duyệt with derived warnings; Lưu / Duyệt / Bỏ; Duyệt reuses the add-dish save in one statement. Spec: issue #30. ADR-0006, ADR-0007. Needs OPENROUTER_API_KEY in Vercel (owner). Branch: feat/review-queue.",
       "dependencies": [
         "feat-014"
       ],
-      "status": "not-started",
-      "evidence": ""
+      "status": "done",
+      "evidence": "./init.sh green on feat/review-queue: 395 unit/contract (25 new domain tests in pending-dish.test.ts, 43 new in review.contract.test.ts with a fake RecipeReader), build, 94 Playwright (13 new in e2e/review.spec.ts: upload -> edit -> Lưu -> Duyệt journey, Bỏ, failure messages, axe light+dark at phone width). Screens checked in light and dark at phone width. Not yet: real OpenRouter call (no key yet), migration 0002 on production, PR merge."
     },
     {
       "id": "feat-017",
