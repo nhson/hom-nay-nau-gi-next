@@ -56,6 +56,11 @@ user stories are in issue #1.
 | A8 | Error summary, save failure with retry, unsaved-changes prompt, session expiry keeps the form | ✅ |
 | A9 | Private: noindex, never cached or served offline, no analytics | ✅ |
 | A10 | Deferred: sort, preview toggle on narrow screens, show/hide password, visible version text, filter divider | ⏸ |
+| A11 | Chờ duyệt tab with a count badge: Món chờ duyệt never reach users, the catalog API or the export (ADR-0006) | ✅ |
+| A12 | Tải ảnh công thức: 1–4 photos of one recipe, shrunk on the device, read by a free OpenRouter model (ADR-0007), photos discarded | ✅ |
+| A13 | Warnings derived when read: chay with tỏi, possible duplicate of a dish (hidden included) or another Món chờ duyệt | ✅ |
+| A14 | Review in the dish form: Lưu (keep edits), Duyệt (publish with the next id, one atomic statement), Bỏ (confirm, then remove) | ✅ |
+| A15 | Clear Vietnamese messages: not a recipe, unreadable, AI busy, free limit used up, not set up (no `OPENROUTER_API_KEY`) | ✅ |
 
 ## Hộ gia đình (Household): dropped
 

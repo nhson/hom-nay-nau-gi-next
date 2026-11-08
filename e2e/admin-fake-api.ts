@@ -1,5 +1,6 @@
 import type { Page, Route } from "@playwright/test";
-import { dishIdPrefix, nextDishId, normalizeDraft } from "../src/domain/dish-rules";
+import { dishIdPrefix, nextDishId, normalizeDraft, validateDish } from "../src/domain/dish-rules";
+import { pendingWarnings } from "../src/domain/pending-dish";
 
 /** The right password for the fake; "khoa" makes the fake answer as if 5 wrong tries had locked sign-in. */
 export const GOOD_PASSWORD = "mat-khau-dung";
@@ -32,6 +33,34 @@ export function seedDishes(): FakeDish[] {
   ];
 }
 
+export interface FakePending {
+  id: string;
+  source: { kind: "photo" | "agent"; url: string | null };
+  model: string | null;
+  mealType: "buacom" | "buatomonuoc";
+  category: "xao" | "canh" | "man" | null;
+  chay: boolean;
+  region: "bac" | "trung" | "nam" | null;
+  name: string;
+  time: number | null;
+  ingredients: string[];
+  steps: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** What the fake "model" reads from the next photo upload. */
+export const READ_RECIPE: Omit<FakePending, "id" | "source" | "model" | "createdAt" | "updatedAt"> = {
+  mealType: "buacom",
+  category: "man",
+  chay: false,
+  region: "bac",
+  name: "Gà kho gừng",
+  time: 40,
+  ingredients: ["Gà 500g", "Gừng 1 củ"],
+  steps: ["Chặt gà", "Kho với gừng"],
+};
+
 export interface FakeAdmin {
   signedIn: boolean;
   version: number;
@@ -39,6 +68,13 @@ export interface FakeAdmin {
   /** What the next save (PUT or POST) does instead of succeeding. One shot. */
   nextSave: "network" | "expired" | "tỏi" | null;
   requests: string[];
+  pending: FakePending[];
+  /** Whether an OpenRouter key is "configured". */
+  readerConfigured: boolean;
+  /** What the next photo read answers instead of a recipe. One shot. */
+  nextRead: "not_a_recipe" | "unreadable" | "reader_rate_limited" | "reader_unavailable" | null;
+  /** Photo uploads received (data URLs per upload). */
+  uploads: string[][];
 }
 
 /**
@@ -46,7 +82,20 @@ export interface FakeAdmin {
  * request interception, so the page, its validation and its states are exercised for real.
  */
 export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> = {}): Promise<FakeAdmin> {
-  const fake: FakeAdmin = { signedIn: false, version: 12, dishes: seedDishes(), nextSave: null, requests: [], ...initial };
+  const fake: FakeAdmin = {
+    signedIn: false,
+    version: 12,
+    dishes: seedDishes(),
+    nextSave: null,
+    requests: [],
+    pending: [],
+    readerConfigured: true,
+    nextRead: null,
+    uploads: [],
+    ...initial,
+  };
+  const view = (item: FakePending) => ({ ...item, warnings: pendingWarnings(item, fake.dishes, fake.pending, item.id) });
+  let pendingSeq = 0;
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
   const error = (route: Route, status: number, code: string, message = code, extra: object = {}) =>
     json(route, status, { error: { code, message, ...extra } });
@@ -73,6 +122,51 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
 
     if (!fake.signedIn) return error(route, 401, "unauthorized");
     if (path === "/dishes" && method === "GET") return json(route, 200, { version: fake.version, dishes: fake.dishes });
+
+    if (path.startsWith("/pending")) {
+      if (path === "/pending" && method === "GET") {
+        const items = [...fake.pending].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(view);
+        return json(route, 200, { items, readerConfigured: fake.readerConfigured });
+      }
+      if (path === "/pending/photos" && method === "POST") {
+        const { photos } = request.postDataJSON() as { photos: string[] };
+        fake.uploads.push(photos);
+        if (!fake.readerConfigured) return error(route, 503, "reader_not_configured");
+        if (fake.nextRead) {
+          const code = fake.nextRead;
+          fake.nextRead = null;
+          return error(route, code.startsWith("reader") ? 503 : 422, code);
+        }
+        const at = new Date(Date.UTC(2026, 10, 8, 2, 0, pendingSeq)).toISOString();
+        const item: FakePending = { id: `p${++pendingSeq}`, source: { kind: "photo", url: null }, model: "google/gemma-4-31b-it:free", ...READ_RECIPE, createdAt: at, updatedAt: at };
+        fake.pending.push(item);
+        return json(route, 201, { pending: view(item) });
+      }
+      const [, , pid, action] = path.split("/");
+      const index = fake.pending.findIndex((item) => item.id === decodeURIComponent(pid ?? ""));
+      if (index < 0) return error(route, 404, "not_found");
+      if (method === "GET") return json(route, 200, { pending: view(fake.pending[index]) });
+      if (method === "PUT") {
+        fake.pending[index] = { ...fake.pending[index], ...normalizeDraft(request.postDataJSON()), updatedAt: new Date().toISOString() };
+        return json(route, 200, { pending: view(fake.pending[index]) });
+      }
+      if (method === "DELETE") {
+        fake.pending.splice(index, 1);
+        return json(route, 200, { ok: true });
+      }
+      if (method === "POST" && action === "approve") {
+        const draft = normalizeDraft(request.postDataJSON());
+        const issues = validateDish(draft, fake.dishes);
+        if (issues.length > 0) return error(route, 422, "validation_failed", "invalid", { issues });
+        const id = nextDishId(dishIdPrefix(draft), fake.dishes.map((d) => d.id));
+        const dish = { ...draft, id, retired: false, updatedAt: new Date().toISOString() };
+        fake.dishes.push(dish);
+        fake.pending.splice(index, 1);
+        fake.version += 1;
+        return json(route, 201, { version: fake.version, dish });
+      }
+      return error(route, 405, "method_not_allowed");
+    }
 
     const saving = method === "POST" || method === "PUT";
     if (path.startsWith("/dishes") && saving && fake.nextSave) {

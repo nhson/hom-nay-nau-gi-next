@@ -1,0 +1,20 @@
+CREATE TABLE "pending_dishes" (
+	"id" text PRIMARY KEY NOT NULL,
+	"source_kind" text NOT NULL,
+	"source_url" text,
+	"model" text,
+	"meal_type" text NOT NULL,
+	"category" text,
+	"chay" boolean DEFAULT false NOT NULL,
+	"region" text,
+	"name" text DEFAULT '' NOT NULL,
+	"time_minutes" integer,
+	"ingredients" text[] NOT NULL,
+	"steps" text[] NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "pending_dishes_source_kind_valid" CHECK ("pending_dishes"."source_kind" in ('photo', 'agent')),
+	CONSTRAINT "pending_dishes_meal_type_valid" CHECK ("pending_dishes"."meal_type" in ('buacom', 'buatomonuoc')),
+	CONSTRAINT "pending_dishes_category_valid" CHECK ("pending_dishes"."category" is null or "pending_dishes"."category" in ('xao', 'canh', 'man')),
+	CONSTRAINT "pending_dishes_region_valid" CHECK ("pending_dishes"."region" is null or "pending_dishes"."region" in ('bac', 'trung', 'nam'))
+);

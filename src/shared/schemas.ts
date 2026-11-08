@@ -64,6 +64,13 @@ export const API_ERROR_CODES = [
   "bad_request",
   "validation_failed",
   "not_found",
+  // Món chờ duyệt (reading recipe photos)
+  "payload_too_large",
+  "not_a_recipe",
+  "unreadable",
+  "reader_not_configured",
+  "reader_unavailable",
+  "reader_rate_limited",
 ] as const;
 
 /** One thing wrong with a submitted dish: the rule that failed and where (the UI words it). */
@@ -97,6 +104,57 @@ export const adminCatalogResponseSchema = z.object({
 });
 /** A saved dish and the catalog version that now contains it. */
 export const adminDishResponseSchema = z.object({ version: z.number().int().min(0), dish: adminDishSchema });
+/** What the admin page sends to have recipe photos read: 1–4 images of ONE recipe, as data URLs. */
+export const MAX_PHOTOS = 4;
+export const photoUploadSchema = z.object({
+  photos: z
+    .array(z.string().regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/))
+    .min(1)
+    .max(MAX_PHOTOS),
+});
+
+export const pendingWarningSchema = z.discriminatedUnion("code", [
+  z.object({ code: z.literal("chay-toi") }),
+  z.object({
+    code: z.literal("possible-duplicate"),
+    of: z.enum(["dish", "pending"]),
+    id: z.string(),
+    name: z.string(),
+    hidden: z.boolean(),
+  }),
+]);
+
+/**
+ * A Món chờ duyệt as the admin sees it. Looser than a dish (a proposal may be incomplete); Duyệt
+ * runs the full dish rules. `warnings` are derived from the catalog as it is now.
+ */
+export const pendingDishSchema = z.object({
+  id: z.string().min(1),
+  source: z.object({ kind: z.enum(["photo", "agent"]), url: z.string().nullable() }),
+  model: z.string().nullable(),
+  mealType: mealTypeSchema,
+  category: categorySchema.nullable(),
+  chay: z.boolean(),
+  region: regionSchema.nullable(),
+  name: z.string(),
+  time: z.number().int().positive().nullable(),
+  ingredients: z.array(z.string()),
+  steps: z.array(z.string()),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  warnings: z.array(pendingWarningSchema),
+});
+export const pendingDishResponseSchema = z.object({ pending: pendingDishSchema });
+export const pendingListResponseSchema = z.object({
+  /** Newest first. */
+  items: z.array(pendingDishSchema),
+  /** Whether photos can be read at all (an OpenRouter key is set). */
+  readerConfigured: z.boolean(),
+});
+export type PendingDish = z.infer<typeof pendingDishSchema>;
+export type PendingWarningView = z.infer<typeof pendingWarningSchema>;
+export type PendingListResponse = z.infer<typeof pendingListResponseSchema>;
+
 export type AdminDish = z.infer<typeof adminDishSchema>;
 export type AdminCatalogResponse = z.infer<typeof adminCatalogResponseSchema>;
 export type DishDraftInput = z.infer<typeof dishDraftSchema>;

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, Loader2, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Save, Trash2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -26,15 +26,17 @@ import { groupOf, groupStyle } from "@/lib/category-style";
 import { problemFieldId, problemMessage } from "@/lib/dish-problems";
 import { BOWL_LABEL, CATEGORY_LABEL, REGION_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import type { AdminDish } from "@/shared/schemas";
+import type { AdminDish, PendingDish } from "@/shared/schemas";
 import { Recipe } from "../recipe";
 import { useAdmin } from "./admin-frame";
 import { LinesEditor } from "./lines-editor";
+import { sourceLabel, warningHref, warningText } from "./review-labels";
 
 interface FormState {
   name: string;
   mealType: MealType;
-  category: Category;
+  /** "" only for a Món chờ duyệt the model could not place in a Nhóm món. */
+  category: Category | "";
   region: Region | "";
   time: string;
   chay: boolean;
@@ -53,10 +55,13 @@ const EMPTY: FormState = {
   steps: [""],
 };
 
-const fromDish = (dish: AdminDish): FormState => ({
+type DraftFields = Pick<AdminDish, "name" | "mealType" | "category" | "region" | "time" | "chay" | "ingredients" | "steps">;
+
+const fromDish = (dish: DraftFields): FormState => ({
   name: dish.name,
   mealType: dish.mealType,
-  category: dish.category ?? "xao",
+  // A Bữa 1 món keeps a default for when it is switched to Bữa cơm 3 món; a proposal without a Nhóm món stays unset.
+  category: dish.category ?? (dish.mealType === "buatomonuoc" ? "xao" : ""),
   region: dish.region ?? "",
   time: dish.time === null ? "" : String(dish.time),
   chay: dish.chay,
@@ -67,7 +72,7 @@ const fromDish = (dish: AdminDish): FormState => ({
 function toDraft(form: FormState): DishDraft {
   return {
     mealType: form.mealType,
-    category: form.mealType === "buacom" ? form.category : null,
+    category: form.mealType === "buacom" && form.category !== "" ? form.category : null,
     chay: form.chay,
     region: form.region === "" ? null : form.region,
     name: form.name,
@@ -77,15 +82,21 @@ function toDraft(form: FormState): DishDraft {
   };
 }
 
-const draftKey = (id: string | null) => `admin-draft:${id ?? "new"}`;
+const draftKey = (id: string | null, pendingId?: string) =>
+  pendingId ? `admin-draft:pending:${pendingId}` : `admin-draft:${id ?? "new"}`;
 
 const SELECT =
   "h-11 w-full rounded-lg border border-input bg-transparent px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30";
 
-/** Add (id = null) or edit one dish. */
-export function DishFormScreen({ id }: { id: string | null }) {
+/**
+ * Add (id = null) or edit one dish; or, with `pendingId`, review a Món chờ duyệt: Lưu keeps the edits,
+ * Duyệt publishes it as a new dish, Bỏ discards it (ADR-0006).
+ */
+export function DishFormScreen({ id, pendingId }: { id: string | null; pendingId?: string }) {
   const router = useRouter();
-  const { setVersion, requireLogin } = useAdmin();
+  const { setVersion, requireLogin, pendingCount, setPendingCount } = useAdmin();
+  const reviewing = pendingId !== undefined;
+  const home = reviewing ? "/admin/review" : "/admin";
 
   const [all, setAll] = useState<AdminDish[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -97,31 +108,34 @@ export function DishFormScreen({ id }: { id: string | null }) {
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [pending, setPending] = useState<PendingDish | null>(null);
+  const [discarding, setDiscarding] = useState(false);
+  const [busy, setBusy] = useState<"save" | "discard" | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const failRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => headingRef.current?.focus(), []);
 
-  // Load the catalog (needed to check duplicate names) and, when editing, the dish itself.
+  // Load the catalog (needed to check duplicate names) and, when editing, the dish or the Món chờ duyệt itself.
   useEffect(() => {
     let cancelled = false;
-    adminApi
-      .listDishes()
-      .then((catalog) => {
+    Promise.all([adminApi.listDishes(), pendingId === undefined ? Promise.resolve(null) : adminApi.getPending(pendingId)])
+      .then(([catalog, proposal]) => {
         if (cancelled) return;
         setVersion(catalog.version);
         setAll(catalog.dishes);
+        setPending(proposal);
         const dish = id === null ? null : catalog.dishes.find((item) => item.id === id);
         if (id !== null && !dish) return setLoadFailed(true);
-        const base = dish ? fromDish(dish) : EMPTY;
+        const base = proposal ? fromDish(proposal) : dish ? fromDish(dish) : EMPTY;
         setInitial(JSON.stringify(base));
         // Coming back from a session that expired mid-edit: restore what was typed.
         let restored: FormState | null = null;
         try {
-          const saved = sessionStorage.getItem(draftKey(id));
+          const saved = sessionStorage.getItem(draftKey(id, pendingId));
           if (saved) restored = JSON.parse(saved) as FormState;
-          sessionStorage.removeItem(draftKey(id));
+          sessionStorage.removeItem(draftKey(id, pendingId));
         } catch {
           // Storage is only a convenience.
         }
@@ -135,7 +149,7 @@ export function DishFormScreen({ id }: { id: string | null }) {
     return () => {
       cancelled = true;
     };
-  }, [id, setVersion, requireLogin]);
+  }, [id, pendingId, setVersion, requireLogin]);
 
   const dirty = JSON.stringify(form) !== initial;
   useEffect(() => {
@@ -167,6 +181,64 @@ export function DishFormScreen({ id }: { id: string | null }) {
     setSaveFailed(false);
   }
 
+  /** The session ended mid-edit: keep what was typed for after signing in. */
+  function keepForLogin() {
+    try {
+      sessionStorage.setItem(draftKey(id, pendingId), JSON.stringify(form));
+    } catch {
+      // Without storage the form simply starts over after signing in.
+    }
+    requireLogin();
+  }
+
+  const countDown = () => setPendingCount(Math.max(0, (pendingCount ?? 1) - 1));
+
+  /** Lưu (review mode): keep the edits on the Món chờ duyệt without publishing. Only an impossible time blocks it. */
+  async function saveEdits() {
+    if (!pendingId) return;
+    if (problems.some((problem) => problem.code === "time-invalid")) {
+      setSubmitted(true);
+      setSummaryOpen(true);
+      requestAnimationFrame(() => summaryRef.current?.focus());
+      return;
+    }
+    setBusy("save");
+    setSaveFailed(false);
+    try {
+      setPending(await adminApi.updatePending(pendingId, draft));
+      setInitial(JSON.stringify(form));
+      toast.success("Đã lưu. Món vẫn ở Chờ duyệt.");
+    } catch (error) {
+      if (error instanceof AdminApiError && error.status === 401) keepForLogin();
+      else if (error instanceof AdminApiError && error.status === 404) setLoadFailed(true);
+      else {
+        setSaveFailed(true);
+        requestAnimationFrame(() => failRef.current?.focus());
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Bỏ (review mode), after the confirmation dialog. */
+  async function discard() {
+    if (!pendingId) return;
+    setDiscarding(false);
+    setBusy("discard");
+    try {
+      await adminApi.discardPending(pendingId);
+      countDown();
+      toast.success(`Đã bỏ “${form.name.trim() || "món chờ duyệt"}”.`);
+      setInitial(JSON.stringify(form));
+      router.push(home);
+    } catch (error) {
+      setBusy(null);
+      if (error instanceof AdminApiError && error.status === 401) keepForLogin();
+      else if (error instanceof AdminApiError && error.status === 404) router.push(home);
+      else toast.error("Chưa bỏ được. Thử lại.");
+    }
+  }
+
   function focusField(fieldId: string) {
     const element = document.getElementById(fieldId);
     element?.scrollIntoView({ block: "center" });
@@ -185,20 +257,26 @@ export function DishFormScreen({ id }: { id: string | null }) {
     setSaving(true);
     setSaveFailed(false);
     try {
-      const saved = id === null ? await adminApi.createDish(draft) : await adminApi.updateDish(id, draft);
+      const saved = pendingId
+        ? await adminApi.approvePending(pendingId, draft)
+        : id === null
+          ? await adminApi.createDish(draft)
+          : await adminApi.updateDish(id, draft);
       setVersion(saved.version);
-      toast.success(`Đã lưu và đăng. Danh mục lên v${saved.version}.`);
+      if (pendingId) {
+        countDown();
+        toast.success(`Đã duyệt “${saved.dish.name}” (mã ${saved.dish.id}). Danh mục lên v${saved.version}.`);
+      } else {
+        toast.success(`Đã lưu và đăng. Danh mục lên v${saved.version}.`);
+      }
       setInitial(JSON.stringify(form));
-      router.push("/admin");
+      router.push(home);
     } catch (error) {
       setSaving(false);
       if (error instanceof AdminApiError && error.status === 401) {
-        try {
-          sessionStorage.setItem(draftKey(id), JSON.stringify(form));
-        } catch {
-          // Without storage the form simply starts over after signing in.
-        }
-        requireLogin();
+        keepForLogin();
+      } else if (pendingId && error instanceof AdminApiError && error.status === 404) {
+        setLoadFailed(true);
       } else if (error instanceof AdminApiError && error.code === "validation_failed") {
         setServerProblems(error.issues);
         setSummaryOpen(true);
@@ -212,15 +290,17 @@ export function DishFormScreen({ id }: { id: string | null }) {
 
   function leave() {
     if (dirty) setLeaving(true);
-    else router.push("/admin");
+    else router.push(home);
   }
 
   if (loadFailed) {
     return (
       <div role="alert" className="py-16 text-center">
-        <h1 className="font-display text-2xl font-semibold">Không mở được món này</h1>
-        <p className="mt-2 text-muted-foreground">Món không tồn tại, hoặc không tải được dữ liệu.</p>
-        <Link href="/admin" className={cn(buttonVariants({ variant: "outline" }), "mt-4")}>
+        <h1 className="font-display text-2xl font-semibold">{reviewing ? "Không mở được món chờ duyệt này" : "Không mở được món này"}</h1>
+        <p className="mt-2 text-muted-foreground">
+          {reviewing ? "Món có thể đã được duyệt hoặc bỏ, hoặc không tải được dữ liệu." : "Món không tồn tại, hoặc không tải được dữ liệu."}
+        </p>
+        <Link href={home} className={cn(buttonVariants({ variant: "outline" }), "mt-4")}>
           Về danh sách
         </Link>
       </div>
@@ -237,17 +317,47 @@ export function DishFormScreen({ id }: { id: string | null }) {
     <div>
       <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
         <Button variant="ghost" className="h-11" onClick={leave}>
-          <ArrowLeft aria-hidden /> Danh sách
+          <ArrowLeft aria-hidden /> {reviewing ? "Chờ duyệt" : "Danh sách"}
         </Button>
         <div>
           <h1 ref={headingRef} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
-            {editing ? "Sửa món" : "Thêm món"}
+            {reviewing ? "Duyệt món" : editing ? "Sửa món" : "Thêm món"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {editing ? `Mã món ${id}${updatedLabel}` : "Mã món sẽ tự đặt khi lưu."}
+            {pending
+              ? `${sourceLabel(pending)} · ${new Date(pending.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}${pending.model ? ` · ${pending.model}` : ""}`
+              : editing
+                ? `Mã món ${id}${updatedLabel}`
+                : "Mã món sẽ tự đặt khi lưu."}
           </p>
         </div>
       </div>
+
+      {pending && pending.warnings.length > 0 && (
+        <section aria-labelledby="warn-title" className="mb-5 rounded-2xl border border-destructive/35 bg-destructive/5 p-4 text-sm">
+          <h2 id="warn-title" className="flex items-center gap-2 font-semibold">
+            <TriangleAlert aria-hidden className="size-4 text-destructive" /> Cần xem trước khi Duyệt
+          </h2>
+          <ul className="mt-1.5 list-disc space-y-1 pl-6">
+            {pending.warnings.map((warning, i) => {
+              const href = warningHref(warning);
+              return (
+                <li key={i}>
+                  {warningText(warning)}
+                  {href && (
+                    <>
+                      {" "}
+                      <Link href={href} target="_blank" className="font-semibold underline underline-offset-3">
+                        Xem món đó
+                      </Link>
+                    </>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
         <form onSubmit={save} noValidate className="rounded-2xl border bg-card">
@@ -329,10 +439,16 @@ export function DishFormScreen({ id }: { id: string | null }) {
                   className={cn(SELECT, "mt-1.5")}
                   disabled={bowl}
                   value={bowl ? "" : form.category}
+                  aria-invalid={categoryError ? true : undefined}
                   aria-describedby="f-cat-hint"
                   onChange={(event) => update({ category: event.target.value as Category })}
                 >
                   {bowl && <option value="">Không có</option>}
+                  {!bowl && form.category === "" && (
+                    <option value="" disabled>
+                      Chọn Nhóm món
+                    </option>
+                  )}
                   {(Object.keys(CATEGORY_LABEL) as Category[]).map((key) => (
                     <option key={key} value={key}>
                       {CATEGORY_LABEL[key]}
@@ -406,6 +522,37 @@ export function DishFormScreen({ id }: { id: string | null }) {
             <LinesEditor kind="step" lines={form.steps} onChange={(steps) => update({ steps })} errors={errorsFor("steps")} />
           </section>
 
+          {reviewing ? (
+            <div className="sticky bottom-0 flex flex-wrap items-center gap-2.5 rounded-b-2xl border-t bg-card/95 px-5 py-3.5 backdrop-blur">
+              <p className="min-w-52 flex-[1_1_100%] text-[0.8125rem] text-muted-foreground sm:flex-1">
+                Duyệt là đăng ngay vào Danh mục món. Lưu chỉ giữ lại bản sửa ở Chờ duyệt.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="text-destructive max-sm:flex-1"
+                disabled={saving || busy !== null}
+                onClick={() => setDiscarding(true)}
+              >
+                <Trash2 aria-hidden /> Bỏ
+              </Button>
+              <Button type="button" variant="outline" size="lg" className="max-sm:flex-1" disabled={saving || busy !== null} onClick={saveEdits}>
+                {busy === "save" ? <Loader2 aria-hidden className="animate-spin" /> : <Save aria-hidden />} Lưu
+              </Button>
+              <Button type="submit" size="lg" className="max-sm:flex-[1_1_100%]" disabled={saving || busy !== null}>
+                {saving ? (
+                  <>
+                    <Loader2 aria-hidden className="animate-spin" /> Đang duyệt…
+                  </>
+                ) : (
+                  <>
+                    <Check aria-hidden /> Duyệt và đăng
+                  </>
+                )}
+              </Button>
+            </div>
+          ) : (
           <div className="sticky bottom-0 flex flex-wrap items-center gap-2.5 rounded-b-2xl border-t bg-card/95 px-5 py-3.5 backdrop-blur">
             <p className="min-w-52 flex-[1_1_100%] text-[0.8125rem] text-muted-foreground sm:flex-1">Lưu là đăng ngay: không có bản nháp.</p>
             <Button type="button" variant="outline" size="lg" className="max-sm:flex-1" disabled={saving} onClick={leave}>
@@ -423,6 +570,7 @@ export function DishFormScreen({ id }: { id: string | null }) {
               )}
             </Button>
           </div>
+          )}
         </form>
 
         <Preview form={form} className="max-lg:hidden" />
@@ -432,7 +580,9 @@ export function DishFormScreen({ id }: { id: string | null }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Bỏ thay đổi chưa lưu?</DialogTitle>
-            <DialogDescription>Bạn đã sửa món này nhưng chưa bấm Lưu và đăng.</DialogDescription>
+            <DialogDescription>
+              {reviewing ? "Bạn đã sửa món này nhưng chưa bấm Lưu hoặc Duyệt." : "Bạn đã sửa món này nhưng chưa bấm Lưu và đăng."}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLeaving(false)}>
@@ -443,10 +593,27 @@ export function DishFormScreen({ id }: { id: string | null }) {
               onClick={() => {
                 setInitial(JSON.stringify(form));
                 setLeaving(false);
-                router.push("/admin");
+                router.push(home);
               }}
             >
               Bỏ thay đổi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={discarding} onOpenChange={setDiscarding}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Bỏ “{form.name.trim() || "món chờ duyệt này"}”?</DialogTitle>
+            <DialogDescription>Món chờ duyệt này sẽ bị xoá. Danh mục món không thay đổi.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDiscarding(false)}>
+              Giữ lại
+            </Button>
+            <Button className="bg-destructive text-white hover:bg-destructive/90 dark:text-background" onClick={discard}>
+              <Trash2 aria-hidden /> Bỏ món
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -472,7 +639,8 @@ function AlertBox({ ref, children }: { ref: React.Ref<HTMLDivElement>; children:
 
 /** The dish as people will see it in the app (the same recipe component). */
 function Preview({ form, className }: { form: FormState; className?: string }) {
-  const style = groupStyle(groupOf({ category: form.mealType === "buacom" ? form.category : null }));
+  // A proposal without a Nhóm món yet previews as the first group; the form already asks for one.
+  const style = groupStyle(groupOf({ category: form.mealType === "buacom" ? form.category || "xao" : null }));
   return (
     <aside aria-label="Xem trước" className={cn("sticky top-20 rounded-2xl border bg-card p-5", className)}>
       <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Người dùng sẽ thấy</p>

@@ -1,9 +1,34 @@
 import { z } from "zod";
-import { dishIdPrefix, nextDishId, normalizeDraft, validateDish, type DishDraft } from "@/domain";
+import {
+  dishIdPrefix,
+  nextDishId,
+  normalizeDraft,
+  pendingWarnings,
+  readRecipeReply,
+  RECIPE_INSTRUCTIONS,
+  validateDish,
+  type DishDraft,
+} from "@/domain";
 import { errorResponse } from "@/server/api/responses";
 import { readAdminCatalog, readCatalog, type AdminDish, type Db } from "@/server/catalog/repository";
-import { adminCatalogResponseSchema, catalogResponseSchema, dishDraftSchema } from "@/shared/schemas";
+import {
+  adminCatalogResponseSchema,
+  catalogResponseSchema,
+  dishDraftSchema,
+  photoUploadSchema,
+  type PendingDish,
+} from "@/shared/schemas";
 import type { AdminConfig } from "./config";
+import {
+  approvePending,
+  deletePending,
+  getPending,
+  insertPending,
+  listPending,
+  updatePending,
+  type PendingRecord,
+} from "./pending-repository";
+import { unconfiguredReader, type RecipeReader } from "./recipe-reader";
 import { createDish, isUniqueViolation, setRetired, updateDish, type Saved } from "./repository";
 import {
   clearedSessionCookie,
@@ -24,7 +49,15 @@ export interface AdminDeps {
   getConfig: () => AdminConfig | null;
   /** Injected so tests control time. */
   now?: () => Date;
+  /** The AI model that reads recipe photos (ADR-0007). Absent: photo reading is not configured. */
+  getReader?: () => RecipeReader;
 }
+
+/**
+ * The most photo data one upload may carry. Vercel refuses request bodies over 4.5 MB before they
+ * reach us; the page shrinks photos well below this, so only a hand-made request gets here.
+ */
+const MAX_UPLOAD_CHARS = 4_400_000;
 
 const loginBody = z.object({ passphrase: z.string() });
 const hiddenBody = z.object({ retired: z.boolean() });
@@ -254,6 +287,127 @@ export function createAdminHandlers(deps: AdminDeps) {
 
   const notFound = () => errorResponse(404, "not_found", "No dish with that id.");
 
+  // --- Món chờ duyệt (ADR-0006) ---
+
+  const getReader = deps.getReader ?? (() => unconfiguredReader);
+  const pendingNotFound = () => errorResponse(404, "not_found", "No Món chờ duyệt with that id.");
+
+  /** The record plus the warnings it has against the catalog and the other Món chờ duyệt as they are now. */
+  async function withWarnings(db: Db, records: PendingRecord[]): Promise<PendingDish[]> {
+    const catalog = await readCatalog(db);
+    const all = await listPending(db);
+    return records.map((record) => ({
+      ...record,
+      warnings: pendingWarnings(record, catalog?.dishes ?? [], all, record.id),
+    }));
+  }
+
+  const listPendingHandler = guarded(false, async (_request, db) => {
+    const items = await withWarnings(db, await listPending(db));
+    return json({ items, readerConfigured: getReader().configured });
+  });
+
+  const readPhotosHandler = guarded(true, async (request, db) => {
+    const text = await request.text();
+    if (text.length > MAX_UPLOAD_CHARS) {
+      return errorResponse(413, "payload_too_large", "The photos are too large. Send smaller photos.");
+    }
+    let body: unknown = null;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      // Not JSON: the schema below rejects null.
+    }
+    const parsed = photoUploadSchema.safeParse(body);
+    if (!parsed.success) {
+      return errorResponse(400, "bad_request", "Send { photos: [1 to 4 JPEG, PNG or WebP data URLs] }.");
+    }
+
+    const reader = getReader();
+    if (!reader.configured) return readerFailed("not_configured");
+    const result = await reader.read({ instructions: RECIPE_INSTRUCTIONS, photos: parsed.data.photos });
+    if (!result.ok) return readerFailed(result.failure);
+
+    const reading = readRecipeReply(result.reply);
+    if (!reading.ok) {
+      return reading.reason === "not_a_recipe"
+        ? errorResponse(422, "not_a_recipe", "The photos do not look like a recipe.")
+        : errorResponse(422, "unreadable", "The recipe in the photos could not be read.");
+    }
+    const record = await insertPending(db, {
+      id: crypto.randomUUID(),
+      source: { kind: "photo", url: null },
+      model: result.model,
+      draft: reading.draft,
+      at: now(),
+    });
+    const [pending] = await withWarnings(db, [record]);
+    return json({ pending }, { status: 201 });
+  });
+
+  function readerFailed(failure: "not_configured" | "unavailable" | "rate_limited"): Response {
+    if (failure === "not_configured") {
+      return errorResponse(503, "reader_not_configured", "Reading recipe photos is not set up (no OpenRouter key).");
+    }
+    if (failure === "rate_limited") {
+      return errorResponse(503, "reader_rate_limited", "The free AI models are at their limit. Try again later.");
+    }
+    return errorResponse(503, "reader_unavailable", "The AI model did not answer. Try again later.");
+  }
+
+  const getPendingHandler = (request: Request, id: string) =>
+    guarded(false, async (_req, db) => {
+      const record = await getPending(db, id);
+      if (!record) return pendingNotFound();
+      const [pending] = await withWarnings(db, [record]);
+      return json({ pending });
+    })(request);
+
+  const updatePendingHandler = (request: Request, id: string) =>
+    guarded(true, async (req, db) => {
+      const input = await readJson(req, dishDraftSchema);
+      if (!input) return badDish();
+      const draft = normalizeDraft(input);
+      // A proposal may be incomplete; only a time the column cannot hold blocks saving it.
+      const badTime = validateDish(draft, []).filter((problem) => problem.code === "time-invalid");
+      if (badTime.length > 0) return validationFailed(badTime);
+      const record = await updatePending(db, id, draft, now());
+      if (!record) return pendingNotFound();
+      const [pending] = await withWarnings(db, [record]);
+      return json({ pending });
+    })(request);
+
+  const discardPendingHandler = (request: Request, id: string) =>
+    guarded(true, async (_req, db) => ((await deletePending(db, id)) ? json({ ok: true }) : pendingNotFound()))(request);
+
+  const approvePendingHandler = (request: Request, id: string) =>
+    guarded(true, async (req, db) => {
+      const input = await readJson(req, dishDraftSchema);
+      if (!input) return badDish();
+      const draft = normalizeDraft(input);
+
+      // Same rules and the same id scheme as adding a dish by hand; a lost id race reads again.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const catalog = await readCatalog(db);
+        if (!catalog) return catalogUnavailable();
+        if (!(await getPending(db, id))) return pendingNotFound();
+        const issues = validateDish(draft, catalog.dishes);
+        if (issues.length > 0) return validationFailed(issues);
+
+        const dishId = nextDishId(dishIdPrefix(draft), catalog.dishes.map((dish) => dish.id));
+        try {
+          const saved = await approvePending(db, id, dishId, draft);
+          // Null: someone else approved or discarded it in between.
+          return saved
+            ? json({ version: saved.version, dish: stored(dishId, draft, saved) }, { status: 201 })
+            : pendingNotFound();
+        } catch (error) {
+          if (!isUniqueViolation(error)) throw error;
+        }
+      }
+      return errorResponse(500, "internal_error", "Something went wrong. Please try again.");
+    })(request);
+
   function validationFailed(issues: ReturnType<typeof validateDish>): Response {
     return errorResponse(422, "validation_failed", "The dish cannot be saved as it is.", {}, { issues });
   }
@@ -267,5 +421,11 @@ export function createAdminHandlers(deps: AdminDeps) {
     updateDish: updateDishHandler,
     setHidden: setHiddenHandler,
     exportCatalog,
+    listPending: listPendingHandler,
+    readPhotos: readPhotosHandler,
+    getPending: getPendingHandler,
+    updatePending: updatePendingHandler,
+    discardPending: discardPendingHandler,
+    approvePending: approvePendingHandler,
   };
 }

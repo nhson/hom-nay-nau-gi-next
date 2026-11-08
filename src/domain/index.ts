@@ -12,3 +12,4 @@ export * from "./selectors";
 export * from "./analytics";
 export * from "./install-hint";
 export * from "./dish-rules";
+export * from "./pending-dish";
