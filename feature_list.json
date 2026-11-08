@@ -159,6 +159,16 @@
       ],
       "status": "not-started",
       "evidence": ""
+    },
+    {
+      "id": "feat-017",
+      "name": "Tác nhân thu thập công thức hằng ngày (spec B)",
+      "description": "Daily Vercel Cron (22:00 UTC) plus Chạy ngay: reads unseen pages from the Nguồn công thức (monngonmoingay sitemaps, vnexpress cooking page), respects robots.txt, extracts via the free OpenRouter model list, ranks by catalog gaps, adds the top N as Món chờ duyệt; seen-URL memory (incl. Bỏ/Duyệt), Lần chạy gần nhất, Cài đặt tác nhân. Spec: issue #31. ADR-0006, ADR-0007. Needs CRON_SECRET and OPENROUTER_API_KEY in Vercel (owner).",
+      "dependencies": [
+        "feat-016"
+      ],
+      "status": "not-started",
+      "evidence": ""
     }
   ]
 }
