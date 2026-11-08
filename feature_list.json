@@ -169,6 +169,14 @@
       ],
       "status": "not-started",
       "evidence": ""
+    },
+    {
+      "id": "feat-018",
+      "name": "Next.js security upgrade (16.4.0 → 16.4.5)",
+      "description": "Small tweak: next and eslint-config-next 16.4.0 → 16.4.5 (latest patch) to clear the known security advisory; next build stopped with SecurityFatalError on 16.4.0. No code changes.",
+      "dependencies": [],
+      "status": "in-progress",
+      "evidence": "./init.sh green on the branch: lint, typecheck, 327 unit/contract, build (twice, no SecurityFatalError), 81 Playwright."
     }
   ]
 }
