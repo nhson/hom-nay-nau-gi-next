@@ -312,12 +312,13 @@ export function createAdminHandlers(deps: AdminDeps) {
     if (text.length > MAX_UPLOAD_CHARS) {
       return errorResponse(413, "payload_too_large", "The photos are too large. Send smaller photos.");
     }
-    let parsed: ReturnType<typeof photoUploadSchema.safeParse>;
+    let body: unknown = null;
     try {
-      parsed = photoUploadSchema.safeParse(JSON.parse(text));
+      body = JSON.parse(text);
     } catch {
-      parsed = photoUploadSchema.safeParse(null);
+      // Not JSON: the schema below rejects null.
     }
+    const parsed = photoUploadSchema.safeParse(body);
     if (!parsed.success) {
       return errorResponse(400, "bad_request", "Send { photos: [1 to 4 JPEG, PNG or WebP data URLs] }.");
     }
@@ -367,9 +368,9 @@ export function createAdminHandlers(deps: AdminDeps) {
       const input = await readJson(req, dishDraftSchema);
       if (!input) return badDish();
       const draft = normalizeDraft(input);
-      if (draft.time !== null && (!Number.isInteger(draft.time) || draft.time <= 0)) {
-        return validationFailed([{ code: "time-invalid", field: "time" }]);
-      }
+      // A proposal may be incomplete; only a time the column cannot hold blocks saving it.
+      const badTime = validateDish(draft, []).filter((problem) => problem.code === "time-invalid");
+      if (badTime.length > 0) return validationFailed(badTime);
       const record = await updatePending(db, id, draft, now());
       if (!record) return pendingNotFound();
       const [pending] = await withWarnings(db, [record]);
