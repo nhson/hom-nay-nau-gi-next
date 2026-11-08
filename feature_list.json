@@ -149,6 +149,26 @@
       ],
       "status": "done",
       "evidence": "PR #26 merged (Closes #25): ./init.sh green (327 unit, 81 Playwright incl. 20 new in e2e/theme.spec.ts and axe with the menu open in both themes); code review run and fixed; live on production (the page carries the theme script and the Giao diện button). Checked by the owner on a real iPhone, including the installed app's status bar colour following the choice."
+    },
+    {
+      "id": "feat-016",
+      "name": "Món chờ duyệt + tải ảnh công thức (spec A)",
+      "description": "Chờ duyệt tab on /admin: upload 1–4 recipe photos, a free OpenRouter model turns them into a Món chờ duyệt with derived warnings; Lưu / Duyệt / Bỏ; Duyệt reuses the add-dish save in one statement. Spec: issue #30. ADR-0006, ADR-0007. Needs OPENROUTER_API_KEY in Vercel (owner).",
+      "dependencies": [
+        "feat-014"
+      ],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-017",
+      "name": "Tác nhân thu thập công thức hằng ngày (spec B)",
+      "description": "Daily Vercel Cron (22:00 UTC) plus Chạy ngay: reads unseen pages from the Nguồn công thức (monngonmoingay sitemaps, vnexpress cooking page), respects robots.txt, extracts via the free OpenRouter model list, ranks by catalog gaps, adds the top N as Món chờ duyệt; seen-URL memory (incl. Bỏ/Duyệt), Lần chạy gần nhất, Cài đặt tác nhân. Spec: issue #31. ADR-0006, ADR-0007. Needs CRON_SECRET and OPENROUTER_API_KEY in Vercel (owner).",
+      "dependencies": [
+        "feat-016"
+      ],
+      "status": "not-started",
+      "evidence": ""
     }
   ]
 }

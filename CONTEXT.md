@@ -32,6 +32,17 @@ _Avoid_: Món đã xoá, món ngừng dùng.
 Người duy nhất được đăng nhập vào app: chủ của app, có toàn quyền cập nhật **Danh mục món** (thêm, sửa, ẩn, hiện lại món) qua trang quản trị. Không có vai trò hay phân quyền, không có tài khoản cho người dùng thường: mọi người còn lại chỉ là người dùng ẩn danh, đọc Danh mục món và giữ dữ liệu cá nhân trên chính thiết bị của mình.
 _Avoid_: User, Account, Tài khoản, Người dùng, Admin (trong chữ hiển thị cho người dùng) — app không có khái niệm tài khoản người dùng.
 
+**Món chờ duyệt**:
+Một món do AI đề xuất (từ ảnh quản trị viên tải lên, hoặc do **Tác nhân thu thập** lấy từ một **Nguồn công thức**), đang chờ **Quản trị viên** xem. Nằm riêng, ngoài **Danh mục món**: người dùng không bao giờ thấy, không được gợi ý. Quản trị viên mở món trong form sửa món, chỉnh rồi **Duyệt** (món vào Danh mục món với mã `x*`/`c*`/`m*`/`t*` như món thêm tay, phiên bản danh mục tăng) hoặc **Bỏ** (món bị loại, nguồn của nó được nhớ để không đề xuất lại). Mỗi món ghi nguồn (đường dẫn trang, hoặc "Ảnh tải lên") và các cảnh báo (vd. "có thể trùng với c12", "món chay có nhắc tỏi"). Xem [ADR-0006](docs/adr/0006-ai-proposed-dishes-wait-for-review.md).
+_Avoid_: Bản nháp, Draft, Hàng đợi (trong chữ hiển thị) — Danh mục món vẫn không có bản nháp.
+
+**Nguồn công thức**:
+Một trang web công thức tiếng Việt mà **Tác nhân thu thập** được phép đọc: hiện là monngonmoingay.com (chính) và mục nấu ăn của vnexpress.net. Danh sách nằm trong mã, đổi bằng PR. Chỉ dùng trang tiếng Việt cho phép thu thập (robots.txt) và không chặn bot AI. Xem [ADR-0007](docs/adr/0007-recipe-sources-and-free-models-via-openrouter.md).
+
+**Tác nhân thu thập**:
+Việc chạy tự động mỗi ngày (khoảng 05:00 giờ Việt Nam, hoặc khi quản trị viên bấm "Chạy ngay") đọc các trang mới trong **Nguồn công thức**, dùng AI chuyển trang thành món (trích, phân loại, viết lại các bước gọn bằng lời của mình), ưu tiên món lấp chỗ trống trong Danh mục món, rồi thêm thành **Món chờ duyệt**. Không tự bịa món: mọi món đều có trang gốc. Số món mỗi ngày, ngưỡng tạm dừng khi có nhiều món chờ và số trang đọc mỗi lần do quản trị viên chỉnh trong "Cài đặt tác nhân".
+_Avoid_: Bot, Crawler, Agent (trong chữ hiển thị).
+
 **Giao diện**:
 Cách app hiện màu: **Sáng**, **Tối** hoặc **Theo thiết bị** (mặc định, theo cài đặt sáng/tối của máy). Người dùng chọn bằng nút "Giao diện" ở thanh đầu trang của app và của trang quản trị; lựa chọn lưu trên từng thiết bị, dùng chung cho cả app và trang quản trị, không gửi lên máy chủ và không thuộc dữ liệu cá nhân (lịch sử, yêu thích). Khi chọn Sáng hoặc Tối, cả màu thanh trạng thái/thanh địa chỉ và ô nhập liệu cũng theo lựa chọn đó.
 _Avoid_: Chế độ tối, Dark mode, Theme — dùng "Giao diện" và ba giá trị trên.
