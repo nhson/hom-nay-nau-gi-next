@@ -9,3 +9,9 @@ Quyết định về mô hình: gọi qua OpenRouter (`OPENROUTER_API_KEY`, ch�
 Đã cân nhắc và loại bỏ: Gemini Flash qua khoá Google AI Studio (miễn phí trực tiếp nhưng chủ app muốn một cổng chung OpenRouter; Gemini qua OpenRouter thì mất phí), Vercel AI Gateway (tính phí sau phần tín dụng nhỏ), Groq (gần như chỉ văn bản, không đọc ảnh), agent đám mây Claude Code hay GitHub Actions theo lịch (thêm nơi giữ khoá và gọi cơ sở dữ liệu ngoài repo).
 
 Hệ quả: danh sách mô hình miễn phí trên OpenRouter thay đổi thường xuyên; khi một mô hình biến mất, đổi giá trị cấu hình. Nội dung gửi cho mô hình miễn phí có thể bị nhà cung cấp lưu: chỉ gửi trang công thức công khai và ảnh công thức của quản trị viên, không bao giờ gửi dữ liệu cá nhân của người dùng.
+
+## Cập nhật (2026-11-08): AI tự viết công thức chỉ cho Ảnh thực đơn
+
+Quy tắc "không dùng AI tự viết món từ trí nhớ" vẫn giữ nguyên cho **Tác nhân thu thập**: món do tác nhân đề xuất luôn có trang gốc. Ngoại lệ duy nhất là **Ảnh thực đơn**: thực đơn chỉ có tên món, nên AI viết một công thức nấu tại nhà cho từng tên được quản trị viên chọn, và mỗi món mang cảnh báo "AI tự viết công thức, hãy kiểm tra". Chấp nhận được vì quản trị viên đã tự chọn tên và xem từng món trước khi Duyệt (ADR-0006). Về sau, khi đã có Nguồn công thức, có thể thử tìm công thức thật theo tên trước rồi mới để AI viết.
+
+Ngân sách: đọc tên là một lần gọi, mỗi món thêm một lần gọi, tối đa 8 món mỗi lần tải, tức khoảng 9 lần gọi; với khoảng 50 lần gọi miễn phí mỗi ngày (dùng chung với tác nhân) là vài lần tải mỗi ngày.

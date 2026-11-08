@@ -177,6 +177,16 @@
       "dependencies": [],
       "status": "done",
       "evidence": "PR #33 merged: ./init.sh green (327 unit, 81 Playwright), build twice with no SecurityFatalError; main on Next.js 16.4.5."
+    },
+    {
+      "id": "feat-019",
+      "name": "Ảnh thực đơn (replaces recipe photos)",
+      "description": "Chờ duyệt tab: upload 1–4 menu photos, the model reads dish names into a checklist (names already in the catalog or on Chờ duyệt start unticked), edit/add names, tick up to 8, Tạo món writes one AI recipe per name (one request each, progress, leftovers listed) as a Món chờ duyệt with the ai-written warning. Recipe-photo reading removed. Spec: issue #36 (replaces the photo part of #30). ADR-0006/0007 updates (PR #35).",
+      "dependencies": [
+        "feat-016"
+      ],
+      "status": "not-started",
+      "evidence": ""
     }
   ]
 }
