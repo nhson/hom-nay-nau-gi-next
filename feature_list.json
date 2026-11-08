@@ -177,6 +177,16 @@
       "dependencies": [],
       "status": "in-progress",
       "evidence": "./init.sh green on the branch: lint, typecheck, 327 unit/contract, build (twice, no SecurityFatalError), 81 Playwright."
+    },
+    {
+      "id": "feat-019",
+      "name": "Ảnh thực đơn (replaces recipe photos)",
+      "description": "Chờ duyệt tab: upload 1–4 menu photos, the model reads dish names into a checklist (names already in the catalog or on Chờ duyệt start unticked), edit/add names, tick up to 8, Tạo món writes one AI recipe per name (one request each, progress, leftovers listed) as a Món chờ duyệt with the ai-written warning. Recipe-photo reading removed. Spec: issue #36 (replaces the photo part of #30). ADR-0006/0007 updates (PR #35).",
+      "dependencies": [
+        "feat-016"
+      ],
+      "status": "not-started",
+      "evidence": ""
     }
   ]
 }
