@@ -2,13 +2,14 @@
 
 import { ChevronRight, Inbox, TriangleAlert } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { adminApi, AdminApiError } from "@/lib/admin-api";
 import { groupOf, groupStyle } from "@/lib/category-style";
 import { cn } from "@/lib/utils";
 import type { PendingDish } from "@/shared/schemas";
 import { useAdmin } from "./admin-frame";
+import { AgentCard } from "./agent-card";
 import { MenuCard } from "./menu-card";
 import { sourceLabel } from "./review-labels";
 
@@ -22,6 +23,10 @@ export function ReviewListScreen() {
   const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => heading.current?.focus(), []);
+
+  // Bumped after a Chạy ngay, so the list shows what the agent added.
+  const [reloads, setReloads] = useState(0);
+  const reload = useCallback(() => setReloads((count) => count + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +45,7 @@ export function ReviewListScreen() {
     return () => {
       cancelled = true;
     };
-  }, [requireLogin, setPendingCount]);
+  }, [requireLogin, reloads]);
 
   function added(item: PendingDish) {
     setItems((current) => [item, ...(current ?? [])]);
@@ -61,6 +66,8 @@ export function ReviewListScreen() {
           Món do AI đề xuất. Người dùng chưa thấy món nào ở đây cho tới khi bạn Duyệt.
         </p>
       </div>
+
+      <AgentCard onRunFinished={reload} />
 
       <MenuCard configured={configured} pending={items ?? []} onConfigured={setConfigured} onCreated={added} />
 
@@ -83,7 +90,7 @@ export function ReviewListScreen() {
           <div className="px-5 py-12 text-center text-muted-foreground">
             <Inbox aria-hidden className="mx-auto mb-3 size-8" />
             <p className="font-display text-lg font-semibold text-foreground">Chưa có món nào chờ duyệt</p>
-            <p className="mt-1">Tải ảnh một thực đơn hoặc gõ tên món ở trên để bắt đầu.</p>
+            <p className="mt-1">Chạy tác nhân, tải ảnh một thực đơn hoặc gõ tên món ở trên để bắt đầu.</p>
           </div>
         ) : (
           <ul className="divide-y">

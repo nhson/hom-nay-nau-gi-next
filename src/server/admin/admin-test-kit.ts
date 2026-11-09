@@ -1,5 +1,6 @@
 import { createAdminHandlers, type AdminConfig } from "./handlers";
 import type { RecipeReader } from "./recipe-reader";
+import type { Collector } from "@/server/agent/collector";
 import type { Db } from "@/server/catalog/repository";
 
 export const PASSPHRASE = "correct horse battery staple";
@@ -11,13 +12,18 @@ export function createAdminKit(
   getDb: () => Db,
   config: AdminConfig | null = { passphrase: PASSPHRASE, sessionSecret: SESSION_SECRET },
   reader?: RecipeReader,
+  /** Builds the Tác nhân thu thập on the kit's clock, for Chạy ngay. */
+  makeCollector?: (now: () => Date) => Collector,
 ) {
   let nowMs = START;
+  const now = () => new Date(nowMs);
+  const collector = makeCollector?.(now);
   const handlers = createAdminHandlers({
     getDb,
     getConfig: () => config,
-    now: () => new Date(nowMs),
+    now,
     getReader: reader ? () => reader : undefined,
+    getCollector: collector ? () => collector : undefined,
   });
 
   function request(
@@ -53,6 +59,7 @@ export function createAdminKit(
     advance: (ms: number) => {
       nowMs += ms;
     },
-    now: () => new Date(nowMs),
+    now,
+    collector,
   };
 }

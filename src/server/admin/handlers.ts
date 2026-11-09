@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  checkAgentSettings,
   dishIdPrefix,
   nextDishId,
   normalizeDraft,
@@ -15,9 +16,12 @@ import {
   type DishDraft,
 } from "@/domain";
 import { errorResponse } from "@/server/api/responses";
+import type { Collector } from "@/server/agent/collector";
+import { isRunning, listRuns, readSettings, saveSettings } from "@/server/agent/repository";
 import { readAdminCatalog, readCatalog, type AdminDish, type Db } from "@/server/catalog/repository";
 import {
   adminCatalogResponseSchema,
+  agentSettingsSchema,
   catalogResponseSchema,
   dishDraftSchema,
   photoUploadSchema,
@@ -57,6 +61,8 @@ export interface AdminDeps {
   now?: () => Date;
   /** The AI model behind Ảnh thực đơn (ADR-0007). Absent: the AI is not configured. */
   getReader?: () => RecipeReader;
+  /** The Tác nhân thu thập behind Chạy ngay (spec B). Absent: Chạy ngay answers 503. */
+  getCollector?: () => Collector;
 }
 
 /**
@@ -434,6 +440,33 @@ export function createAdminHandlers(deps: AdminDeps) {
       return errorResponse(500, "internal_error", "Something went wrong. Please try again.");
     })(request);
 
+  // --- Tác nhân thu thập (spec B, #31) ---
+
+  const listRunsHandler = guarded(false, async (_request, db) => {
+    return json({ runs: await listRuns(db), running: await isRunning(db, now()) });
+  });
+
+  /** Chạy ngay: runs the agent now and answers with the run when it is done. */
+  const startRunHandler = guarded(true, async () => {
+    if (!deps.getCollector) return errorResponse(503, "admin_unavailable", "The agent is not available.");
+    const outcome = await deps.getCollector().run("manual");
+    return outcome.ok
+      ? json({ run: outcome.run }, { status: 201 })
+      : errorResponse(409, "agent_running", "A run is already going.");
+  });
+
+  const getAgentSettingsHandler = guarded(false, async (_request, db) => json({ settings: await readSettings(db) }));
+
+  const saveAgentSettingsHandler = guarded(true, async (request, db) => {
+    const input = await readJson(request, agentSettingsSchema);
+    if (!input) return errorResponse(400, "bad_request", "Send { dishesPerDay, pauseAt, pagesPerRun } as whole numbers.");
+    const checked = checkAgentSettings(input);
+    if (!checked.ok) {
+      return errorResponse(400, "bad_request", "Some settings are out of range.", {}, { fields: checked.fields });
+    }
+    return json({ settings: await saveSettings(db, checked.settings, now()) });
+  });
+
   function validationFailed(issues: ReturnType<typeof validateDish>): Response {
     return errorResponse(422, "validation_failed", "The dish cannot be saved as it is.", {}, { issues });
   }
@@ -454,5 +487,9 @@ export function createAdminHandlers(deps: AdminDeps) {
     updatePending: updatePendingHandler,
     discardPending: discardPendingHandler,
     approvePending: approvePendingHandler,
+    listRuns: listRunsHandler,
+    startRun: startRunHandler,
+    getAgentSettings: getAgentSettingsHandler,
+    saveAgentSettings: saveAgentSettingsHandler,
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, Loader2, Save, Trash2, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, Loader2, Save, Trash2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -30,7 +30,7 @@ import type { AdminDish, PendingDish } from "@/shared/schemas";
 import { Recipe } from "../recipe";
 import { useAdmin } from "./admin-frame";
 import { LinesEditor } from "./lines-editor";
-import { sourceLabel, warningHref, warningText } from "./review-labels";
+import { sourceLabel, sourceSite, warningHref, warningText } from "./review-labels";
 
 interface FormState {
   name: string;
@@ -330,6 +330,18 @@ export function DishFormScreen({ id, pendingId }: { id: string | null; pendingId
                 ? `Mã món ${id}${updatedLabel}`
                 : "Mã món sẽ tự đặt khi lưu."}
           </p>
+          {pending?.source.url && (
+            <a
+              href={pending.source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-0.5 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              Xem trang gốc trên {sourceSite(pending.source.url) ?? new URL(pending.source.url).host}
+              <ExternalLink aria-hidden className="size-3.5" />
+              <span className="sr-only">(mở thẻ mới)</span>
+            </a>
+          )}
         </div>
       </div>
 

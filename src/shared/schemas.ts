@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DISH_PROBLEM_CODES } from "@/domain/dish-rules";
+import type { RunEntry } from "@/domain/collector";
 import { PENDING_SOURCE_KINDS } from "@/domain/pending-dish";
 
 // Shared by the Route Handlers (outgoing) and the client (incoming), so server and client cannot
@@ -73,6 +74,8 @@ export const API_ERROR_CODES = [
   "reader_not_configured",
   "reader_unavailable",
   "reader_rate_limited",
+  // Tác nhân thu thập
+  "agent_running",
 ] as const;
 
 /** One thing wrong with a submitted dish: the rule that failed and where (the UI words it). */
@@ -90,6 +93,8 @@ export const apiErrorSchema = z.object({
     lockedUntil: z.string().optional(),
     /** `validation_failed`: every problem with the submitted dish. */
     issues: z.array(dishIssueSchema).optional(),
+    /** `bad_request` on Cài đặt tác nhân: the settings that are out of range. */
+    fields: z.array(z.enum(["dishesPerDay", "pauseAt", "pagesPerRun"])).optional(),
   }),
 });
 
@@ -184,3 +189,49 @@ export type CatalogResponse = z.infer<typeof catalogResponseSchema>;
 export type ApiError = z.infer<typeof apiErrorSchema>;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
+
+// --- Tác nhân thu thập (spec B, #31) ---
+
+export const agentSettingsSchema = z.object({
+  dishesPerDay: z.number().int(),
+  pauseAt: z.number().int(),
+  pagesPerRun: z.number().int(),
+});
+export const agentSettingsResponseSchema = z.object({ settings: agentSettingsSchema });
+
+export const runEntrySchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("skip"),
+    reason: z.enum(["duplicate", "not_a_recipe", "unreadable", "not_kept", "robots"]),
+    sourceId: z.string(),
+    url: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("error"),
+    reason: z.enum(["source", "layout", "page", "reader", "crash"]),
+    sourceId: z.string(),
+    url: z.string().optional(),
+  }),
+]) satisfies z.ZodType<RunEntry>;
+export const agentRunSchema = z.object({
+  id: z.string().min(1),
+  trigger: z.enum(["cron", "manual"]),
+  status: z.enum(["ok", "skipped", "partial", "failed"]),
+  skipped: z.enum(["paused", "too_many_waiting"]).nullable(),
+  stoppedBy: z.enum(["rate_limited", "not_configured", "deadline"]).nullable(),
+  pagesRead: z.number().int().min(0),
+  added: z.number().int().min(0),
+  entries: z.array(runEntrySchema),
+  startedAt: z.string(),
+  finishedAt: z.string(),
+});
+export const agentRunResponseSchema = z.object({ run: agentRunSchema });
+export const agentRunsResponseSchema = z.object({
+  /** Newest first, at most ~30. */
+  runs: z.array(agentRunSchema),
+  /** Whether a run is going right now. */
+  running: z.boolean(),
+});
+export type AgentSettingsView = z.infer<typeof agentSettingsSchema>;
+export type AgentRun = z.infer<typeof agentRunSchema>;
+export type AgentRunsResponse = z.infer<typeof agentRunsResponseSchema>;

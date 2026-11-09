@@ -1,10 +1,59 @@
-import type { PendingDish, PendingWarningView } from "@/shared/schemas";
+import { RECIPE_SOURCES, type RunReason } from "@/domain";
+import type { AgentRun, PendingDish, PendingWarningView } from "@/shared/schemas";
 
 /** Where a Món chờ duyệt came from, in words. */
 export function sourceLabel(item: Pick<PendingDish, "source">): string {
   if (item.source.kind === "menu") return "Ảnh thực đơn";
   if (item.source.kind === "photo") return "Ảnh công thức";
-  return "Tác nhân thu thập";
+  const site = sourceSite(item.source.url);
+  return site ? `Tác nhân thu thập · ${site}` : "Tác nhân thu thập";
+}
+
+/** The Nguồn công thức a page belongs to, by name, or null. */
+export function sourceSite(url: string | null): string | null {
+  if (!url) return null;
+  return RECIPE_SOURCES.find((source) => url.startsWith(`${source.origin}/`))?.name ?? null;
+}
+
+const SOURCE_NAMES: Record<string, string> = Object.fromEntries(RECIPE_SOURCES.map((source) => [source.id, source.name]));
+
+export const RUN_STATUS_TEXT: Record<AgentRun["status"], string> = {
+  ok: "Xong",
+  partial: "Xong một phần",
+  skipped: "Bỏ qua",
+  failed: "Lỗi",
+};
+
+export const RUN_TRIGGER_TEXT: Record<AgentRun["trigger"], string> = { cron: "Hằng ngày", manual: "Chạy ngay" };
+
+/** Why a run did nothing or stopped early, in words; null when it ran to the end. */
+export function runNote(run: Pick<AgentRun, "skipped" | "stoppedBy">): string | null {
+  if (run.skipped === "paused") return "Đang tạm dừng: Số món mỗi ngày là 0.";
+  if (run.skipped === "too_many_waiting") return "Đã có nhiều món chờ duyệt. Duyệt hoặc bỏ bớt để tác nhân chạy tiếp.";
+  if (run.stoppedBy === "rate_limited") return "Dừng sớm: các mô hình AI miễn phí đã hết lượt cho hôm nay.";
+  if (run.stoppedBy === "not_configured") return "Chưa bật AI: máy chủ chưa có khoá OpenRouter.";
+  if (run.stoppedBy === "deadline") return "Dừng sớm: hết thời gian cho một lần chạy. Lần sau đọc tiếp.";
+  return null;
+}
+
+const REASON_TEXT: Record<RunReason["reason"], string> = {
+  duplicate: "trùng món đã có hoặc đang chờ",
+  not_a_recipe: "không phải công thức món ăn",
+  unreadable: "không đọc được nội dung",
+  not_kept: "để dành cho lần sau",
+  robots: "trang không cho phép đọc (robots.txt)",
+  source: "không tải được danh sách món",
+  layout: "không tìm thấy liên kết công thức nào (trang web đã đổi giao diện?)",
+  crash: "lần chạy gặp lỗi",
+  page: "không tải được",
+  reader: "AI không trả lời được",
+};
+
+/** One grouped skip or error of a run, in words: "vnexpress.net: 2 trang không phải công thức món ăn". */
+export function reasonText(reason: RunReason): string {
+  const where = SOURCE_NAMES[reason.sourceId] ?? "Tác nhân";
+  const whole = reason.reason === "robots" || reason.reason === "source" || reason.reason === "layout" || reason.reason === "crash";
+  return `${where}: ${whole ? "" : `${reason.count} trang `}${REASON_TEXT[reason.reason]}`;
 }
 
 /** The Vietnamese wording of a warning (the API only says which one and about what). */

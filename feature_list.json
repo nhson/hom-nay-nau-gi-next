@@ -167,8 +167,8 @@
       "dependencies": [
         "feat-016"
       ],
-      "status": "not-started",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Branch feat/daily-agent: ./init.sh green (unit/contract incl. 35 collector domain tests and 26 agent contract tests with a fake web, fake model and kit clock; Playwright incl. Chạy ngay journey with the source link, settings save + inline error, axe light/dark at phone width). Screenshots checked in light and dark. Two-axis code review run; fixed: only exact names are dropped (close matches are proposed with the possible-duplicate warning, story 22), a source with no recipe links is a 'layout' error, a crash has its own reason, live 'running' state while a cron run is going, copy says 05:00. After merge (owner): migration 0004_collector on production, CRON_SECRET in Vercel, one Chạy ngay on a preview."
     },
     {
       "id": "feat-018",

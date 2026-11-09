@@ -2,11 +2,17 @@ import type { DishDraft } from "@/domain";
 import {
   adminCatalogResponseSchema,
   adminDishResponseSchema,
+  agentRunResponseSchema,
+  agentRunsResponseSchema,
+  agentSettingsResponseSchema,
   apiErrorSchema,
   menuReadingResponseSchema,
   pendingDishResponseSchema,
   pendingListResponseSchema,
   type AdminCatalogResponse,
+  type AgentRun,
+  type AgentRunsResponse,
+  type AgentSettingsView,
   type PendingDish,
   type MenuReadingResponse,
   type PendingListResponse,
@@ -22,6 +28,8 @@ export class AdminApiError extends Error {
     message: string,
     readonly issues: DishIssue[] = [],
     readonly lockedUntil?: string,
+    /** Cài đặt tác nhân: the settings the server found out of range. */
+    readonly fields: string[] = [],
   ) {
     super(message);
     this.name = "AdminApiError";
@@ -45,8 +53,8 @@ async function call(path: string, init: { method?: string; body?: unknown } = {}
   if (!response.ok) {
     const parsed = apiErrorSchema.safeParse(await response.json().catch(() => null));
     if (parsed.success) {
-      const { code, message, issues, lockedUntil } = parsed.data.error;
-      throw new AdminApiError(response.status, code, message, issues, lockedUntil);
+      const { code, message, issues, lockedUntil, fields } = parsed.data.error;
+      throw new AdminApiError(response.status, code, message, issues, lockedUntil, fields);
     }
     throw new AdminApiError(response.status, "internal_error", `Lỗi máy chủ (${response.status}).`);
   }
@@ -102,5 +110,20 @@ export const adminApi = {
   /** Duyệt: publishes the (edited) draft as a dish. */
   async approvePending(id: string, draft: DishDraft): Promise<AdminDishResponse> {
     return adminDishResponseSchema.parse(await call(`/pending/${encodeURIComponent(id)}/approve`, { method: "POST", body: draft }));
+  },
+
+  // Tác nhân thu thập
+  async listRuns(): Promise<AgentRunsResponse> {
+    return agentRunsResponseSchema.parse(await call("/agent/runs"));
+  },
+  /** Chạy ngay: resolves when the run is done (it can take a few minutes). */
+  async startRun(): Promise<AgentRun> {
+    return agentRunResponseSchema.parse(await call("/agent/runs", { method: "POST", body: {} })).run;
+  },
+  async getAgentSettings(): Promise<AgentSettingsView> {
+    return agentSettingsResponseSchema.parse(await call("/agent/settings")).settings;
+  },
+  async saveAgentSettings(settings: AgentSettingsView): Promise<AgentSettingsView> {
+    return agentSettingsResponseSchema.parse(await call("/agent/settings", { method: "PUT", body: settings })).settings;
   },
 };

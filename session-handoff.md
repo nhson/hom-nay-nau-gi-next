@@ -2,36 +2,30 @@
 
 ## Current Objective
 
-- Goal: feat-019 (spec #36), Ảnh thực đơn: menu photos → dish names checklist → AI writes one recipe per ticked name as a Món chờ duyệt. Replaces recipe photos.
-- Current status: built and verified on `feat/menu-photo` (./init.sh green: 434 unit, 99 Playwright; code review run and fixed). PR open, not merged. After merge: migration 0003 on production (owner approval).
-- Branch / commit: `feat/menu-photo`
+- Goal: feat-017 (spec #31), Tác nhân thu thập: a daily run (and Chạy ngay) reads unseen recipe pages from the Nguồn công thức, asks the free OpenRouter models, and adds the dishes that fill catalog gaps as Món chờ duyệt.
+- Current status: built and verified on `feat/daily-agent` (./init.sh green; code review run and fixed). PR not merged.
+- Branch: `feat/daily-agent`
 
 ## Completed This Session
 
-- [x] Domain: `src/domain/pending-dish.ts` reads the model's reply into a dish draft (or not_a_recipe / unreadable / invalid_shape), repairs common model quirks, derives warnings (chay with tỏi, possible duplicates by Vietnamese-aware name similarity), and holds the model instructions
-- [x] Server: `pending_dishes` table (migration `0002_pending_dishes`), `pending-repository.ts` (Duyệt is ONE SQL statement: delete pending + insert dish + bump version), `RecipeReader` port with an OpenRouter adapter (free model fallback list), admin API under `/api/v1/admin/pending`
-- [x] UI: Chờ duyệt tab with count badge, photo picker (shrunk to JPEG on the device), review mode of the dish form (Lưu / Duyệt / Bỏ, warnings box)
+- [x] Domain `src/domain/collector.ts`: robots.txt, sitemap/listing links, candidate choice (seen pages, retries, exact-name pre-skip, sources interleaved), gap ranking, run gate, settings bounds, run status and grouped reasons, page text, the read-page instructions
+- [x] Server `src/server/agent/`: runner (lock, per-site delay, 3 pages at a time, 240 s deadline, stops on the free limit), real fetcher (UA, 15 s, 2 MB), repository; migration `0004_collector` (seen sources, settings + lock, runs pruned to 30); Duyệt/Bỏ mark the page approved/discarded in the same statement
+- [x] Routes: `GET /api/v1/cron/collect` (Bearer `CRON_SECRET`), `GET|POST /api/v1/admin/agent/runs`, `GET|PUT /api/v1/admin/agent/settings`; `vercel.json` cron `0 22 * * *`
+- [x] UI on Chờ duyệt: Tác nhân thu thập card (Chạy ngay, Lần chạy gần nhất, Các lần chạy trước, Cài đặt tác nhân), site name on agent items, "Xem trang gốc" link in the review form
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
-| Unit + contract | `corepack pnpm test` | 395 passed | 25 new domain tests, 43 new contract tests with a fake RecipeReader |
-| Browser + a11y | `corepack pnpm test:e2e` | 94 passed | 13 new in `e2e/review.spec.ts` (journey, failures, axe light + dark at phone width) |
-| Lint / types / build | `./init.sh` | all green | the build needed a retry because of the Next.js security nudge (see progress.md) |
+| Full gate | `./init.sh` | green | lint, typecheck, unit/contract, build, Playwright |
+| Agent contract | `corepack pnpm vitest run src/server/agent` | 26 passed | fake web + fake model + kit clock |
+| Browser + a11y | `e2e/review.spec.ts` | passed | Chạy ngay journey, settings, axe light/dark |
 
-## Decisions Made
+## Blockers / Owner actions
 
-- No AI SDK dependency: the OpenRouter adapter is a plain `fetch` with the `models` fallback list and `response_format: json_object`; every answer is checked by `readRecipeReply` and, on Duyệt, `validateDish`
-- Warnings are derived on every read, never stored; Lưu allows an incomplete proposal (only an impossible time is refused)
-- Remembering discarded sources is spec B (#31): only agent items have a source URL
-
-## Blockers / Risks
-
-- Owner must add `OPENROUTER_API_KEY` in Vercel (optional `OPENROUTER_MODELS`, comma separated) before photo reading works anywhere but tests
-- Migration `0002_pending_dishes` must be applied to production after merge (`db:migrate`, ask first)
-- The free model has not been tried on a real Vietnamese recipe photo yet
-- See `progress.md` for the Next.js security advisory and the older risks
+- Production migration `0004_collector` after merge (ask first)
+- `CRON_SECRET` must be added in Vercel by the owner; without it the cron route answers 401 to everyone (Chạy ngay still works)
+- The free models have not read a real monngonmoingay/vnexpress page yet: try Chạy ngay on the preview
 
 ## Next Session Startup
 
@@ -41,4 +35,4 @@
 
 ## Recommended Next Step
 
-- After the owner merges PR #29 and the feat-016 PR: apply migration 0002, add the key, read one real photo on a phone. Then `/implement` spec #31 (feat-017), reusing the Món chờ duyệt table and the RecipeReader port.
+- Merge the feat-017 PR when the owner says so, migrate, add `CRON_SECRET`, Chạy ngay once. Then grill spec C (push notifications).
