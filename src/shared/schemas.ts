@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DISH_PROBLEM_CODES } from "@/domain/dish-rules";
+import type { RunEntry } from "@/domain/collector";
 import { PENDING_SOURCE_KINDS } from "@/domain/pending-dish";
 
 // Shared by the Route Handlers (outgoing) and the client (incoming), so server and client cannot
@@ -198,12 +199,20 @@ export const agentSettingsSchema = z.object({
 });
 export const agentSettingsResponseSchema = z.object({ settings: agentSettingsSchema });
 
-export const runEntrySchema = z.object({
-  kind: z.enum(["skip", "error"]),
-  reason: z.enum(["duplicate", "not_a_recipe", "unreadable", "not_kept", "robots", "source", "page", "reader"]),
-  sourceId: z.string(),
-  url: z.string().optional(),
-});
+export const runEntrySchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("skip"),
+    reason: z.enum(["duplicate", "not_a_recipe", "unreadable", "not_kept", "robots"]),
+    sourceId: z.string(),
+    url: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("error"),
+    reason: z.enum(["source", "page", "reader"]),
+    sourceId: z.string(),
+    url: z.string().optional(),
+  }),
+]) satisfies z.ZodType<RunEntry>;
 export const agentRunSchema = z.object({
   id: z.string().min(1),
   trigger: z.enum(["cron", "manual"]),

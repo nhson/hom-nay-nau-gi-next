@@ -1,5 +1,6 @@
 import type { Page, Route } from "@playwright/test";
 import { dishIdPrefix, nextDishId, normalizeDraft, validateDish } from "../src/domain/dish-rules";
+import { checkAgentSettings, type AgentSettings, type RunEntry } from "../src/domain/collector";
 import { startingTick } from "../src/domain/menu-photo";
 import { pendingWarnings } from "../src/domain/pending-dish";
 
@@ -64,6 +65,33 @@ export const WRITTEN_RECIPE: Omit<FakePending, "id" | "source" | "model" | "name
   steps: ["Chặt gà", "Kho với gừng"],
 };
 
+export interface FakeRun {
+  id: string;
+  trigger: "cron" | "manual";
+  status: "ok" | "skipped" | "partial" | "failed";
+  skipped: "paused" | "too_many_waiting" | null;
+  stoppedBy: "rate_limited" | "not_configured" | "deadline" | null;
+  pagesRead: number;
+  added: number;
+  entries: RunEntry[];
+  startedAt: string;
+  finishedAt: string;
+}
+
+/** What the fake agent finds on a Chạy ngay. */
+export const AGENT_FIND: Omit<FakePending, "id" | "createdAt" | "updatedAt"> = {
+  source: { kind: "agent", url: "https://monngonmoingay.com/bun-rieu-cua/" },
+  model: "google/gemma-4-31b-it:free",
+  mealType: "buatomonuoc",
+  category: null,
+  chay: false,
+  region: "bac",
+  name: "Bún riêu cua",
+  time: 60,
+  ingredients: ["Cua đồng 500g", "Bún tươi"],
+  steps: ["Giã cua lọc nước", "Nấu riêu"],
+};
+
 export interface FakeAdmin {
   signedIn: boolean;
   version: number;
@@ -82,6 +110,9 @@ export interface FakeAdmin {
   uploads: string[][];
   /** Names sent to be written, in order. */
   written: string[];
+  /** Lần chạy gần nhất first. */
+  runs: FakeRun[];
+  agentSettings: AgentSettings;
 }
 
 /**
@@ -101,6 +132,8 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
     writeAnswers: [],
     uploads: [],
     written: [],
+    runs: [],
+    agentSettings: { dishesPerDay: 3, pauseAt: 15, pagesPerRun: 10 },
     ...initial,
   };
   const view = (item: FakePending) => ({
@@ -134,6 +167,36 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
 
     if (!fake.signedIn) return error(route, 401, "unauthorized");
     if (path === "/dishes" && method === "GET") return json(route, 200, { version: fake.version, dishes: fake.dishes });
+
+    if (path === "/agent/runs" && method === "GET") return json(route, 200, { runs: fake.runs, running: false });
+    if (path === "/agent/runs" && method === "POST") {
+      const at = new Date().toISOString();
+      fake.pending.push({ ...AGENT_FIND, id: `a${++pendingSeq}`, createdAt: at, updatedAt: at });
+      const run: FakeRun = {
+        id: `r${fake.runs.length + 1}`,
+        trigger: "manual",
+        status: "ok",
+        skipped: null,
+        stoppedBy: null,
+        pagesRead: 4,
+        added: 1,
+        entries: [
+          { kind: "skip", reason: "not_a_recipe", sourceId: "vnexpress", url: "https://vnexpress.net/meo-bep-4800002.html" },
+          { kind: "skip", reason: "duplicate", sourceId: "monngonmoingay", url: "https://monngonmoingay.com/canh-chua-ca-loc/" },
+        ],
+        startedAt: at,
+        finishedAt: at,
+      };
+      fake.runs.unshift(run);
+      return json(route, 201, { run });
+    }
+    if (path === "/agent/settings" && method === "GET") return json(route, 200, { settings: fake.agentSettings });
+    if (path === "/agent/settings" && method === "PUT") {
+      const checked = checkAgentSettings(request.postDataJSON() as AgentSettings);
+      if (!checked.ok) return error(route, 400, "bad_request", "out of range", { fields: checked.fields });
+      fake.agentSettings = checked.settings;
+      return json(route, 200, { settings: fake.agentSettings });
+    }
 
     if (path.startsWith("/pending")) {
       if (path === "/pending" && method === "GET") {

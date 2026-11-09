@@ -1,8 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { installFakeAdmin, type FakeAdmin } from "./admin-fake-api";
+import { installFakeAdmin, type FakeAdmin, type FakeRun } from "./admin-fake-api";
 
-// The Chờ duyệt tab (spec #30, Ảnh thực đơn #36): real pages against the stateful fake admin API (CI has no database or
+// The Chờ duyệt tab (spec #30, Ảnh thực đơn #36, Tác nhân thu thập #31): real pages against the stateful fake admin API (CI has no database or
 // AI key). The real API contract is covered by src/server/admin/review.contract.test.ts.
 
 // A real, decodable 8x8 PNG, so the page's photo shrinking runs for real.
@@ -213,6 +213,78 @@ test("says the AI is not set up when there is no OpenRouter key", async ({ page 
   await expect(page.getByRole("button", { name: "Chọn ảnh" })).toBeDisabled();
 });
 
+const agentCard = (page: Page) => page.getByRole("region", { name: "Tác nhân thu thập" });
+
+const PAST_RUN: FakeRun = {
+  id: "r0",
+  trigger: "cron",
+  status: "partial",
+  skipped: null,
+  stoppedBy: "rate_limited",
+  pagesRead: 2,
+  added: 1,
+  entries: [
+    { kind: "error", reason: "page", sourceId: "monngonmoingay", url: "https://monngonmoingay.com/ga-kho/" },
+    { kind: "skip", reason: "robots", sourceId: "vnexpress" },
+  ],
+  startedAt: "2026-11-07T22:00:00.000Z",
+  finishedAt: "2026-11-07T22:03:00.000Z",
+};
+
+test("Chạy ngay shows the run and the dish it found, with a link to the page it came from", async ({ page }) => {
+  const fake = await signedIn(page, { runs: [PAST_RUN] });
+  await openReview(page);
+  const card = agentCard(page);
+  await expect(card.getByText("Đọc 2 trang · thêm 1 món chờ duyệt")).toBeVisible();
+  await expect(card.getByText(/hết lượt cho hôm nay/)).toBeVisible();
+  await expect(card.getByText("vnexpress.net: trang không cho phép đọc (robots.txt)")).toBeVisible();
+
+  await card.getByRole("button", { name: "Chạy ngay" }).click();
+  await expect(toast(page, "Tác nhân đã thêm 1 món chờ duyệt.")).toBeVisible();
+  await expect(card.getByText("Đọc 4 trang · thêm 1 món chờ duyệt")).toBeVisible();
+  await expect(card.getByText("vnexpress.net: 1 trang không phải công thức món ăn")).toBeVisible();
+  await card.getByText("Các lần chạy trước (1)").click();
+  await expect(card.getByText("Đọc 2 trang · thêm 1 món chờ duyệt")).toBeVisible();
+
+  const row = page.getByRole("link", { name: /Bún riêu cua/ });
+  await expect(row).toContainText("Tác nhân thu thập · monngonmoingay.com");
+  await row.click();
+  await expect(heading(page, "Duyệt món")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Xem trang gốc trên monngonmoingay\.com/ })).toHaveAttribute(
+    "href",
+    "https://monngonmoingay.com/bun-rieu-cua/",
+  );
+  expect(fake.requests).toContain("POST /agent/runs");
+});
+
+test("Cài đặt tác nhân saves, and says which value is out of range", async ({ page }) => {
+  const fake = await signedIn(page);
+  await openReview(page);
+  const card = agentCard(page);
+  await card.getByText("Cài đặt tác nhân").click();
+  const perDay = card.getByLabel("Số món mỗi ngày");
+  await expect(perDay).toHaveValue("3");
+
+  await perDay.fill("11");
+  await card.getByRole("button", { name: "Lưu" }).click();
+  await expect(card.getByText("Nhập một số nguyên từ 0 đến 10.")).toBeVisible();
+  await expect(perDay).toBeFocused();
+  await expect(perDay).toHaveAttribute("aria-invalid", "true");
+  expect(fake.requests).not.toContain("PUT /agent/settings");
+
+  await perDay.fill("5");
+  await card.getByLabel("Số trang đọc mỗi lần").fill("12");
+  await card.getByRole("button", { name: "Lưu" }).click();
+  await expect(toast(page, "Đã lưu Cài đặt tác nhân.")).toBeVisible();
+  expect(fake.agentSettings).toEqual({ dishesPerDay: 5, pauseAt: 15, pagesPerRun: 12 });
+});
+
+test("says when no run has happened yet", async ({ page }) => {
+  await signedIn(page);
+  await openReview(page);
+  await expect(agentCard(page).getByText(/Chưa chạy lần nào/)).toBeVisible();
+});
+
 for (const colorScheme of ["light", "dark"] as const) {
   test.describe(`Chờ duyệt accessibility (${colorScheme})`, () => {
     test.beforeEach(async ({ page }) => {
@@ -243,6 +315,18 @@ for (const colorScheme of ["light", "dark"] as const) {
       expect(await axeViolations(page)).toEqual([]);
       await page.getByRole("button", { name: "Tạo món (2)" }).click();
       await expect(progress(page).getByRole("listitem").last()).toContainText("Chưa tạo");
+      expect(await axeViolations(page)).toEqual([]);
+    });
+
+    test("the agent's runs and its settings with an error", async ({ page }) => {
+      await signedIn(page, { runs: [PAST_RUN, { ...PAST_RUN, id: "r1", status: "skipped", skipped: "too_many_waiting", stoppedBy: null, entries: [] }] });
+      await openReview(page);
+      const card = agentCard(page);
+      await card.getByText("Các lần chạy trước (1)").click();
+      await card.getByText("Cài đặt tác nhân").click();
+      await card.getByLabel("Số trang đọc mỗi lần").fill("0");
+      await card.getByRole("button", { name: "Lưu" }).click();
+      await expect(card.getByText("Nhập một số nguyên từ 1 đến 20.")).toBeVisible();
       expect(await axeViolations(page)).toEqual([]);
     });
 
