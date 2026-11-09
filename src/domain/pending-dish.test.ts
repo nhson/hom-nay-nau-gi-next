@@ -193,4 +193,11 @@ describe("warnings on a Món chờ duyệt", () => {
     expect(pendingWarnings(proposal("Đậu hũ sốt nấm", { chay: false, steps: ["Phi tỏi thơm"] }), catalog, [])).toEqual([]);
     expect(pendingWarnings(proposal("Đậu hũ sốt nấm", { chay: true, steps: ["Nấu buổi tối"] }), catalog, [])).toEqual([]);
   });
+
+  it("marks every dish written from an Ảnh thực đơn as written by the AI, and only those", () => {
+    expect(pendingWarnings({ ...proposal("Gà kho gừng"), sourceKind: "menu" }, catalog, [])).toEqual([{ code: "ai-written" }]);
+    expect(pendingWarnings({ ...proposal("Gà kho gừng"), sourceKind: "photo" }, catalog, [])).toEqual([]);
+    expect(pendingWarnings({ ...proposal("Gà kho gừng"), sourceKind: "agent" }, catalog, [])).toEqual([]);
+  });
 });
+

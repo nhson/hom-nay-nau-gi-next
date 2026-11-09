@@ -1,5 +1,6 @@
 import type { Page, Route } from "@playwright/test";
 import { dishIdPrefix, nextDishId, normalizeDraft, validateDish } from "../src/domain/dish-rules";
+import { startingTick } from "../src/domain/menu-photo";
 import { pendingWarnings } from "../src/domain/pending-dish";
 
 /** The right password for the fake; "khoa" makes the fake answer as if 5 wrong tries had locked sign-in. */
@@ -35,7 +36,7 @@ export function seedDishes(): FakeDish[] {
 
 export interface FakePending {
   id: string;
-  source: { kind: "photo" | "agent"; url: string | null };
+  source: { kind: "menu" | "agent" | "photo"; url: string | null };
   model: string | null;
   mealType: "buacom" | "buatomonuoc";
   category: "xao" | "canh" | "man" | null;
@@ -49,13 +50,15 @@ export interface FakePending {
   updatedAt: string;
 }
 
-/** What the fake "model" reads from the next photo upload. */
-export const READ_RECIPE: Omit<FakePending, "id" | "source" | "model" | "createdAt" | "updatedAt"> = {
+/** What the fake "model" reads off any menu photo. */
+export const MENU_NAMES = ["Canh chua cá lóc", "Bò lúc lắc", "Gà kho gừng"];
+
+/** What the fake "model" writes for a name (the name itself is the one sent). */
+export const WRITTEN_RECIPE: Omit<FakePending, "id" | "source" | "model" | "name" | "createdAt" | "updatedAt"> = {
   mealType: "buacom",
   category: "man",
   chay: false,
   region: "bac",
-  name: "Gà kho gừng",
   time: 40,
   ingredients: ["Gà 500g", "Gừng 1 củ"],
   steps: ["Chặt gà", "Kho với gừng"],
@@ -71,10 +74,14 @@ export interface FakeAdmin {
   pending: FakePending[];
   /** Whether an OpenRouter key is "configured". */
   readerConfigured: boolean;
-  /** What the next photo read answers instead of a recipe. One shot. */
-  nextRead: "not_a_recipe" | "unreadable" | "reader_rate_limited" | "reader_unavailable" | null;
-  /** Photo uploads received (data URLs per upload). */
+  /** What the next menu read answers instead of names. One shot. */
+  nextRead: "unreadable" | "no_dishes" | "reader_rate_limited" | "reader_unavailable" | null;
+  /** What the next dish writes answer, in order: null succeeds, a code fails. Empty: all succeed. */
+  writeAnswers: (null | "unusable_answer" | "reader_rate_limited" | "reader_unavailable")[];
+  /** Menu photo uploads received (data URLs per upload). */
   uploads: string[][];
+  /** Names sent to be written, in order. */
+  written: string[];
 }
 
 /**
@@ -91,10 +98,15 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
     pending: [],
     readerConfigured: true,
     nextRead: null,
+    writeAnswers: [],
     uploads: [],
+    written: [],
     ...initial,
   };
-  const view = (item: FakePending) => ({ ...item, warnings: pendingWarnings(item, fake.dishes, fake.pending, item.id) });
+  const view = (item: FakePending) => ({
+    ...item,
+    warnings: pendingWarnings({ ...item, sourceKind: item.source.kind }, fake.dishes, fake.pending, item.id),
+  });
   let pendingSeq = 0;
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
   const error = (route: Route, status: number, code: string, message = code, extra: object = {}) =>
@@ -128,7 +140,7 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
         const items = [...fake.pending].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(view);
         return json(route, 200, { items, readerConfigured: fake.readerConfigured });
       }
-      if (path === "/pending/photos" && method === "POST") {
+      if (path === "/pending/menu" && method === "POST") {
         const { photos } = request.postDataJSON() as { photos: string[] };
         fake.uploads.push(photos);
         if (!fake.readerConfigured) return error(route, 503, "reader_not_configured");
@@ -137,8 +149,17 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
           fake.nextRead = null;
           return error(route, code.startsWith("reader") ? 503 : 422, code);
         }
+        const names = MENU_NAMES.map((name) => ({ name, ...startingTick(name, fake.dishes, fake.pending) }));
+        return json(route, 200, { model: "google/gemma-4-31b-it:free", names });
+      }
+      if (path === "/pending/dishes" && method === "POST") {
+        const { name } = request.postDataJSON() as { name: string };
+        fake.written.push(name);
+        if (!fake.readerConfigured) return error(route, 503, "reader_not_configured");
+        const failure = fake.writeAnswers.shift();
+        if (failure) return error(route, failure.startsWith("reader") ? 503 : 422, failure);
         const at = new Date(Date.UTC(2026, 10, 8, 2, 0, pendingSeq)).toISOString();
-        const item: FakePending = { id: `p${++pendingSeq}`, source: { kind: "photo", url: null }, model: "google/gemma-4-31b-it:free", ...READ_RECIPE, createdAt: at, updatedAt: at };
+        const item: FakePending = { id: `p${++pendingSeq}`, source: { kind: "menu", url: null }, model: "google/gemma-4-31b-it:free", name, ...WRITTEN_RECIPE, createdAt: at, updatedAt: at };
         fake.pending.push(item);
         return json(route, 201, { pending: view(item) });
       }

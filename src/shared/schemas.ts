@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DISH_PROBLEM_CODES } from "@/domain/dish-rules";
+import { PENDING_SOURCE_KINDS } from "@/domain/pending-dish";
 
 // Shared by the Route Handlers (outgoing) and the client (incoming), so server and client cannot
 // drift and a bad payload can never reach the on-device store.
@@ -64,10 +65,11 @@ export const API_ERROR_CODES = [
   "bad_request",
   "validation_failed",
   "not_found",
-  // Món chờ duyệt (reading recipe photos)
+  // Món chờ duyệt (Ảnh thực đơn)
   "payload_too_large",
-  "not_a_recipe",
   "unreadable",
+  "no_dishes",
+  "unusable_answer",
   "reader_not_configured",
   "reader_unavailable",
   "reader_rate_limited",
@@ -104,7 +106,7 @@ export const adminCatalogResponseSchema = z.object({
 });
 /** A saved dish and the catalog version that now contains it. */
 export const adminDishResponseSchema = z.object({ version: z.number().int().min(0), dish: adminDishSchema });
-/** What the admin page sends to have recipe photos read: 1–4 images of ONE recipe, as data URLs. */
+/** What the admin page sends to have an Ảnh thực đơn read: 1–4 images of ONE menu, as data URLs. */
 export const MAX_PHOTOS = 4;
 export const photoUploadSchema = z.object({
   photos: z
@@ -113,7 +115,24 @@ export const photoUploadSchema = z.object({
     .max(MAX_PHOTOS),
 });
 
+/** What the admin page sends to have one dish written from a name (Ảnh thực đơn). Checked again by the domain. */
+export const writeDishSchema = z.object({ name: z.string() });
+
+export const nameMatchSchema = z.object({
+  of: z.enum(["dish", "pending"]),
+  id: z.string(),
+  name: z.string(),
+  hidden: z.boolean(),
+});
+
+/** The dish names read off an Ảnh thực đơn, each with whether it starts ticked. Nothing is stored. */
+export const menuReadingResponseSchema = z.object({
+  model: z.string(),
+  names: z.array(z.object({ name: z.string(), ticked: z.boolean(), match: nameMatchSchema.nullable() })),
+});
+
 export const pendingWarningSchema = z.discriminatedUnion("code", [
+  z.object({ code: z.literal("ai-written") }),
   z.object({ code: z.literal("chay-toi") }),
   z.object({
     code: z.literal("possible-duplicate"),
@@ -130,7 +149,7 @@ export const pendingWarningSchema = z.discriminatedUnion("code", [
  */
 export const pendingDishSchema = z.object({
   id: z.string().min(1),
-  source: z.object({ kind: z.enum(["photo", "agent"]), url: z.string().nullable() }),
+  source: z.object({ kind: z.enum(PENDING_SOURCE_KINDS), url: z.string().nullable() }),
   model: z.string().nullable(),
   mealType: mealTypeSchema,
   category: categorySchema.nullable(),
@@ -148,12 +167,14 @@ export const pendingDishResponseSchema = z.object({ pending: pendingDishSchema }
 export const pendingListResponseSchema = z.object({
   /** Newest first. */
   items: z.array(pendingDishSchema),
-  /** Whether photos can be read at all (an OpenRouter key is set). */
+  /** Whether the AI model can be asked at all (an OpenRouter key is set). */
   readerConfigured: z.boolean(),
 });
 export type PendingDish = z.infer<typeof pendingDishSchema>;
 export type PendingWarningView = z.infer<typeof pendingWarningSchema>;
 export type PendingListResponse = z.infer<typeof pendingListResponseSchema>;
+export type MenuReadingResponse = z.infer<typeof menuReadingResponseSchema>;
+export type MenuNameView = MenuReadingResponse["names"][number];
 
 export type AdminDish = z.infer<typeof adminDishSchema>;
 export type AdminCatalogResponse = z.infer<typeof adminCatalogResponseSchema>;

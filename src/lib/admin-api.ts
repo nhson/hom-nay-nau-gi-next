@@ -3,10 +3,12 @@ import {
   adminCatalogResponseSchema,
   adminDishResponseSchema,
   apiErrorSchema,
+  menuReadingResponseSchema,
   pendingDishResponseSchema,
   pendingListResponseSchema,
   type AdminCatalogResponse,
   type PendingDish,
+  type MenuReadingResponse,
   type PendingListResponse,
   type AdminDishResponse,
   type DishIssue,
@@ -80,9 +82,13 @@ export const adminApi = {
   async listPending(): Promise<PendingListResponse> {
     return pendingListResponseSchema.parse(await call("/pending"));
   },
-  /** `photos` are data URLs, already shrunk on this device. */
-  async readPhotos(photos: string[]): Promise<PendingDish> {
-    return pendingDishResponseSchema.parse(await call("/pending/photos", { method: "POST", body: { photos } })).pending;
+  /** Reads the dish names off an Ảnh thực đơn. `photos` are data URLs, already shrunk on this device. Stores nothing. */
+  async readMenu(photos: string[]): Promise<MenuReadingResponse> {
+    return menuReadingResponseSchema.parse(await call("/pending/menu", { method: "POST", body: { photos } }));
+  },
+  /** Has the AI write the recipe for one name; it becomes a Món chờ duyệt. */
+  async writeDish(name: string): Promise<PendingDish> {
+    return pendingDishResponseSchema.parse(await call("/pending/dishes", { method: "POST", body: { name } })).pending;
   },
   async getPending(id: string): Promise<PendingDish> {
     return pendingDishResponseSchema.parse(await call(`/pending/${encodeURIComponent(id)}`)).pending;

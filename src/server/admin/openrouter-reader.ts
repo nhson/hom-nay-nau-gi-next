@@ -29,9 +29,10 @@ export function readOpenRouterConfig(env: Record<string, string | undefined> = p
 }
 
 /**
- * The production RecipeReader: one chat completion with the photos as image inputs and a JSON answer.
- * Deliberately thin (no logic worth testing); the answer is judged by `readRecipeReply`. Only recipe
- * photos and fixed instructions are sent, never anything from users' devices (ADR-0005).
+ * The production RecipeReader: one chat completion with a JSON answer, with the menu photos as image
+ * inputs when there are any. Deliberately thin (no logic worth testing); the answer is judged by the
+ * domain (`readMenuReply`, `readWrittenDish`). Only menu photos, dish names and fixed instructions are
+ * sent, never anything from users' devices (ADR-0005).
  */
 export function createOpenRouterReader(config: OpenRouterConfig | null): RecipeReader {
   if (!config) return unconfiguredReader;
@@ -54,13 +55,15 @@ export function createOpenRouterReader(config: OpenRouterConfig | null): RecipeR
             response_format: { type: "json_object" },
             messages: [
               { role: "system", content: instructions },
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: "Đọc công thức trong các ảnh này." },
-                  ...photos.map((url) => ({ type: "image_url", image_url: { url } })),
-                ],
-              },
+              photos && photos.length > 0
+                ? {
+                    role: "user",
+                    content: [
+                      { type: "text", text: "Đọc tên các món trong thực đơn ở các ảnh này." },
+                      ...photos.map((url) => ({ type: "image_url", image_url: { url } })),
+                    ],
+                  }
+                : { role: "user", content: "Viết công thức theo yêu cầu trên." },
             ],
           }),
         });
