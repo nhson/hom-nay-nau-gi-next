@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateDish } from "./dish-rules";
-import { checkMenuName, MENU_NAME_LIMIT, readMenuReply, readWrittenDish, startingTick } from "./menu-photo";
+import { checkMenuName, MENU_BATCH_LIMIT, MENU_NAME_LIMIT, namesToAdd, readMenuReply, readWrittenDish, startingTick } from "./menu-photo";
 import { dish } from "./testing";
 
 // An Ảnh thực đơn starts as whatever dish names the AI model read off the menu. These tests pin what that turns into.
@@ -168,6 +168,32 @@ describe("a name the Quản trị viên sends to be written", () => {
   it("is refused when empty or too long to be a dish name", () => {
     expect(checkMenuName("   ")).toBeNull();
     expect(checkMenuName("Món " + "rất ".repeat(30))).toBeNull();
+  });
+});
+
+describe("adding names to the checklist", () => {
+  const row = (name: string, ticked = true) => ({ name, ticked, match: null });
+
+  it("adds new names after the ones already there", () => {
+    expect(namesToAdd([row("Bò lúc lắc")], [row("Gà luộc"), row("Rau muống xào")])).toEqual([row("Gà luộc"), row("Rau muống xào")]);
+  });
+
+  it("skips a name already on the list, ignoring case, accents and spaces, and repeats among the new ones", () => {
+    expect(namesToAdd([row("pho bo")], [row("Phở bò"), row("Gà luộc"), row("GÀ  LUỘC")])).toEqual([row("Gà luộc")]);
+  });
+
+  it("keeps a different dish that only starts the same", () => {
+    expect(namesToAdd([row("Phở bò")], [row("Phở bò tái")])).toEqual([row("Phở bò tái")]);
+  });
+
+  it("keeps whatever else each new row carries", () => {
+    expect(namesToAdd([], [{ ...row("Gà luộc"), key: 7 }])).toEqual([{ ...row("Gà luộc"), key: 7 }]);
+  });
+
+  it("never ticks more than the batch limit across old and new names", () => {
+    const current = Array.from({ length: MENU_BATCH_LIMIT - 1 }, (_, i) => row(`Món ${i + 1}`));
+    const added = namesToAdd(current, [row("Món mới A"), row("Món mới B"), row("Món mới C", false)]);
+    expect(added).toEqual([row("Món mới A"), row("Món mới B", false), row("Món mới C", false)]);
   });
 });
 

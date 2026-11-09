@@ -2,11 +2,11 @@
 
 import { Camera, Check, ImagePlus, Loader2, Plus, RotateCcw, Sparkles, TriangleAlert, X } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { checkMenuName, MENU_BATCH_LIMIT, startingTick, type NameMatch } from "@/domain";
+import { checkMenuName, DISH_NAME_MAX, MENU_BATCH_LIMIT, namesToAdd, startingTick, type MenuRow, type NameMatch } from "@/domain";
 import { adminApi, AdminApiError } from "@/lib/admin-api";
 import { shrinkPhoto } from "@/lib/shrink-photo";
 import { cn } from "@/lib/utils";
@@ -33,7 +33,7 @@ function failureMessage(error: unknown, task: "read" | "write"): string {
     case "payload_too_large":
       return "Ảnh quá lớn. Chọn ít ảnh hơn hoặc ảnh nhỏ hơn.";
     case "bad_request":
-      return task === "read" ? "Ảnh không hợp lệ. Chọn ảnh JPEG, PNG hoặc WebP." : "Tên món không hợp lệ (1 đến 60 ký tự).";
+      return task === "read" ? "Ảnh không hợp lệ. Chọn ảnh JPEG, PNG hoặc WebP." : `Tên món không hợp lệ (1 đến ${DISH_NAME_MAX} ký tự).`;
     case "network":
       return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
     default:
@@ -53,11 +53,8 @@ interface Photo {
   url: string;
 }
 
-interface Row {
+interface Row extends MenuRow {
   key: number;
-  name: string;
-  ticked: boolean;
-  match: NameMatch | null;
 }
 
 type Status = "waiting" | "writing" | "done" | "failed" | "left";
@@ -67,6 +64,8 @@ interface Job {
   status: Status;
   pendingId?: string;
 }
+
+const isLeftover = (job: Job) => job.status === "failed" || job.status === "left";
 
 const STATUS_TEXT: Record<Status, string> = {
   waiting: "Chờ viết",
@@ -103,13 +102,27 @@ export function MenuCard({
   const [running, setRunning] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const catalog = useRef<AdminDish[] | null>(null);
+  // The catalog, for the starting tick of names typed or edited here (names read off a photo come with theirs).
+  const [catalog, setCatalog] = useState<AdminDish[]>([]);
   const input = useRef<HTMLInputElement>(null);
   const problemRef = useRef<HTMLDivElement>(null);
   const nextKey = useRef(0);
 
   const busy = reading || running || preparing;
   const tickedCount = rows.filter((row) => row.ticked).length;
+
+  useEffect(() => {
+    let cancelled = false;
+    adminApi
+      .listDishes()
+      .then((result) => !cancelled && setCatalog(result.dishes))
+      .catch(() => undefined); // Without it, typed names simply start ticked; the duplicate warning still shows on review.
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const freshRow = (name: string): Row => ({ key: nextKey.current++, name, ...startingTick(name, catalog, pending) });
 
   function showProblem(message: string) {
     setProblem(message);
@@ -123,22 +136,6 @@ export function MenuCard({
     }
     if (error instanceof AdminApiError && error.code === "reader_not_configured") onConfigured(false);
     return false;
-  }
-
-  /** The catalog for ticks on typed or edited names; loaded once, the first time it is needed. */
-  async function loadCatalog(): Promise<AdminDish[]> {
-    if (catalog.current) return catalog.current;
-    try {
-      catalog.current = (await adminApi.listDishes()).dishes;
-    } catch {
-      catalog.current = [];
-    }
-    return catalog.current;
-  }
-
-  async function tickFor(name: string, othersTicked: number): Promise<Pick<Row, "ticked" | "match">> {
-    const result = startingTick(name, await loadCatalog(), pending);
-    return { match: result.match, ticked: result.ticked && othersTicked < MENU_BATCH_LIMIT };
   }
 
   async function pick(event: ChangeEvent<HTMLInputElement>) {
@@ -172,18 +169,8 @@ export function MenuCard({
     try {
       const result = await adminApi.readMenu(photos.map((photo) => photo.url));
       // Names already on the checklist stay; the menu's names are added after them, without repeats.
-      setRows((current) => {
-        const known = new Set(current.map((row) => row.name.toLowerCase()));
-        let ticked = current.filter((row) => row.ticked).length;
-        const added = result.names
-          .filter((item) => !known.has(item.name.toLowerCase()))
-          .map((item) => {
-            const tick = item.ticked && ticked < MENU_BATCH_LIMIT;
-            if (tick) ticked++;
-            return { key: nextKey.current++, name: item.name, ticked: tick, match: item.match };
-          });
-        return [...current, ...added];
-      });
+      const incoming = result.names.map((item): Row => ({ key: nextKey.current++, name: item.name, ticked: item.ticked, match: item.match }));
+      setRows((current) => [...current, ...namesToAdd(current, incoming)]);
       setPhotos([]);
       setNotice(`Đã đọc ${result.names.length} tên món. Chọn món muốn tạo rồi bấm “Tạo món”.`);
     } catch (error) {
@@ -193,13 +180,17 @@ export function MenuCard({
     }
   }
 
-  async function addTyped(event: FormEvent) {
+  function addTyped(event: FormEvent) {
     event.preventDefault();
     const name = checkMenuName(typed);
-    if (!name) return showProblem("Gõ một tên món (1 đến 60 ký tự).");
+    if (!name) return showProblem(`Gõ một tên món (1 đến ${DISH_NAME_MAX} ký tự).`);
     setProblem(null);
-    const tick = await tickFor(name, tickedCount);
-    setRows((current) => [...current, { key: nextKey.current++, name, ...tick }]);
+    const row = freshRow(name);
+    if (namesToAdd(rows, [row]).length === 0) {
+      setNotice(`“${name}” đã có trong danh sách.`);
+      return;
+    }
+    setRows((current) => [...current, ...namesToAdd(current, [row])]);
     setTyped("");
   }
 
@@ -207,13 +198,16 @@ export function MenuCard({
     setRows((current) => current.map((row) => (row.key === key ? { ...row, name } : row)));
   }
 
-  /** Once an edit is done, the tick follows the new name ("đã có" or not). */
-  async function settleName(key: number) {
-    const row = rows.find((item) => item.key === key);
-    if (!row) return;
-    const others = rows.filter((item) => item.ticked && item.key !== key).length;
-    const tick = await tickFor(row.name, others);
-    setRows((current) => current.map((item) => (item.key === key ? { ...item, ...tick } : item)));
+  /** Once an edit is done, the tick follows the new name ("đã có" or not), within the batch limit. */
+  function settleName(key: number) {
+    setRows((current) => {
+      const others = current.filter((item) => item.ticked && item.key !== key).length;
+      return current.map((item) => {
+        if (item.key !== key) return item;
+        const tick = startingTick(item.name, catalog, pending);
+        return { ...item, match: tick.match, ticked: tick.ticked && others < MENU_BATCH_LIMIT };
+      });
+    });
   }
 
   function toggle(key: number, ticked: boolean) {
@@ -270,18 +264,18 @@ export function MenuCard({
     else if (done > 0) toast.success(`Đã tạo ${done} món chờ duyệt.`);
   }
 
-  /** Puts the names that failed or were never written back on the checklist, ticked. */
+  /** Puts the names that failed or were never written back on the checklist, ticked (if still new) and the others unticked. */
   function retryLeftovers() {
     if (!jobs) return;
-    const again = jobs.filter((job) => job.status === "failed" || job.status === "left").slice(0, MENU_BATCH_LIMIT);
-    setRows((current) => [
-      ...current.map((row) => ({ ...row, ticked: false })),
-      ...again.map((job) => ({ key: nextKey.current++, name: job.name, ticked: true, match: null })),
-    ]);
+    const again = jobs.filter(isLeftover).map((job) => freshRow(job.name));
+    setRows((current) => {
+      const unticked = current.map((row) => ({ ...row, ticked: false }));
+      return [...unticked, ...namesToAdd(unticked, again)];
+    });
     setJobs(null);
   }
 
-  const leftovers = jobs?.filter((job) => job.status === "failed" || job.status === "left").length ?? 0;
+  const leftovers = jobs?.filter(isLeftover).length ?? 0;
   const writing = jobs?.findIndex((job) => job.status === "writing") ?? -1;
 
   return (
@@ -387,7 +381,7 @@ export function MenuCard({
                   <Input
                     value={row.name}
                     disabled={busy}
-                    maxLength={60}
+                    maxLength={DISH_NAME_MAX}
                     aria-label={`Tên món ${index + 1}`}
                     onChange={(event) => rename(row.key, event.target.value)}
                     onBlur={() => settleName(row.key)}
@@ -413,7 +407,7 @@ export function MenuCard({
           <Input
             value={typed}
             disabled={busy}
-            maxLength={60}
+            maxLength={DISH_NAME_MAX}
             placeholder="Gõ thêm tên món, vd. Canh chua cá lóc"
             aria-label="Thêm tên món"
             onChange={(event) => setTyped(event.target.value)}

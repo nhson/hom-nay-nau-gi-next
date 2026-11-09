@@ -38,7 +38,7 @@ export function createOpenRouterReader(config: OpenRouterConfig | null): RecipeR
   if (!config) return unconfiguredReader;
   return {
     configured: true,
-    async read({ instructions, photos }): Promise<ReaderResult> {
+    async read({ instructions, photos, prompt }): Promise<ReaderResult> {
       let response: Response;
       try {
         response = await fetch(ENDPOINT, {
@@ -63,7 +63,7 @@ export function createOpenRouterReader(config: OpenRouterConfig | null): RecipeR
                       ...photos.map((url) => ({ type: "image_url", image_url: { url } })),
                     ],
                   }
-                : { role: "user", content: "Viết công thức theo yêu cầu trên." },
+                : { role: "user", content: prompt ?? "" },
             ],
           }),
         });

@@ -10,7 +10,8 @@ import {
   readWrittenDish,
   startingTick,
   validateDish,
-  writeDishInstructions,
+  WRITE_DISH_INSTRUCTIONS,
+  writeDishPrompt,
   type DishDraft,
 } from "@/domain";
 import { errorResponse } from "@/server/api/responses";
@@ -354,7 +355,7 @@ export function createAdminHandlers(deps: AdminDeps) {
 
     const reader = getReader();
     if (!reader.configured) return readerFailed("not_configured");
-    const result = await reader.read({ instructions: writeDishInstructions(name) });
+    const result = await reader.read({ instructions: WRITE_DISH_INSTRUCTIONS, prompt: writeDishPrompt(name) });
     if (!result.ok) return readerFailed(result.failure);
 
     const written = readWrittenDish(result.reply, name);

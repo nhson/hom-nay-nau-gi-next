@@ -52,7 +52,7 @@ const recipe = (overrides: Record<string, unknown> = {}) => ({
 
 /** A fake model: answers with the queued results in order, and records what it was asked. */
 function fakeReader(...answers: ReaderResult[]) {
-  const calls: { instructions: string; photos?: string[] }[] = [];
+  const calls: { instructions: string; photos?: string[]; prompt?: string }[] = [];
   const reader: RecipeReader = {
     configured: true,
     read: async (input) => {
@@ -215,7 +215,9 @@ describe("writing one dish from a ticked name", () => {
     });
     expect(kit.calls).toHaveLength(1);
     expect(kit.calls[0].photos).toBeUndefined();
-    expect(kit.calls[0].instructions).toContain("Gà kho gừng");
+    // The name travels as the message, never inside the instructions the model must follow.
+    expect(kit.calls[0].prompt).toContain("Gà kho gừng");
+    expect(kit.calls[0].instructions).not.toContain("Gà kho gừng");
     expect((await list(kit)).items.map((item) => item.id)).toEqual([pending.id]);
   });
 
@@ -245,6 +247,11 @@ describe("writing one dish from a ticked name", () => {
 });
 
 describe("a Món chờ duyệt made by the old recipe-photo upload", () => {
+  it("can no longer be made: the recipe-photo route is gone", async () => {
+    const kit = await setup();
+    expect("readPhotos" in kit.k.handlers).toBe(false);
+  });
+
   it("still lists, without the AI-written warning, and still approves", async () => {
     const kit = await setup();
     const old = await insertPending(ctx.db, {

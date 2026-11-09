@@ -10,8 +10,11 @@ export type ReaderResult = { ok: true; reply: unknown; model: string } | { ok: f
 export interface RecipeReader {
   /** Whether the reader has what it needs (an API key), so the page can say so before an upload. */
   configured: boolean;
-  /** `photos` are data URLs (JPEG, PNG or WebP) of one menu; absent for a text-only call (writing a recipe). */
-  read(input: { instructions: string; photos?: string[] }): Promise<ReaderResult>;
+  /**
+   * `instructions` are fixed by the app. `photos` are data URLs (JPEG, PNG or WebP) of one menu;
+   * `prompt` is the text message for a text-only call (the dish name to write a recipe for).
+   */
+  read(input: { instructions: string; photos?: string[]; prompt?: string }): Promise<ReaderResult>;
 }
 
 /** A reader that is switched off: every read reports `not_configured`. */

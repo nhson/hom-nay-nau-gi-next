@@ -174,7 +174,6 @@ export type PendingDish = z.infer<typeof pendingDishSchema>;
 export type PendingWarningView = z.infer<typeof pendingWarningSchema>;
 export type PendingListResponse = z.infer<typeof pendingListResponseSchema>;
 export type MenuReadingResponse = z.infer<typeof menuReadingResponseSchema>;
-export type MenuNameView = MenuReadingResponse["names"][number];
 
 export type AdminDish = z.infer<typeof adminDishSchema>;
 export type AdminCatalogResponse = z.infer<typeof adminCatalogResponseSchema>;

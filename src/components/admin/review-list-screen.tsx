@@ -31,7 +31,6 @@ export function ReviewListScreen() {
         if (cancelled) return;
         setItems(result.items);
         setConfigured(result.readerConfigured);
-        setPendingCount(result.items.length);
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -44,12 +43,13 @@ export function ReviewListScreen() {
   }, [requireLogin, setPendingCount]);
 
   function added(item: PendingDish) {
-    setItems((current) => {
-      const next = [item, ...(current ?? [])];
-      setPendingCount(next.length);
-      return next;
-    });
+    setItems((current) => [item, ...(current ?? [])]);
   }
+
+  // The badge in the admin bar follows the list, however it changed.
+  useEffect(() => {
+    if (items) setPendingCount(items.length);
+  }, [items, setPendingCount]);
 
   return (
     <div>
