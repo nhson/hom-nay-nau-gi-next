@@ -260,6 +260,36 @@ export function runStatus(run: { skipped: string | null; pagesRead: number; adde
 }
 
 /** How the agent names itself to sites, in robots.txt groups and in its User-Agent header. */
+/**
+ * What a run notes about a page or a source it did not turn into a Món chờ duyệt.
+ * Skips are expected (`duplicate`: the name is already in the catalog or waiting; `not_kept`: a valid
+ * dish that lost to better gap-fillers, left unseen for a later run; `robots`: the source's robots.txt
+ * disallows us). Errors are not (`source`: its sitemap or listing could not be read; `page`: the page
+ * could not be fetched; `reader`: the model gave no usable answer).
+ */
+export type RunEntry =
+  | { kind: "skip"; reason: "duplicate" | "not_a_recipe" | "unreadable" | "not_kept" | "robots"; sourceId: string; url?: string }
+  | { kind: "error"; reason: "source" | "page" | "reader"; sourceId: string; url?: string };
+
+export interface RunReason {
+  kind: RunEntry["kind"];
+  reason: RunEntry["reason"];
+  sourceId: string;
+  count: number;
+}
+
+/** The entries grouped by what happened and where, in the order each first happened. */
+export function runReasons(entries: readonly RunEntry[]): RunReason[] {
+  const groups = new Map<string, RunReason>();
+  for (const entry of entries) {
+    const key = `${entry.kind}|${entry.reason}|${entry.sourceId}`;
+    const group = groups.get(key);
+    if (group) group.count++;
+    else groups.set(key, { kind: entry.kind, reason: entry.reason, sourceId: entry.sourceId, count: 1 });
+  }
+  return [...groups.values()];
+}
+
 export const AGENT_NAME = "HomNayNauGiBot";
 export const AGENT_USER_AGENT = `${AGENT_NAME}/1.0 (+https://hom-nay-nau-gi-next.vercel.app; family recipe app, a few pages a day)`;
 

@@ -81,16 +81,27 @@ export async function updatePending(db: Db, id: string, draft: DishDraft, at: Da
   return row ? toRecord(row) : null;
 }
 
-/** Bỏ. False when it was not there. */
+/**
+ * Bỏ. False when it was not there. A Món chờ duyệt the Tác nhân thu thập found also marks its page
+ * `discarded`, in the same statement, so the agent never proposes it again.
+ */
 export async function deletePending(db: Db, id: string): Promise<boolean> {
-  const rows = await db.delete(pendingDishes).where(eq(pendingDishes.id, id)).returning({ id: pendingDishes.id });
+  const result = await db.execute(sql`WITH gone AS (
+      DELETE FROM pending_dishes WHERE id = ${id}::text RETURNING id, source_url
+    ), seen AS (
+      UPDATE agent_seen_sources SET outcome = 'discarded', last_processed_at = now()
+      WHERE url IN (SELECT source_url FROM gone WHERE source_url IS NOT NULL)
+    )
+    SELECT id FROM gone`);
+  const rows = Array.isArray(result) ? result : result.rows;
   return rows.length > 0;
 }
 
 /**
  * Duyệt, as ONE SQL statement (like every catalog change, see repository.ts): removes the Món chờ
  * duyệt, inserts the dish under `dishId` and bumps the catalog version, all or nothing. Null when the
- * Món chờ duyệt (or the catalog) is not there, so nothing changed.
+ * Món chờ duyệt (or the catalog) is not there, so nothing changed. A page the Tác nhân thu thập found
+ * is marked `approved` in the same statement.
  */
 export function approvePending(db: Db, pendingId: string, dishId: string, draft: DishDraft): Promise<Saved | null> {
   return publish(
@@ -98,7 +109,10 @@ export function approvePending(db: Db, pendingId: string, dishId: string, draft:
     sql`WITH gone AS (
       DELETE FROM pending_dishes WHERE id = ${pendingId}::text
         AND EXISTS (SELECT 1 FROM catalog_meta WHERE id = 1)
-      RETURNING id
+      RETURNING id, source_url
+    ), seen AS (
+      UPDATE agent_seen_sources SET outcome = 'approved', last_processed_at = now()
+      WHERE url IN (SELECT source_url FROM gone WHERE source_url IS NOT NULL)
     ), changed AS (
       INSERT INTO dishes (id, position, meal_type, category, chay, region, name, time_minutes, ingredients, steps, retired, updated_at)
       SELECT ${dishId}::text, COALESCE((SELECT max(position) FROM dishes), -1) + 1, ${draft.mealType}::text, ${draft.category}::text,

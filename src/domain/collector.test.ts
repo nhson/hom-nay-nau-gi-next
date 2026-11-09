@@ -11,6 +11,7 @@ import {
   rankByGaps,
   robotsAllow,
   runGate,
+  runReasons,
   runStatus,
   sitemapLocations,
   slugWords,
@@ -237,6 +238,29 @@ describe("how a run ended", () => {
   it("failed when it could not read any page", () => {
     expect(runStatus({ ...base, pagesRead: 0, added: 0, errors: 2 })).toBe("failed");
     expect(runStatus({ ...base, pagesRead: 0, added: 0, stoppedBy: "not_configured" })).toBe("failed");
+  });
+});
+
+describe("the reasons shown for a run", () => {
+  it("groups the skip and error entries by what happened and where, in the order they first happened", () => {
+    expect(
+      runReasons([
+        { kind: "skip", reason: "not_a_recipe", sourceId: "monngonmoingay", url: "https://a/1" },
+        { kind: "error", reason: "page", sourceId: "vnexpress", url: "https://b/1" },
+        { kind: "skip", reason: "not_a_recipe", sourceId: "monngonmoingay", url: "https://a/2" },
+        { kind: "skip", reason: "robots", sourceId: "vnexpress" },
+        { kind: "skip", reason: "not_a_recipe", sourceId: "vnexpress", url: "https://b/2" },
+      ]),
+    ).toEqual([
+      { kind: "skip", reason: "not_a_recipe", sourceId: "monngonmoingay", count: 2 },
+      { kind: "error", reason: "page", sourceId: "vnexpress", count: 1 },
+      { kind: "skip", reason: "robots", sourceId: "vnexpress", count: 1 },
+      { kind: "skip", reason: "not_a_recipe", sourceId: "vnexpress", count: 1 },
+    ]);
+  });
+
+  it("has nothing to show for a clean run", () => {
+    expect(runReasons([])).toEqual([]);
   });
 });
 
