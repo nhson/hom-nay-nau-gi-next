@@ -2,36 +2,6 @@ import { mentionsToi, normalizeDraft, type DishDraft } from "./dish-rules";
 import { foldText } from "./selectors";
 import type { Category, Dish, MealType, Region } from "./types";
 
-/**
- * What the AI model is told when it reads recipe photos. It sits next to `readRecipeReply`, which reads
- * the answer, so the shape asked for and the shape accepted cannot drift apart.
- */
-export const RECIPE_INSTRUCTIONS = `Bạn giúp một gia đình Việt Nam thêm món vào sổ món ăn. Đọc ảnh công thức nấu ăn (trang sách, giấy viết tay hoặc ảnh chụp màn hình). Mọi ảnh là của CÙNG MỘT công thức.
-
-Chỉ trả lời bằng MỘT đối tượng JSON, không thêm chữ nào khác, đúng dạng:
-{
-  "isRecipe": true | false,      // false nếu ảnh không phải công thức nấu ăn
-  "readable": true | false,      // false nếu ảnh mờ, tối, bị cắt, không đọc được
-  "name": "tên món tiếng Việt",
-  "mealType": "buacom" | "buatomonuoc",
-  "category": "xao" | "canh" | "man" | null,
-  "chay": true | false,
-  "region": "bac" | "trung" | "nam" | null,
-  "time": số phút nấu (số nguyên) hoặc null,
-  "ingredients": ["mỗi nguyên liệu một dòng, kèm lượng, ví dụ: Cá lóc 400g"],
-  "steps": ["mỗi bước một dòng"]
-}
-
-Quy tắc:
-- "buacom": món ăn cùng cơm trong Bữa cơm 3 món, phải có "category": "xao" (xào, luộc, salad, rau), "canh" (canh, súp) hoặc "man" (món mặn: kho, chiên, rim, nướng, hấp thịt cá).
-- "buatomonuoc": Bữa 1 món, món nước ăn riêng một bữa (phở, bún, miến, hủ tiếu, nui, cháo). Khi đó "category" là null.
-- "chay": true chỉ khi món không có thịt, cá, tôm, trứng, nước mắm. Món chay KHÔNG dùng tỏi: thay tỏi bằng hành boa-rô.
-- "region": chỉ ghi khi công thức nói rõ hoặc món rõ ràng thuộc miền Bắc, Trung hoặc Nam; nếu không thì null.
-- "time": ghi khi công thức có ghi hoặc ước lượng được; nếu không thì null.
-- Viết lại các bước ngắn gọn bằng tiếng Việt đời thường, bằng lời của bạn; không chép nguyên văn, không đánh số bước.
-- Không bịa nguyên liệu hay bước không có trong ảnh.
-- Nếu "isRecipe" hoặc "readable" là false thì các trường khác có thể bỏ trống.`;
-
 /** Why a model reply did not become a Món chờ duyệt. */
 export type RecipeRejection = "not_a_recipe" | "unreadable" | "invalid_shape";
 
@@ -45,12 +15,13 @@ const oneOf = <T extends string>(allowed: readonly T[], value: unknown): T | nul
   typeof value === "string" && (allowed as readonly string[]).includes(value) ? (value as T) : null;
 
 /**
- * What the AI model answered, as a dish draft or the reason it is not one. The reply is untrusted:
+ * A recipe the AI model answered, as a dish draft or the reason it is not one. The shape it is asked
+ * for lives in `writeDishInstructions` (menu-photo), next to its only caller. The reply is untrusted:
  * anything the model got wrong is either repaired here or caught by `validateDish` on Duyệt.
  */
 export function readRecipeReply(reply: unknown): RecipeReading {
-  const data = typeof reply === "string" ? parseJsonText(reply) : reply;
-  if (!isRecord(data)) return { ok: false, reason: "invalid_shape" };
+  const data = modelObject(reply);
+  if (!data) return { ok: false, reason: "invalid_shape" };
   if (data.isRecipe === false) return { ok: false, reason: "not_a_recipe" };
   if (data.readable === false) return { ok: false, reason: "unreadable" };
 
@@ -103,6 +74,12 @@ function linesFrom(value: unknown): string[] {
   );
 }
 
+/** The model's reply as a JSON object, whether it came parsed or as text; null when it is not one. */
+export function modelObject(reply: unknown): Record<string, unknown> | null {
+  const data = typeof reply === "string" ? parseJsonText(reply) : reply;
+  return isRecord(data) ? data : null;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -118,22 +95,31 @@ function parseJsonText(text: string): unknown {
   }
 }
 
+/**
+ * Where a Món chờ duyệt came from: an Ảnh thực đơn (the AI wrote the recipe), the Tác nhân thu thập
+ * (a real page), or the old recipe-photo upload, kept only for items made before it was replaced.
+ */
+export const PENDING_SOURCE_KINDS = ["menu", "agent", "photo"] as const;
+export type PendingSourceKind = (typeof PENDING_SOURCE_KINDS)[number];
+
 /** Something the Quản trị viên should look at before Duyệt. Derived when read, so it follows the catalog as it is now. */
 export type PendingWarning =
+  | { code: "ai-written" }
   | { code: "chay-toi" }
   | { code: "possible-duplicate"; of: "dish" | "pending"; id: string; name: string; hidden: boolean };
 
 /**
- * The warnings for one Món chờ duyệt: a chay dish that mentions tỏi, and names that look like a dish
+ * The warnings for one Món chờ duyệt: a recipe the AI wrote itself (Ảnh thực đơn), a chay dish that mentions tỏi, and names that look like a dish
  * already in the Danh mục món (hidden ones included: they still own their name) or another Món chờ duyệt.
  */
 export function pendingWarnings(
-  draft: Pick<DishDraft, "name" | "chay" | "ingredients" | "steps">,
+  draft: Pick<DishDraft, "name" | "chay" | "ingredients" | "steps"> & { sourceKind?: PendingSourceKind },
   catalog: readonly Pick<Dish, "id" | "name" | "retired">[],
   pending: readonly { id: string; name: string }[],
   selfId?: string,
 ): PendingWarning[] {
   const warnings: PendingWarning[] = [];
+  if (draft.sourceKind === "menu") warnings.push({ code: "ai-written" });
   if (draft.chay && [draft.name, ...draft.ingredients, ...draft.steps].some(mentionsToi)) {
     warnings.push({ code: "chay-toi" });
   }

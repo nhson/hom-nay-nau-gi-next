@@ -2,9 +2,9 @@
 
 ## Current Objective
 
-- Goal: feat-016 (spec #30), Món chờ duyệt + tải ảnh công thức: AI-read recipe photos wait on a Chờ duyệt tab until the Quản trị viên approves them.
-- Current status: live. PR #32 merged (a4b34fb), migration 0002 applied to production, `OPENROUTER_API_KEY` set; Next.js upgraded to 16.4.5 (PR #33). Only the owner's real-photo check remains.
-- Branch / commit: `main`; next feature is feat-017 (spec #31)
+- Goal: feat-019 (spec #36), Ảnh thực đơn: menu photos → dish names checklist → AI writes one recipe per ticked name as a Món chờ duyệt. Replaces recipe photos.
+- Current status: built and verified on `feat/menu-photo` (./init.sh green: 434 unit, 99 Playwright; code review run and fixed). PR open, not merged. After merge: migration 0003 on production (owner approval).
+- Branch / commit: `feat/menu-photo`
 
 ## Completed This Session
 

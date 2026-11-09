@@ -1,5 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
-import type { Category, DishDraft, MealType, Region } from "@/domain";
+import type { Category, DishDraft, MealType, PendingSourceKind, Region } from "@/domain";
 import type { Db } from "@/server/catalog/repository";
 import { pendingDishes } from "@/server/db/schema";
 import { lines, publish, type Saved } from "./repository";
@@ -7,7 +7,7 @@ import { lines, publish, type Saved } from "./repository";
 /** A stored Món chờ duyệt: the proposed dish plus where it came from. Warnings are not stored. */
 export interface PendingRecord extends DishDraft {
   id: string;
-  source: { kind: "photo" | "agent"; url: string | null };
+  source: { kind: PendingSourceKind; url: string | null };
   model: string | null;
   createdAt: string;
   updatedAt: string;

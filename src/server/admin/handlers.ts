@@ -3,10 +3,15 @@ import {
   dishIdPrefix,
   nextDishId,
   normalizeDraft,
+  checkMenuName,
+  MENU_INSTRUCTIONS,
   pendingWarnings,
-  readRecipeReply,
-  RECIPE_INSTRUCTIONS,
+  readMenuReply,
+  readWrittenDish,
+  startingTick,
   validateDish,
+  WRITE_DISH_INSTRUCTIONS,
+  writeDishPrompt,
   type DishDraft,
 } from "@/domain";
 import { errorResponse } from "@/server/api/responses";
@@ -16,6 +21,7 @@ import {
   catalogResponseSchema,
   dishDraftSchema,
   photoUploadSchema,
+  writeDishSchema,
   type PendingDish,
 } from "@/shared/schemas";
 import type { AdminConfig } from "./config";
@@ -28,7 +34,7 @@ import {
   updatePending,
   type PendingRecord,
 } from "./pending-repository";
-import { unconfiguredReader, type RecipeReader } from "./recipe-reader";
+import { unconfiguredReader, type ReaderFailure, type RecipeReader } from "./recipe-reader";
 import { createDish, isUniqueViolation, setRetired, updateDish, type Saved } from "./repository";
 import {
   clearedSessionCookie,
@@ -49,7 +55,7 @@ export interface AdminDeps {
   getConfig: () => AdminConfig | null;
   /** Injected so tests control time. */
   now?: () => Date;
-  /** The AI model that reads recipe photos (ADR-0007). Absent: photo reading is not configured. */
+  /** The AI model behind Ảnh thực đơn (ADR-0007). Absent: the AI is not configured. */
   getReader?: () => RecipeReader;
 }
 
@@ -298,7 +304,7 @@ export function createAdminHandlers(deps: AdminDeps) {
     const all = await listPending(db);
     return records.map((record) => ({
       ...record,
-      warnings: pendingWarnings(record, catalog?.dishes ?? [], all, record.id),
+      warnings: pendingWarnings({ ...record, sourceKind: record.source.kind }, catalog?.dishes ?? [], all, record.id),
     }));
   }
 
@@ -307,7 +313,8 @@ export function createAdminHandlers(deps: AdminDeps) {
     return json({ items, readerConfigured: getReader().configured });
   });
 
-  const readPhotosHandler = guarded(true, async (request, db) => {
+  /** Reads the dish names off an Ảnh thực đơn. Stores nothing: only ticked names that get written become Món chờ duyệt. */
+  const readMenuHandler = guarded(true, async (request, db) => {
     const text = await request.text();
     if (text.length > MAX_UPLOAD_CHARS) {
       return errorResponse(413, "payload_too_large", "The photos are too large. Send smaller photos.");
@@ -325,29 +332,48 @@ export function createAdminHandlers(deps: AdminDeps) {
 
     const reader = getReader();
     if (!reader.configured) return readerFailed("not_configured");
-    const result = await reader.read({ instructions: RECIPE_INSTRUCTIONS, photos: parsed.data.photos });
+    const result = await reader.read({ instructions: MENU_INSTRUCTIONS, photos: parsed.data.photos });
     if (!result.ok) return readerFailed(result.failure);
 
-    const reading = readRecipeReply(result.reply);
+    const reading = readMenuReply(result.reply);
     if (!reading.ok) {
-      return reading.reason === "not_a_recipe"
-        ? errorResponse(422, "not_a_recipe", "The photos do not look like a recipe.")
-        : errorResponse(422, "unreadable", "The recipe in the photos could not be read.");
+      return reading.reason === "no_dishes"
+        ? errorResponse(422, "no_dishes", "No dish names were found in the photos.")
+        : errorResponse(422, "unreadable", "The menu in the photos could not be read.");
     }
+    const catalog = await readCatalog(db);
+    const pending = await listPending(db);
+    const names = reading.names.map((name) => ({ name, ...startingTick(name, catalog?.dishes ?? [], pending) }));
+    return json({ model: result.model, names });
+  });
+
+  /** Writes the recipe for one ticked name and stores it as a Món chờ duyệt. The page sends one name per request. */
+  const writeDishHandler = guarded(true, async (request, db) => {
+    const input = await readJson(request, writeDishSchema);
+    const name = input ? checkMenuName(input.name) : null;
+    if (!name) return errorResponse(400, "bad_request", "Send { name: a dish name of 1 to 60 characters }.");
+
+    const reader = getReader();
+    if (!reader.configured) return readerFailed("not_configured");
+    const result = await reader.read({ instructions: WRITE_DISH_INSTRUCTIONS, prompt: writeDishPrompt(name) });
+    if (!result.ok) return readerFailed(result.failure);
+
+    const written = readWrittenDish(result.reply, name);
+    if (!written.ok) return errorResponse(422, "unusable_answer", "The AI model did not write a usable recipe. Try again.");
     const record = await insertPending(db, {
       id: crypto.randomUUID(),
-      source: { kind: "photo", url: null },
+      source: { kind: "menu", url: null },
       model: result.model,
-      draft: reading.draft,
+      draft: written.draft,
       at: now(),
     });
     const [pending] = await withWarnings(db, [record]);
     return json({ pending }, { status: 201 });
   });
 
-  function readerFailed(failure: "not_configured" | "unavailable" | "rate_limited"): Response {
+  function readerFailed(failure: ReaderFailure): Response {
     if (failure === "not_configured") {
-      return errorResponse(503, "reader_not_configured", "Reading recipe photos is not set up (no OpenRouter key).");
+      return errorResponse(503, "reader_not_configured", "The AI model is not set up (no OpenRouter key).");
     }
     if (failure === "rate_limited") {
       return errorResponse(503, "reader_rate_limited", "The free AI models are at their limit. Try again later.");
@@ -422,7 +448,8 @@ export function createAdminHandlers(deps: AdminDeps) {
     setHidden: setHiddenHandler,
     exportCatalog,
     listPending: listPendingHandler,
-    readPhotos: readPhotosHandler,
+    readMenu: readMenuHandler,
+    writeDish: writeDishHandler,
     getPending: getPendingHandler,
     updatePending: updatePendingHandler,
     discardPending: discardPendingHandler,
