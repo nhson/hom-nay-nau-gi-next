@@ -2,7 +2,7 @@
 
 import { ChevronRight, Inbox, TriangleAlert } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { adminApi, AdminApiError } from "@/lib/admin-api";
 import { groupOf, groupStyle } from "@/lib/category-style";
@@ -26,6 +26,7 @@ export function ReviewListScreen() {
 
   // Bumped after a Chạy ngay, so the list shows what the agent added.
   const [reloads, setReloads] = useState(0);
+  const reload = useCallback(() => setReloads((count) => count + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +67,7 @@ export function ReviewListScreen() {
         </p>
       </div>
 
-      <AgentCard onRunFinished={() => setReloads((count) => count + 1)} />
+      <AgentCard onRunFinished={reload} />
 
       <MenuCard configured={configured} pending={items ?? []} onConfigured={setConfigured} onCreated={added} />
 

@@ -135,6 +135,18 @@ describe("choosing which pages to read in a run", () => {
     expect(result.duplicates).toEqual([{ sourceId: "monngonmoingay", url: mmn("canh-chua-ca-loc") }]);
   });
 
+  it("still reads a page that only resembles a dish we have: the Quản trị viên decides on close matches", () => {
+    const result = chooseCandidates({
+      sources: [{ sourceId: "monngonmoingay", urls: [mmn("canh-chua-ca-loc"), mmn("ca-kho")] }],
+      seen: [],
+      knownNames: ["Canh chua", "Cá kho tộ"],
+      pagesPerRun: 10,
+      rng: keepOrder,
+    });
+    expect(result.pick.map((c) => c.url)).toEqual([mmn("canh-chua-ca-loc"), mmn("ca-kho")]);
+    expect(result.duplicates).toEqual([]);
+  });
+
   it("picks pages in a random order, so a big backlog is not read front to back", () => {
     const urls = [mmn("a-1"), mmn("a-2"), mmn("a-3")];
     const reversed = chooseCandidates({ sources: [{ sourceId: "monngonmoingay", urls }], seen: [], knownNames: [], pagesPerRun: 3, rng: () => 0 });

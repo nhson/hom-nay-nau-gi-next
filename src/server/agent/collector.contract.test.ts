@@ -259,6 +259,27 @@ describe("a run", () => {
   });
 });
 
+describe("close matches and changed sites", () => {
+  it("still proposes a dish whose name only resembles one we have, with the possible-duplicate warning", async () => {
+    const model = fakeModel((title) =>
+      title === "Gà kho gừng" ? { ok: true, reply: recipe("Thịt kho trứng cút", "man"), model: "m" } : undefined,
+    );
+    const kit = await setup({ model });
+    await saveSettings(kit, { dishesPerDay: 10, pauseAt: 15, pagesPerRun: 10 });
+    await runNow(kit);
+    const item = (await pending(kit)).find((dish) => dish.name === "Thịt kho trứng cút");
+    expect(item?.warnings).toContainEqual({ code: "possible-duplicate", of: "dish", id: "m2", name: "Thịt kho trứng", hidden: false });
+  });
+
+  it("reports a source whose pages no longer list any recipe as a layout error", async () => {
+    const kit = await setup();
+    kit.web.served.set(LISTING, { ok: true, text: "<html><body><a href='/the-thao'>Thể thao</a></body></html>" });
+    const run = await runNow(kit);
+    expect(run.entries).toContainEqual({ kind: "error", reason: "layout", sourceId: "vnexpress" });
+    expect(run.status).toBe("partial");
+  });
+});
+
 describe("Duyệt and Bỏ on a dish the agent found", () => {
   it("remember the page as approved or discarded, so it is never proposed again", async () => {
     const kit = await setup();

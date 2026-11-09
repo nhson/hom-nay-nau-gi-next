@@ -9,7 +9,7 @@ import {
   robotsAllow,
   runGate,
   runStatus,
-  similarNames,
+  sameDishName,
   sitemapLocations,
   listingLinks,
   type Candidate,
@@ -149,6 +149,8 @@ export function createCollector(deps: CollectorDeps): Collector {
           }
           const urls = await candidatesOf(source, robots);
           if (urls === null) entries.push({ kind: "error", reason: "source", sourceId: source.id });
+          // Read, but no recipe links in it: the site's layout changed and the source config needs updating.
+          else if (urls.length === 0) entries.push({ kind: "error", reason: "layout", sourceId: source.id });
           else listed.push({ sourceId: source.id, urls });
         }
 
@@ -201,7 +203,7 @@ export function createCollector(deps: CollectorDeps): Collector {
           }
           const { draft } = reading;
           const names = [...knownNames, ...found.map((dish) => dish.name)];
-          if (!draft.name || names.some((name) => similarNames(draft.name, name))) {
+          if (!draft.name || names.some((name) => sameDishName(draft.name, name))) {
             entries.push({ kind: "skip", reason: "duplicate", sourceId: candidate.sourceId, url: candidate.url });
             seenNow.push({ ...candidate, outcome: "duplicate" });
             return;
@@ -240,7 +242,7 @@ export function createCollector(deps: CollectorDeps): Collector {
       }
     } catch (error) {
       console.error("collector run failed", error);
-      entries.push({ kind: "error", reason: "source", sourceId: "agent" });
+      entries.push({ kind: "error", reason: "crash", sourceId: "agent" });
     } finally {
       try {
         await recordSeen(db, seenNow, now());

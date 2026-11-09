@@ -43,6 +43,8 @@ const REASON_TEXT: Record<RunReason["reason"], string> = {
   not_kept: "để dành cho lần sau",
   robots: "trang không cho phép đọc (robots.txt)",
   source: "không tải được danh sách món",
+  layout: "không tìm thấy liên kết công thức nào (trang web đã đổi giao diện?)",
+  crash: "lần chạy gặp lỗi",
   page: "không tải được",
   reader: "AI không trả lời được",
 };
@@ -50,7 +52,7 @@ const REASON_TEXT: Record<RunReason["reason"], string> = {
 /** One grouped skip or error of a run, in words: "vnexpress.net: 2 trang không phải công thức món ăn". */
 export function reasonText(reason: RunReason): string {
   const where = SOURCE_NAMES[reason.sourceId] ?? "Tác nhân";
-  const whole = reason.reason === "robots" || reason.reason === "source";
+  const whole = reason.reason === "robots" || reason.reason === "source" || reason.reason === "layout" || reason.reason === "crash";
   return `${where}: ${whole ? "" : `${reason.count} trang `}${REASON_TEXT[reason.reason]}`;
 }
 

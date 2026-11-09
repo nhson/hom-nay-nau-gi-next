@@ -2,8 +2,8 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-08
-**Active Feature:** feat-019 Ảnh thực đơn (#36) built on `feat/menu-photo`, PR open; after merge, apply migration 0003 to production. Spec B (#31, feat-017) is next
+**Last Updated:** 2026-11-09
+**Active Feature:** feat-017 Tác nhân thu thập (#31) built on `feat/daily-agent`; PR to open. After merge: migration 0004 on production and `CRON_SECRET` in Vercel (owner)
 
 ## Status
 
@@ -20,17 +20,19 @@
 - [x] Phase 2 ideas grilled (PR #29): Món chờ duyệt, Nguồn công thức, Tác nhân thu thập; ADR-0006 (AI dishes wait for review), ADR-0007 (allowed sources, free models via OpenRouter); specs #30 (A) and #31 (B)
 - [x] feat-016 live (PR #32, spec #30): Chờ duyệt tab, photo upload read by a free OpenRouter model, warnings, Lưu / Duyệt / Bỏ; `./init.sh` green (395 unit, 94 Playwright); two-axis code review with no blocking findings; migration 0002 applied to production; `OPENROUTER_API_KEY` set
 - [x] feat-018 Next.js 16.4.0 → 16.4.5 (PR #33): clears the security advisory that stopped `next build` every other run
+- [x] feat-019 Ảnh thực đơn live (PR #37, spec #36); migration 0003 applied to production
+- [x] feat-017 Tác nhân thu thập built on `feat/daily-agent` (spec #31): `./init.sh` green; two-axis code review run and fixed
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
 
-- [ ] feat-019 Ảnh thực đơn (#36): PR open on `feat/menu-photo`; after merge, migration `0003_menu_source_kind` on production (owner approval), then the owner tries one real menu photo on a phone (first real check of the free model's Vietnamese)
-- [ ] Known choices to note in the spec: the 8-dish cap is enforced by the page only (the server gets one name per request); menu names merge by exact folded match, not `similarNames`
+- [ ] feat-017 (#31): PR from `feat/daily-agent`. After merge (owner approval each): `db:migrate` for `0004_collector` on production; owner runs `vercel env add CRON_SECRET` (Production); one Chạy ngay on the preview to see the free model on real pages
+- [ ] Known choices: page text is extracted with a small regex-based domain function (no HTML library); the pre-skip uses the URL slug, not the page title; the run lock is a column on the settings row; history keeps 30 runs (spec said "for example 14"); a Chạy ngay waits for the whole run (up to ~4 min)
 
 ### What's Next
 
-1. Owner tries a real recipe photo on the Chờ duyệt tab
-2. feat-017 (spec #31): Tác nhân thu thập, reusing the Món chờ duyệt table and the RecipeReader port
+1. Owner checks Ảnh thực đơn on a phone and raises enhancements
+2. Merge feat-017, migrate, add `CRON_SECRET`, then watch the first nightly run in Lần chạy gần nhất
 3. Prove the single-statement saves are fine on the real Neon driver beyond the first edit (they worked for one real save); nothing further needed unless something fails
 4. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
 5. Later: grill push notifications (spec C); run `/grill-with-docs` for the owner's next idea (candidates: sort and preview toggle on /admin, which were deferred)

@@ -63,6 +63,9 @@ user stories are in issue #1.
 | A15 | Clear Vietnamese messages: unreadable, no dish names, unusable recipe, AI busy, free limit used up, not set up (no `OPENROUTER_API_KEY`) | ✅ |
 | A16 | Tải ảnh thực đơn (#36): 1–4 menu photos → dish names (no prices, drinks, desserts; repeats merged) → checklist where names already in the catalog or on Chờ duyệt start unticked ("đã có (c3)", "đã ẩn", "đang chờ duyệt"); edit, remove or type names (no photo needed); tick up to 8 | ✅ |
 | A17 | Tạo món: one AI-written recipe per ticked name (about 4 people, amounts, short steps, chay rule), one request at a time with progress; a failure continues, the free limit stops, leftovers listed with "Thử lại" | ✅ |
+| A18 | Tác nhân thu thập (#31): daily at 05:00 Vietnam time (Vercel cron 22:00 UTC, `CRON_SECRET`) and Chạy ngay; reads unseen recipe pages from monngonmoingay.com (sitemaps) and vnexpress.net (cooking page), honours robots.txt with an honest User-Agent, one model call per page, keeps the top N that fill catalog gaps (Nhóm món / Bữa 1 món, chay, Vùng miền) as Món chờ duyệt with their source link | ✅ |
+| A19 | Remembers every page (proposed, approved, discarded, not a recipe, duplicate; failed pages retried up to 3 times); exact-name duplicates skipped, close matches proposed with the warning | ✅ |
+| A20 | Lần chạy gần nhất with the last 30 runs and grouped reasons (robots, layout changed, page or AI errors, free limit, deadline); Cài đặt tác nhân: Số món mỗi ngày 0–10 (0 = tạm dừng), pause at 1–100 waiting, 1–20 pages a run | ✅ |
 
 ## Hộ gia đình (Household): dropped
 

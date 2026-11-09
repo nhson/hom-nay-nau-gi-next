@@ -1,4 +1,4 @@
-import { similarNames } from "./pending-dish";
+import { foldText } from "./selectors";
 import type { Category, Dish, MealType, Region, Rng } from "./types";
 
 // Tác nhân thu thập (spec #31, ADR-0007): the pure decisions of the daily agent. What a Nguồn công thức
@@ -120,6 +120,15 @@ export interface Candidate {
  * list in random order, sources taken in turn with the primary first, up to `pagesPerRun`. A page whose
  * address already names a dish in the catalog or on Chờ duyệt is set aside as a duplicate without reading it.
  */
+/**
+ * The same dish name, ignoring case, accents and spacing: an obvious duplicate the agent drops. A close
+ * match (a typo, an extra word) is not dropped: it is proposed with the possible-duplicate warning.
+ */
+export function sameDishName(a: string, b: string): boolean {
+  const fold = (name: string) => foldText(name).replace(/\s+/g, " ");
+  return fold(a) !== "" && fold(a) === fold(b);
+}
+
 export function chooseCandidates(input: {
   sources: readonly { sourceId: string; urls: readonly string[] }[];
   seen: readonly SeenSource[];
@@ -146,7 +155,7 @@ export function chooseCandidates(input: {
       while (queue.urls.length > 0) {
         const url = queue.urls.shift() as string;
         const words = slugWords(url);
-        if (input.knownNames.some((name) => similarNames(words, name))) {
+        if (input.knownNames.some((name) => sameDishName(words, name))) {
           duplicates.push({ sourceId: queue.sourceId, url });
           continue;
         }
@@ -264,12 +273,13 @@ export function runStatus(run: { skipped: string | null; pagesRead: number; adde
  * What a run notes about a page or a source it did not turn into a Món chờ duyệt.
  * Skips are expected (`duplicate`: the name is already in the catalog or waiting; `not_kept`: a valid
  * dish that lost to better gap-fillers, left unseen for a later run; `robots`: the source's robots.txt
- * disallows us). Errors are not (`source`: its sitemap or listing could not be read; `page`: the page
+ * disallows us). Errors are not (`source`: its sitemap or listing could not be read; `layout`: it was
+ * read but had no recipe links, so the site changed; `crash`: the run itself failed; `page`: the page
  * could not be fetched; `reader`: the model gave no usable answer).
  */
 export type RunEntry =
   | { kind: "skip"; reason: "duplicate" | "not_a_recipe" | "unreadable" | "not_kept" | "robots"; sourceId: string; url?: string }
-  | { kind: "error"; reason: "source" | "page" | "reader"; sourceId: string; url?: string };
+  | { kind: "error"; reason: "source" | "layout" | "page" | "reader" | "crash"; sourceId: string; url?: string };
 
 export interface RunReason {
   kind: RunEntry["kind"];

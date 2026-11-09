@@ -65,7 +65,25 @@ export function AgentCard({ onRunFinished }: { onRunFinished: () => void }) {
     };
   }, [requireLogin]);
 
+  // A run this page did not start (the daily cron): check every 15 s until it is done, then show it.
+  const [mine, setMine] = useState(false);
+  useEffect(() => {
+    if (!running || mine) return;
+    const timer = setInterval(() => {
+      adminApi
+        .listRuns()
+        .then((result) => {
+          setRuns(result.runs);
+          setRunning(result.running);
+          if (!result.running) onRunFinished();
+        })
+        .catch(() => {});
+    }, 15_000);
+    return () => clearInterval(timer);
+  }, [running, mine, onRunFinished]);
+
   async function runNow() {
+    setMine(true);
     setRunning(true);
     try {
       const run = await adminApi.startRun();
@@ -77,6 +95,7 @@ export function AgentCard({ onRunFinished }: { onRunFinished: () => void }) {
       else toast.error(runError(error));
     } finally {
       setRunning(false);
+      setMine(false);
     }
   }
 
@@ -90,7 +109,7 @@ export function AgentCard({ onRunFinished }: { onRunFinished: () => void }) {
             <Bot aria-hidden className="size-5" /> Tác nhân thu thập
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Mỗi tối tự đọc vài trang công thức mới trên monngonmoingay.com và vnexpress.net, rồi đề xuất những món Danh mục món còn thiếu.
+            Mỗi sáng khoảng 5 giờ, tự đọc vài trang công thức mới trên monngonmoingay.com và vnexpress.net, rồi đề xuất những món Danh mục món còn thiếu.
           </p>
         </div>
         <Button className="h-11" onClick={runNow} disabled={running || runs === null}>

@@ -208,7 +208,7 @@ export const runEntrySchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("error"),
-    reason: z.enum(["source", "page", "reader"]),
+    reason: z.enum(["source", "layout", "page", "reader", "crash"]),
     sourceId: z.string(),
     url: z.string().optional(),
   }),
