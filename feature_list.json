@@ -185,8 +185,8 @@
       "dependencies": [
         "feat-016"
       ],
-      "status": "not-started",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Branch feat/menu-photo: ./init.sh green (434 unit/contract incl. 24 menu-photo domain tests and the reworked review contract with a fake reader; 99 Playwright incl. the menu journey, typed names, 8-limit, rate-limit mid-batch with retry, axe light/dark at phone width). Screenshots checked in light and dark. Two-axis code review run; fixed: name merging moved to the domain (namesToAdd), pure state updates and no tick race, dish name sent as the user message. Migration 0003_menu_source_kind must be applied to production after merge (owner approval)."
     }
   ]
 }

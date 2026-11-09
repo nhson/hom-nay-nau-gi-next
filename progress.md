@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-11-08
-**Active Feature:** none. feat-016 (Chờ duyệt + photo upload, #30) is live; spec B (#31, feat-017) is next
+**Active Feature:** feat-019 Ảnh thực đơn (#36) built on `feat/menu-photo`, PR open; after merge, apply migration 0003 to production. Spec B (#31, feat-017) is next
 
 ## Status
 
@@ -24,7 +24,8 @@
 
 ### What's In Progress
 
-- [ ] Owner: read one real Vietnamese recipe photo on a phone to check the free model's quality
+- [ ] feat-019 Ảnh thực đơn (#36): PR open on `feat/menu-photo`; after merge, migration `0003_menu_source_kind` on production (owner approval), then the owner tries one real menu photo on a phone (first real check of the free model's Vietnamese)
+- [ ] Known choices to note in the spec: the 8-dish cap is enforced by the page only (the server gets one name per request); menu names merge by exact folded match, not `similarNames`
 
 ### What's Next
 

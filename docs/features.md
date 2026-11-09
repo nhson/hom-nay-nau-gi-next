@@ -57,10 +57,12 @@ user stories are in issue #1.
 | A9 | Private: noindex, never cached or served offline, no analytics | ✅ |
 | A10 | Deferred: sort, preview toggle on narrow screens, show/hide password, visible version text, filter divider | ⏸ |
 | A11 | Chờ duyệt tab with a count badge: Món chờ duyệt never reach users, the catalog API or the export (ADR-0006) | ✅ |
-| A12 | Tải ảnh công thức: 1–4 photos of one recipe, shrunk on the device, read by a free OpenRouter model (ADR-0007), photos discarded | ✅ |
-| A13 | Warnings derived when read: chay with tỏi, possible duplicate of a dish (hidden included) or another Món chờ duyệt | ✅ |
+| A12 | ~~Tải ảnh công thức~~ replaced by A16 (#36). Items made by it still list and approve, shown as "Ảnh công thức" | ✅ changed |
+| A13 | Warnings derived when read: AI tự viết công thức (Ảnh thực đơn items), chay with tỏi, possible duplicate of a dish (hidden included) or another Món chờ duyệt | ✅ |
 | A14 | Review in the dish form: Lưu (keep edits), Duyệt (publish with the next id, one atomic statement), Bỏ (confirm, then remove) | ✅ |
-| A15 | Clear Vietnamese messages: not a recipe, unreadable, AI busy, free limit used up, not set up (no `OPENROUTER_API_KEY`) | ✅ |
+| A15 | Clear Vietnamese messages: unreadable, no dish names, unusable recipe, AI busy, free limit used up, not set up (no `OPENROUTER_API_KEY`) | ✅ |
+| A16 | Tải ảnh thực đơn (#36): 1–4 menu photos → dish names (no prices, drinks, desserts; repeats merged) → checklist where names already in the catalog or on Chờ duyệt start unticked ("đã có (c3)", "đã ẩn", "đang chờ duyệt"); edit, remove or type names (no photo needed); tick up to 8 | ✅ |
+| A17 | Tạo món: one AI-written recipe per ticked name (about 4 people, amounts, short steps, chay rule), one request at a time with progress; a failure continues, the free limit stops, leftovers listed with "Thử lại" | ✅ |
 
 ## Hộ gia đình (Household): dropped
 
