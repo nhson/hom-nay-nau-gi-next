@@ -35,4 +35,4 @@
 
 ## Recommended Next Step
 
-- feat-017 is live (PR #38; first Chạy ngay added 3 dishes). Next: grill the Langfuse integration requirement (see progress.md, What's Next 5), then spec C (push notifications).
+- feat-017 is live (PR #38; first Chạy ngay added 3 dishes). Next: spec C (push notifications). Langfuse integration is logged as low priority (progress.md, What's Next 6).
