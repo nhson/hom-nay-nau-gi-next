@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { installFakeAdmin, type FakeAdmin, type FakeRun } from "./admin-fake-api";
 
-// The admin menu, Tổng quan, Thêm món, Nhập từ file and bulk Duyệt (spec #41): real pages against the
+// The admin menu, Tổng quan, Thêm món with its Nhập từ file tab (spec #41, feat-021) and bulk Duyệt: real pages against the
 // stateful fake admin API. The real API contract is covered by src/server/admin/import.contract.test.ts.
 
 const heading = (page: Page, name: string) => page.getByRole("heading", { name, level: 1 });
@@ -52,7 +52,7 @@ test.describe("the admin menu", () => {
     await page.goto("/admin");
     await expect(heading(page, "Tổng quan")).toBeVisible();
     const nav = page.getByRole("navigation", { name: "Trang quản trị" });
-    await expect(nav.getByRole("link")).toHaveText(["Tổng quan", "Danh mục món", "Chờ duyệt", "Thêm món", "Nhập từ file", "Tác nhân thu thập", "Xuất JSON"]);
+    await expect(nav.getByRole("link")).toHaveText(["Tổng quan", "Danh mục món", "Chờ duyệt", "Thêm món", "Tác nhân thu thập", "Xuất JSON"]);
     await expect(nav.getByRole("link", { name: "Tổng quan" })).toHaveAttribute("aria-current", "page");
     await expect(nav.getByRole("link", { name: "Xuất JSON" })).toHaveAttribute("href", "/api/v1/admin/export");
     await expect(page.getByRole("button", { name: "Menu" })).toBeHidden();
@@ -78,8 +78,8 @@ test.describe("the admin menu", () => {
     await expect(menu).toBeFocused();
 
     await menu.click();
-    await drawer(page).getByRole("link", { name: "Nhập từ file" }).click();
-    await expect(heading(page, "Nhập từ file")).toBeVisible();
+    await drawer(page).getByRole("link", { name: "Thêm món" }).click();
+    await expect(heading(page, "Thêm món")).toBeVisible();
     await expect(drawer(page)).toBeHidden();
   });
 });
@@ -115,12 +115,26 @@ test.describe("Tổng quan", () => {
   });
 });
 
-test("Thêm món offers the three ways, and Tự nhập công thức opens the form", async ({ page }) => {
+test("Thêm món has two tabs in the address, and Tự nhập công thức opens the form", async ({ page }) => {
   await signedIn(page);
   await page.goto("/admin/add");
   await expect(heading(page, "Thêm món")).toBeVisible();
+  const tabs = page.getByRole("navigation", { name: "Cách thêm món" });
+  await expect(tabs.getByRole("link")).toHaveText(["Ảnh thực đơn / Gõ tên", "Nhập từ file"]);
+  await expect(tabs.getByRole("link", { name: "Ảnh thực đơn / Gõ tên" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("heading", { name: "Tải ảnh thực đơn" })).toBeVisible();
   await expect(page.getByLabel("Thêm tên món")).toBeVisible();
+
+  await tabs.getByRole("link", { name: "Nhập từ file" }).click();
+  await expect(page).toHaveURL(/\/admin\/add\?cach=file$/);
+  await expect(page.getByText("Chọn file JSON", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tải file mẫu" })).toBeVisible();
+  await expect(page.getByText("Một danh sách món, hoặc")).toBeHidden(); // the field guide starts folded
+  await page.getByText("Cách viết file").click();
+  await expect(page.getByText("Một danh sách món, hoặc")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Tải ảnh thực đơn" })).toBeVisible();
+
   await page.getByRole("link", { name: /Tự nhập công thức/ }).click();
   await expect(page).toHaveURL(/\/admin\/dishes\/new$/);
   await expect(page.getByLabel("Tên món", { exact: true })).toBeVisible();
@@ -129,7 +143,9 @@ test("Thêm món offers the three ways, and Tự nhập công thức opens the f
 test.describe("Nhập từ file", () => {
   test("a file is previewed, added to Chờ duyệt, and bulk Duyệt approves the ready ones and keeps the rest selected", async ({ page }) => {
     const fake = await signedIn(page);
+    // The old address still works: it opens the Nhập từ file tab of Thêm món.
     await page.goto("/admin/import");
+    await expect(page).toHaveURL(/\/admin\/add\?cach=file$/);
     await page.locator("#dish-file").setInputFiles(file("mon-moi.json", { version: 3, dishes: IMPORT }));
 
     const preview = page.getByRole("region", { name: "Xem trước: mon-moi.json" });
@@ -164,7 +180,7 @@ test.describe("Nhập từ file", () => {
 
   test("refuses a file that is not JSON, and Tải file mẫu gives a file it accepts", async ({ page }) => {
     const fake = await signedIn(page);
-    await page.goto("/admin/import");
+    await page.goto("/admin/add?cach=file");
     await page.locator("#dish-file").setInputFiles(file("hong.json", "{ dishes: ["));
     await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toContainText("File này không phải JSON hợp lệ.");
     await expect(page.getByRole("button", { name: /vào Chờ duyệt/ })).toHaveCount(0);
@@ -208,7 +224,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     test("Nhập từ file with a preview, and Chờ duyệt after a bulk Duyệt", async ({ page }) => {
       await signedIn(page);
-      await page.goto("/admin/import");
+      await page.goto("/admin/add?cach=file");
       await page.locator("#dish-file").setInputFiles(file("mon-moi.json", IMPORT));
       await expect(page.getByRole("region", { name: "Xem trước: mon-moi.json" })).toBeVisible();
       expect(await axeViolations(page)).toEqual([]);

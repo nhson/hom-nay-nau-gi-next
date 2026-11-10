@@ -178,7 +178,7 @@ export function ReviewListScreen() {
                 Thêm món
               </Link>
               ,{" "}
-              <Link href="/admin/import" className="font-semibold text-primary underline-offset-4 hover:underline">
+              <Link href="/admin/add?cach=file" className="font-semibold text-primary underline-offset-4 hover:underline">
                 Nhập từ file
               </Link>{" "}
               hoặc chạy{" "}

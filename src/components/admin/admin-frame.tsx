@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Bot, Download, FileUp, Inbox, LayoutDashboard, LogOut, Menu as MenuIcon, Plus, X, type LucideIcon } from "lucide-react";
+import { BookOpen, Bot, Download, Inbox, LayoutDashboard, LogOut, Menu as MenuIcon, Plus, X, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -143,7 +143,6 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon; current: (path
   },
   { href: "/admin/review", label: "Chờ duyệt", icon: Inbox, current: (path) => path.startsWith("/admin/review") },
   { href: "/admin/add", label: "Thêm món", icon: Plus, current: (path) => path === "/admin/add" || path === "/admin/dishes/new" },
-  { href: "/admin/import", label: "Nhập từ file", icon: FileUp, current: (path) => path === "/admin/import" },
   { href: "/admin/agent", label: "Tác nhân thu thập", icon: Bot, current: (path) => path === "/admin/agent" },
 ];
 
