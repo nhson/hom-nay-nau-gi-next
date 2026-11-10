@@ -35,4 +35,4 @@
 
 ## Recommended Next Step
 
-- Merge the feat-017 PR when the owner says so, migrate, add `CRON_SECRET`, Chạy ngay once. Then grill spec C (push notifications).
+- feat-017 is live (PR #38; first Chạy ngay added 3 dishes). Next: spec C (push notifications). Langfuse integration is logged as low priority (progress.md, What's Next 6).
