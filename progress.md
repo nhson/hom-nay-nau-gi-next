@@ -38,8 +38,9 @@
 2. Watch the first nightly run (22:00 UTC) in Lần chạy gần nhất; it proves `CRON_SECRET` reaches the cron route
 3. Prove the single-statement saves are fine on the real Neon driver beyond the first edit (they worked for one real save); nothing further needed unless something fails
 4. Owner picks a custom domain (see `docs/phase-1.md` for the data-reset caveat when the address changes)
-5. Later: grill push notifications (spec C); run `/grill-with-docs` for the owner's next idea (candidates: sort and preview toggle on /admin, which were deferred)
-6. **Low priority: Langfuse integration** (owner, 2026-11-09). Not grilled yet: run `/grill-with-docs` first. Likely scope: trace each OpenRouter call (Ảnh thực đơn, photo upload, Tác nhân thu thập) with model, latency, tokens and outcome, so free-model quality and failures are visible. Open questions: which calls, prompt/page text sent or redacted (no personal data reaches the server anyway), Langfuse Cloud vs self-hosted, keys as Vercel env
+5. Later: run `/grill-with-docs` for the owner's next idea (candidates: sort and preview toggle on /admin, which were deferred)
+6. **Low priority: push notifications (spec C)** (owner, 2026-11-10). Parked after the first grill: one mass notification to all users, sent by cron or by hand. Not specced; grill the rest first
+7. **Low priority: Langfuse integration** (owner, 2026-11-09). Not grilled yet: run `/grill-with-docs` first. Likely scope: trace each OpenRouter call (Ảnh thực đơn, photo upload, Tác nhân thu thập) with model, latency, tokens and outcome, so free-model quality and failures are visible. Open questions: which calls, prompt/page text sent or redacted (no personal data reaches the server anyway), Langfuse Cloud vs self-hosted, keys as Vercel env
 
 ## Blockers / Risks
 
