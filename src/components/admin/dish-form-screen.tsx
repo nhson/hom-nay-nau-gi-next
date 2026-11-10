@@ -96,7 +96,7 @@ export function DishFormScreen({ id, pendingId }: { id: string | null; pendingId
   const router = useRouter();
   const { setVersion, requireLogin, pendingCount, setPendingCount } = useAdmin();
   const reviewing = pendingId !== undefined;
-  const home = reviewing ? "/admin/review" : "/admin";
+  const home = reviewing ? "/admin/review" : "/admin/dishes";
 
   const [all, setAll] = useState<AdminDish[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -330,7 +330,7 @@ export function DishFormScreen({ id, pendingId }: { id: string | null; pendingId
                 ? `Mã món ${id}${updatedLabel}`
                 : "Mã món sẽ tự đặt khi lưu."}
           </p>
-          {pending?.source.url && (
+          {pending?.source.kind === "agent" && pending.source.url && (
             <a
               href={pending.source.url}
               target="_blank"

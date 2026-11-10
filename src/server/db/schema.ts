@@ -66,9 +66,9 @@ export const pendingDishes = pgTable(
   "pending_dishes",
   {
     id: text("id").primaryKey(),
-    /** `menu`: Ảnh thực đơn (AI-written recipe). `agent`: Tác nhân thu thập (spec B). `photo`: the old recipe-photo upload, kept for rows made before it was replaced. */
+    /** `menu`: Ảnh thực đơn (AI-written recipe). `agent`: Tác nhân thu thập (spec B). `file`: Nhập từ file (spec #41). `photo`: the old recipe-photo upload, kept for rows made before it was replaced. */
     sourceKind: text("source_kind").notNull(),
-    /** The page the dish came from (agent only). */
+    /** The page the dish came from (agent), or the name of the file it was imported from (file). */
     sourceUrl: text("source_url"),
     /** The model that produced it, as OpenRouter reported it. */
     model: text("model"),
@@ -84,7 +84,7 @@ export const pendingDishes = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    check("pending_dishes_source_kind_valid", sql`${t.sourceKind} in ('menu', 'agent', 'photo')`),
+    check("pending_dishes_source_kind_valid", sql`${t.sourceKind} in ('menu', 'agent', 'file', 'photo')`),
     check("pending_dishes_meal_type_valid", sql`${t.mealType} in ('buacom', 'buatomonuoc')`),
     check("pending_dishes_category_valid", sql`${t.category} is null or ${t.category} in ('xao', 'canh', 'man')`),
     check("pending_dishes_region_valid", sql`${t.region} is null or ${t.region} in ('bac', 'trung', 'nam')`),

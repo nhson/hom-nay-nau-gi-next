@@ -157,7 +157,7 @@ export function DishListScreen() {
               Đã ẩn
             </button>
           </div>
-          <Link href="/admin/dishes/new" className={cn(buttonVariants({ variant: "turmeric" }), "md:ml-auto")}>
+          <Link href="/admin/add" className={cn(buttonVariants({ variant: "turmeric" }), "md:ml-auto")}>
             <Plus aria-hidden /> Thêm món
           </Link>
         </div>

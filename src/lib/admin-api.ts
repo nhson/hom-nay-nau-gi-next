@@ -6,6 +6,8 @@ import {
   agentRunsResponseSchema,
   agentSettingsResponseSchema,
   apiErrorSchema,
+  bulkApproveResponseSchema,
+  dishFileImportResponseSchema,
   menuReadingResponseSchema,
   pendingDishResponseSchema,
   pendingListResponseSchema,
@@ -13,6 +15,8 @@ import {
   type AgentRun,
   type AgentRunsResponse,
   type AgentSettingsView,
+  type BulkApproveResponse,
+  type DishFileImportResponse,
   type PendingDish,
   type MenuReadingResponse,
   type PendingListResponse,
@@ -30,6 +34,8 @@ export class AdminApiError extends Error {
     readonly lockedUntil?: string,
     /** Cài đặt tác nhân: the settings the server found out of range. */
     readonly fields: string[] = [],
+    /** Nhập từ file: why the server refused the file. */
+    readonly refusal?: string,
   ) {
     super(message);
     this.name = "AdminApiError";
@@ -53,8 +59,8 @@ async function call(path: string, init: { method?: string; body?: unknown } = {}
   if (!response.ok) {
     const parsed = apiErrorSchema.safeParse(await response.json().catch(() => null));
     if (parsed.success) {
-      const { code, message, issues, lockedUntil, fields } = parsed.data.error;
-      throw new AdminApiError(response.status, code, message, issues, lockedUntil, fields);
+      const { code, message, issues, lockedUntil, fields, refusal } = parsed.data.error;
+      throw new AdminApiError(response.status, code, message, issues, lockedUntil, fields, refusal);
     }
     throw new AdminApiError(response.status, "internal_error", `Lỗi máy chủ (${response.status}).`);
   }
@@ -110,6 +116,15 @@ export const adminApi = {
   /** Duyệt: publishes the (edited) draft as a dish. */
   async approvePending(id: string, draft: DishDraft): Promise<AdminDishResponse> {
     return adminDishResponseSchema.parse(await call(`/pending/${encodeURIComponent(id)}/approve`, { method: "POST", body: draft }));
+  },
+
+  /** Nhập từ file: the server reads the file again and adds the dishes it can to Chờ duyệt. */
+  async importFile(fileName: string, text: string): Promise<DishFileImportResponse> {
+    return dishFileImportResponseSchema.parse(await call("/pending/import", { method: "POST", body: { fileName, text } }));
+  },
+  /** Bulk Duyệt: each Món chờ duyệt as it is stored. */
+  async approveMany(ids: string[]): Promise<BulkApproveResponse> {
+    return bulkApproveResponseSchema.parse(await call("/pending/approve", { method: "POST", body: { ids } }));
   },
 
   // Tác nhân thu thập

@@ -5,6 +5,7 @@ import type { AgentRun, PendingDish, PendingWarningView } from "@/shared/schemas
 export function sourceLabel(item: Pick<PendingDish, "source">): string {
   if (item.source.kind === "menu") return "Ảnh thực đơn";
   if (item.source.kind === "photo") return "Ảnh công thức";
+  if (item.source.kind === "file") return item.source.url ? `Nhập từ file · ${item.source.url}` : "Nhập từ file";
   const site = sourceSite(item.source.url);
   return site ? `Tác nhân thu thập · ${site}` : "Tác nhân thu thập";
 }

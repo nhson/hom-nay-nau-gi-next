@@ -33,12 +33,20 @@ Người duy nhất được đăng nhập vào app: chủ của app, có toàn 
 _Avoid_: User, Account, Tài khoản, Người dùng, Admin (trong chữ hiển thị cho người dùng) — app không có khái niệm tài khoản người dùng.
 
 **Món chờ duyệt**:
-Một món do AI đề xuất (từ một **Ảnh thực đơn** quản trị viên tải lên, hoặc do **Tác nhân thu thập** lấy từ một **Nguồn công thức**), đang chờ **Quản trị viên** xem. Nằm riêng, ngoài **Danh mục món**: người dùng không bao giờ thấy, không được gợi ý. Quản trị viên mở món trong form sửa món, chỉnh rồi **Duyệt** (món vào Danh mục món với mã `x*`/`c*`/`m*`/`t*` như món thêm tay, phiên bản danh mục tăng) hoặc **Bỏ** (món bị loại, nguồn của nó được nhớ để không đề xuất lại). Mỗi món ghi nguồn (đường dẫn trang, hoặc "Ảnh thực đơn") và các cảnh báo (vd. "có thể trùng với c12", "món chay có nhắc tỏi"). Xem [ADR-0006](docs/adr/0006-ai-proposed-dishes-wait-for-review.md).
+Một món được đề xuất, chưa vào Danh mục món: do AI viết (từ một **Ảnh thực đơn** hoặc tên món quản trị viên gõ), do **Tác nhân thu thập** lấy từ một **Nguồn công thức**, hoặc từ một **Nhập từ file** (không dùng AI); đang chờ **Quản trị viên** xem. Nằm riêng, ngoài **Danh mục món**: người dùng không bao giờ thấy, không được gợi ý. Quản trị viên mở món trong form sửa món, chỉnh rồi **Duyệt** (món vào Danh mục món với mã `x*`/`c*`/`m*`/`t*` như món thêm tay, phiên bản danh mục tăng) hoặc **Bỏ** (món bị loại, nguồn của nó được nhớ để không đề xuất lại). Mỗi món ghi nguồn (đường dẫn trang, "Ảnh thực đơn", hoặc "Nhập từ file · tên file") và các cảnh báo (vd. "có thể trùng với c12", "món chay có nhắc tỏi"). Xem [ADR-0006](docs/adr/0006-ai-proposed-dishes-wait-for-review.md).
 _Avoid_: Bản nháp, Draft, Hàng đợi (trong chữ hiển thị) — Danh mục món vẫn không có bản nháp.
 
 **Ảnh thực đơn**:
 1–4 ảnh một thực đơn (thực đơn quán, thực đơn tuần viết tay, ảnh chụp màn hình một danh sách món) mà **Quản trị viên** tải lên trang quản trị. AI chỉ đọc **tên món** (bỏ giá, tiêu đề mục, đồ uống, tráng miệng) thành một danh sách; quản trị viên sửa, bỏ hoặc gõ thêm tên, chọn tối đa 8 món (món đã có trong Danh mục món hoặc đang chờ duyệt mặc định không chọn), rồi bấm "Tạo món". Với mỗi tên được chọn, AI **tự viết** một công thức nấu tại nhà (khoảng 4 người, nguyên liệu có định lượng, các bước ngắn, đúng quy tắc chay) thành một **Món chờ duyệt** có cảnh báo "AI tự viết công thức, hãy kiểm tra". Ảnh bị bỏ sau khi đọc. Xem [ADR-0006](docs/adr/0006-ai-proposed-dishes-wait-for-review.md).
 _Avoid_: Ảnh công thức (cách cũ, đã thay), Menu (trong chữ hiển thị).
+
+**Nhập từ file**:
+Cách thêm nhiều món một lúc: **Quản trị viên** tải lên một file JSON (dạng file Xuất JSON, hoặc chỉ một danh sách món). Chỉ tên món là bắt buộc; Kiểu bữa ăn, Nhóm món, Vùng miền nhận cả mã (`buacom`, `canh`, `nam`) lẫn chữ tiếng Việt, có hay không dấu. Trang cho xem trước (sẽ thêm, bỏ qua và vì sao, cảnh báo) rồi thêm các món thành **Món chờ duyệt**. Món trùng tên với Danh mục món (cả món đã ẩn) hoặc Chờ duyệt bị bỏ qua; file không bao giờ sửa hay ẩn món đã có. Không dùng AI.
+_Avoid_: Import, Tải lên hàng loạt.
+
+**Tổng quan**:
+Trang đầu của trang quản trị (`/admin`): phiên bản và số món của **Danh mục món** (đang dùng, đã ẩn, theo Nhóm món và Bữa 1 món), số **Món chờ duyệt**, lần chạy gần nhất của **Tác nhân thu thập**, và lối tắt Thêm món, Chạy ngay, Chờ duyệt.
+_Avoid_: Dashboard, Trang chủ (trong chữ hiển thị).
 
 **Nguồn công thức**:
 Một trang web công thức tiếng Việt mà **Tác nhân thu thập** được phép đọc: hiện là monngonmoingay.com (chính) và mục nấu ăn của vnexpress.net. Danh sách nằm trong mã, đổi bằng PR. Chỉ dùng trang tiếng Việt cho phép thu thập (robots.txt) và không chặn bot AI. Xem [ADR-0007](docs/adr/0007-recipe-sources-and-free-models-via-openrouter.md).

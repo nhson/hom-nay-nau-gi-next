@@ -42,7 +42,7 @@ export function readRecipeReply(reply: unknown): RecipeReading {
 }
 
 /** Minutes from a number or from text such as "45 phút", "1 giờ 30 phút", "2 tiếng". Null when there is no positive time. */
-function minutesFrom(value: unknown): number | null {
+export function minutesFrom(value: unknown): number | null {
   let minutes: number;
   if (typeof value === "number") {
     minutes = value;
@@ -65,7 +65,7 @@ function minutesFrom(value: unknown): number | null {
 }
 
 /** A list of lines from an array or one block of text, without bullets or step numbers ("- ", "1. ", "Bước 2:"). */
-function linesFrom(value: unknown): string[] {
+export function linesFrom(value: unknown): string[] {
   const raw = Array.isArray(value) ? value.map((item) => String(item)) : typeof value === "string" ? value.split(/\r?\n/) : [];
   return raw.map((line) =>
     line
@@ -97,9 +97,9 @@ function parseJsonText(text: string): unknown {
 
 /**
  * Where a Món chờ duyệt came from: an Ảnh thực đơn (the AI wrote the recipe), the Tác nhân thu thập
- * (a real page), or the old recipe-photo upload, kept only for items made before it was replaced.
+ * (a real page), a Nhập từ file (no AI), or the old recipe-photo upload, kept only for items made before it was replaced.
  */
-export const PENDING_SOURCE_KINDS = ["menu", "agent", "photo"] as const;
+export const PENDING_SOURCE_KINDS = ["menu", "agent", "file", "photo"] as const;
 export type PendingSourceKind = (typeof PENDING_SOURCE_KINDS)[number];
 
 /** Something the Quản trị viên should look at before Duyệt. Derived when read, so it follows the catalog as it is now. */

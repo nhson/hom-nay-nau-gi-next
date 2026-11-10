@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { installFakeAdmin, type FakeAdmin, type FakeRun } from "./admin-fake-api";
 
-// The Chờ duyệt tab (spec #30, Ảnh thực đơn #36, Tác nhân thu thập #31): real pages against the stateful fake admin API (CI has no database or
+// Chờ duyệt (spec #30), Ảnh thực đơn on Thêm món (#36), Tác nhân thu thập (#31), each on its own page since #41: real pages against the stateful fake admin API (CI has no database or
 // AI key). The real API contract is covered by src/server/admin/review.contract.test.ts.
 
 // A real, decodable 8x8 PNG, so the page's photo shrinking runs for real.
@@ -22,6 +22,25 @@ async function signedIn(page: Page, initial: Partial<FakeAdmin> = {}) {
 async function openReview(page: Page) {
   await page.goto("/admin/review");
   await expect(heading(page, "Chờ duyệt")).toBeVisible();
+}
+
+/** Thêm món: where Ảnh thực đơn and typed names live. */
+async function openAdd(page: Page) {
+  await page.goto("/admin/add");
+  await expect(heading(page, "Thêm món")).toBeVisible();
+}
+
+async function openAgent(page: Page) {
+  await page.goto("/admin/agent");
+  await expect(heading(page, "Tác nhân thu thập")).toBeVisible();
+}
+
+/** Opens the phone menu drawer. */
+async function openMenu(page: Page) {
+  await page.getByRole("button", { name: "Menu" }).click();
+  const drawer = page.getByRole("dialog", { name: "Menu quản trị" });
+  await expect(drawer).toBeVisible();
+  return drawer;
 }
 
 async function pickPhotos(page: Page, ...names: string[]) {
@@ -52,6 +71,7 @@ test("a menu photo becomes a checklist, the ticked names are written one by one,
   const fake = await signedIn(page);
   await openReview(page);
   await expect(page.getByText("Chưa có món nào chờ duyệt")).toBeVisible();
+  await openAdd(page);
 
   await pickPhotos(page, "trang-1.png", "trang-2.png");
   await expect(page.getByRole("list", { name: "Ảnh đã chọn" }).getByRole("img")).toHaveCount(2);
@@ -89,7 +109,11 @@ test("a menu photo becomes a checklist, the ticked names are written one by one,
   await expect(progress(page).getByRole("link", { name: "Xong" })).toHaveCount(2);
   await expect(toast(page, "Đã tạo 2 món chờ duyệt.")).toBeVisible();
   expect(fake.written).toEqual(["Bò lúc lắc", "Bún riêu cua"]);
-  await expect(page.getByRole("link", { name: /Chờ duyệt\s*:\s*2 món đang chờ/ })).toBeVisible();
+  const drawer = await openMenu(page);
+  await expect(drawer.getByRole("link", { name: /Chờ duyệt\s*:\s*2 món đang chờ/ })).toBeVisible();
+  await drawer.getByRole("link", { name: /Chờ duyệt/ }).click();
+  await expect(drawer).toBeHidden();
+  await expect(heading(page, "Chờ duyệt")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Món đang chờ (2)" })).toBeVisible();
 
   await page.getByRole("link", { name: /Bò lúc lắc.*Ảnh thực đơn/ }).click();
@@ -107,7 +131,7 @@ test("a menu photo becomes a checklist, the ticked names are written one by one,
 
 test("names can be typed without any photo", async ({ page }) => {
   const fake = await signedIn(page);
-  await openReview(page);
+  await openAdd(page);
   await addName(page, "Thịt kho trứng");
   await page.getByRole("button", { name: "Tạo món (1)" }).click();
   await expect(progress(page).getByRole("link", { name: "Xong" })).toHaveCount(1);
@@ -117,7 +141,7 @@ test("names can be typed without any photo", async ({ page }) => {
 
 test("at most 8 names are ticked at once", async ({ page }) => {
   await signedIn(page);
-  await openReview(page);
+  await openAdd(page);
   for (let i = 1; i <= 9; i++) await addName(page, `Món thử ${i}`);
   await expect(page.getByRole("checkbox", { checked: true })).toHaveCount(8);
   await expect(page.getByRole("checkbox", { name: "Chọn “Món thử 9”" })).not.toBeChecked();
@@ -129,7 +153,7 @@ test("at most 8 names are ticked at once", async ({ page }) => {
 
 test("when the free limit runs out mid-batch, written dishes stay and the rest can be retried", async ({ page }) => {
   const fake = await signedIn(page, { writeAnswers: [null, "unusable_answer", "reader_rate_limited"] });
-  await openReview(page);
+  await openAdd(page);
   for (const name of ["Món A", "Món B", "Món C", "Món D"]) await addName(page, name);
   await page.getByRole("button", { name: "Tạo món (4)" }).click();
 
@@ -165,7 +189,7 @@ test("shows a duplicate warning and blocks Duyệt on the same name, with the di
 
 test("Bỏ asks first, then removes the Món chờ duyệt", async ({ page }) => {
   const fake = await signedIn(page);
-  await openReview(page);
+  await openAdd(page);
   await addName(page, "Gà kho gừng");
   await page.getByRole("button", { name: "Tạo món (1)" }).click();
   await progress(page).getByRole("link", { name: "Xong" }).click();
@@ -187,7 +211,7 @@ for (const [code, message] of [
 ] as const) {
   test(`explains a failed menu read (${code}) and keeps the photos to try again`, async ({ page }) => {
     const fake = await signedIn(page, { nextRead: code });
-    await openReview(page);
+    await openAdd(page);
     await pickPhotos(page, "a.png");
     await page.getByRole("button", { name: "Đọc thực đơn" }).click();
     await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toContainText(message);
@@ -198,7 +222,7 @@ for (const [code, message] of [
 
 test("refuses more than 4 photos and files that are not images, before sending anything", async ({ page }) => {
   const fake = await signedIn(page);
-  await openReview(page);
+  await openAdd(page);
   await pickPhotos(page, "1.png", "2.png", "3.png", "4.png", "5.png");
   await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toContainText("Chọn tối đa 4 ảnh cho một thực đơn.");
   await page.locator("#menu-photos").setInputFiles({ name: "thuc-don.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") });
@@ -208,12 +232,12 @@ test("refuses more than 4 photos and files that are not images, before sending a
 
 test("says the AI is not set up when there is no OpenRouter key", async ({ page }) => {
   await signedIn(page, { readerConfigured: false });
-  await openReview(page);
+  await openAdd(page);
   await expect(page.getByText(/Chưa bật AI/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Chọn ảnh" })).toBeDisabled();
 });
 
-const agentCard = (page: Page) => page.getByRole("region", { name: "Tác nhân thu thập" });
+const agentCard = (page: Page) => page.getByRole("main");
 
 const PAST_RUN: FakeRun = {
   id: "r0",
@@ -233,7 +257,7 @@ const PAST_RUN: FakeRun = {
 
 test("Chạy ngay shows the run and the dish it found, with a link to the page it came from", async ({ page }) => {
   const fake = await signedIn(page, { runs: [PAST_RUN] });
-  await openReview(page);
+  await openAgent(page);
   const card = agentCard(page);
   await expect(card.getByText("Đọc 2 trang · thêm 1 món chờ duyệt")).toBeVisible();
   await expect(card.getByText(/hết lượt cho hôm nay/)).toBeVisible();
@@ -246,6 +270,7 @@ test("Chạy ngay shows the run and the dish it found, with a link to the page i
   await card.getByText("Các lần chạy trước (1)").click();
   await expect(card.getByText("Đọc 2 trang · thêm 1 món chờ duyệt")).toBeVisible();
 
+  await openReview(page);
   const row = page.getByRole("link", { name: /Bún riêu cua/ });
   await expect(row).toContainText("Tác nhân thu thập · monngonmoingay.com");
   await row.click();
@@ -259,7 +284,7 @@ test("Chạy ngay shows the run and the dish it found, with a link to the page i
 
 test("Cài đặt tác nhân saves, and says which value is out of range", async ({ page }) => {
   const fake = await signedIn(page);
-  await openReview(page);
+  await openAgent(page);
   const card = agentCard(page);
   await card.getByText("Cài đặt tác nhân").click();
   const perDay = card.getByLabel("Số món mỗi ngày");
@@ -281,7 +306,7 @@ test("Cài đặt tác nhân saves, and says which value is out of range", async
 
 test("says when no run has happened yet", async ({ page }) => {
   await signedIn(page);
-  await openReview(page);
+  await openAgent(page);
   await expect(agentCard(page).getByText(/Chưa chạy lần nào/)).toBeVisible();
 });
 
@@ -299,7 +324,7 @@ for (const colorScheme of ["light", "dark"] as const) {
           { id: "p9", source: { kind: "photo", url: null }, model: null, mealType: "buacom", category: "man", chay: true, region: null, name: "Cá kho tộ", time: 30, ingredients: ["Tỏi"], steps: ["Kho"], createdAt: "2026-11-08T01:00:00.000Z", updatedAt: "2026-11-08T01:00:00.000Z" },
         ],
       });
-      await openReview(page);
+      await openAdd(page);
       await pickPhotos(page, "a.png");
       await page.getByRole("button", { name: "Đọc thực đơn" }).click();
       await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toBeVisible();
@@ -308,7 +333,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     test("the checklist with hints, the limit message and the progress list", async ({ page }) => {
       await signedIn(page, { writeAnswers: [null, "reader_rate_limited"] });
-      await openReview(page);
+      await openAdd(page);
       await pickPhotos(page, "a.png");
       await page.getByRole("button", { name: "Đọc thực đơn" }).click();
       await expect(nameRow(page, 0)).toContainText("đã có (c3)");
@@ -320,7 +345,7 @@ for (const colorScheme of ["light", "dark"] as const) {
 
     test("the agent's runs and its settings with an error", async ({ page }) => {
       await signedIn(page, { runs: [PAST_RUN, { ...PAST_RUN, id: "r1", status: "skipped", skipped: "too_many_waiting", stoppedBy: null, entries: [] }] });
-      await openReview(page);
+      await openAgent(page);
       const card = agentCard(page);
       await card.getByText("Các lần chạy trước (1)").click();
       await card.getByText("Cài đặt tác nhân").click();

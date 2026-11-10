@@ -1,5 +1,5 @@
-import { DishListScreen } from "@/components/admin/dish-list-screen";
+import { OverviewScreen } from "@/components/admin/overview-screen";
 
 export default function AdminPage() {
-  return <DishListScreen />;
+  return <OverviewScreen />;
 }

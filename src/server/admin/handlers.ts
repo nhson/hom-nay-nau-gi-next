@@ -1,12 +1,14 @@
 import { z } from "zod";
 import {
   checkAgentSettings,
+  DISH_FILE_MAX_BYTES,
   dishIdPrefix,
   nextDishId,
   normalizeDraft,
   checkMenuName,
   MENU_INSTRUCTIONS,
   pendingWarnings,
+  readDishFile,
   readMenuReply,
   readWrittenDish,
   startingTick,
@@ -22,10 +24,14 @@ import { readAdminCatalog, readCatalog, type AdminDish, type Db } from "@/server
 import {
   adminCatalogResponseSchema,
   agentSettingsSchema,
+  BULK_APPROVE_MAX,
+  bulkApproveSchema,
   catalogResponseSchema,
   dishDraftSchema,
+  dishFileImportSchema,
   photoUploadSchema,
   writeDishSchema,
+  type BulkApproveResponse,
   type PendingDish,
 } from "@/shared/schemas";
 import type { AdminConfig } from "./config";
@@ -34,6 +40,7 @@ import {
   deletePending,
   getPending,
   insertPending,
+  insertPendingMany,
   listPending,
   updatePending,
   type PendingRecord,
@@ -412,33 +419,96 @@ export function createAdminHandlers(deps: AdminDeps) {
   const discardPendingHandler = (request: Request, id: string) =>
     guarded(true, async (_req, db) => ((await deletePending(db, id)) ? json({ ok: true }) : pendingNotFound()))(request);
 
+  type Approval =
+    | { ok: true; dishId: string; saved: Saved }
+    | { ok: false; reason: "not_found" | "catalog_unavailable" }
+    | { ok: false; reason: "validation_failed"; issues: ReturnType<typeof validateDish> };
+
+  /**
+   * Duyệt of one Món chờ duyệt with `draft`: the same rules and id scheme as adding a dish by hand, in
+   * one statement. Single and bulk Duyệt both come here. A lost id race reads again.
+   */
+  async function approveOne(db: Db, id: string, draft: DishDraft): Promise<Approval> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const catalog = await readCatalog(db);
+      if (!catalog) return { ok: false, reason: "catalog_unavailable" };
+      if (!(await getPending(db, id))) return { ok: false, reason: "not_found" };
+      const issues = validateDish(draft, catalog.dishes);
+      if (issues.length > 0) return { ok: false, reason: "validation_failed", issues };
+
+      const dishId = nextDishId(dishIdPrefix(draft), catalog.dishes.map((dish) => dish.id));
+      try {
+        const saved = await approvePending(db, id, dishId, draft);
+        // Null: someone else approved or discarded it in between.
+        return saved ? { ok: true, dishId, saved } : { ok: false, reason: "not_found" };
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error;
+      }
+    }
+    throw new Error("could not pick a free dish id");
+  }
+
   const approvePendingHandler = (request: Request, id: string) =>
     guarded(true, async (req, db) => {
       const input = await readJson(req, dishDraftSchema);
       if (!input) return badDish();
       const draft = normalizeDraft(input);
-
-      // Same rules and the same id scheme as adding a dish by hand; a lost id race reads again.
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const catalog = await readCatalog(db);
-        if (!catalog) return catalogUnavailable();
-        if (!(await getPending(db, id))) return pendingNotFound();
-        const issues = validateDish(draft, catalog.dishes);
-        if (issues.length > 0) return validationFailed(issues);
-
-        const dishId = nextDishId(dishIdPrefix(draft), catalog.dishes.map((dish) => dish.id));
-        try {
-          const saved = await approvePending(db, id, dishId, draft);
-          // Null: someone else approved or discarded it in between.
-          return saved
-            ? json({ version: saved.version, dish: stored(dishId, draft, saved) }, { status: 201 })
-            : pendingNotFound();
-        } catch (error) {
-          if (!isUniqueViolation(error)) throw error;
-        }
-      }
-      return errorResponse(500, "internal_error", "Something went wrong. Please try again.");
+      const result = await approveOne(db, id, draft);
+      if (result.ok) return json({ version: result.saved.version, dish: stored(result.dishId, draft, result.saved) }, { status: 201 });
+      if (result.reason === "validation_failed") return validationFailed(result.issues);
+      return result.reason === "not_found" ? pendingNotFound() : catalogUnavailable();
     })(request);
+
+  /** Bulk Duyệt: each Món chờ duyệt as it is stored, one by one, so one that cannot be approved does not block the rest. */
+  const approvePendingManyHandler = guarded(true, async (request, db) => {
+    const input = await readJson(request, bulkApproveSchema);
+    if (!input) return errorResponse(400, "bad_request", `Send { ids: 1 to ${BULK_APPROVE_MAX} Món chờ duyệt ids }.`);
+    const approved: BulkApproveResponse["approved"] = [];
+    const failed: BulkApproveResponse["failed"] = [];
+    for (const id of new Set(input.ids)) {
+      const record = await getPending(db, id);
+      const result = record ? await approveOne(db, id, normalizeDraft(record)) : ({ ok: false, reason: "not_found" } as const);
+      if (result.ok) approved.push({ id, dishId: result.dishId });
+      else if (result.reason === "catalog_unavailable") return catalogUnavailable();
+      else failed.push({ id, reason: result.reason, issues: result.reason === "validation_failed" ? result.issues : [] });
+    }
+    const catalog = await readCatalog(db);
+    return json({ version: catalog?.version ?? 0, approved, failed });
+  });
+
+  /** Nhập từ file: the dishes of a JSON file become Món chờ duyệt, read again here against the names as they are now. No AI. */
+  const importPendingHandler = guarded(true, async (request, db) => {
+    const body = await request.text();
+    // The file travels as a JSON string, so escaping can make the body larger than the file itself.
+    if (body.length > DISH_FILE_MAX_BYTES * 2 + 1_000) return fileTooLarge();
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      // Not JSON: the schema below rejects null.
+    }
+    const input = dishFileImportSchema.safeParse(parsed);
+    if (!input.success) return errorResponse(400, "bad_request", "Send { fileName, text }: the file's name and its text.");
+    if (new TextEncoder().encode(input.data.text).length > DISH_FILE_MAX_BYTES) return fileTooLarge();
+
+    const catalog = await readAdminCatalog(db);
+    const pending = await listPending(db);
+    const knownNames = [...(catalog?.dishes ?? []).map((item) => item.name), ...pending.map((item) => item.name)];
+    const reading = readDishFile(input.data.text, knownNames);
+    if (!reading.ok) {
+      return errorResponse(400, "bad_request", "The file cannot be imported.", {}, { refusal: reading.refusal });
+    }
+    const added = reading.add.map((item) => ({ ...item, id: crypto.randomUUID() }));
+    const fileName = input.data.fileName.trim().slice(0, 200) || "file.json";
+    await insertPendingMany(db, added, { source: { kind: "file", url: fileName }, at: now() });
+    return json(
+      { added: added.map(({ row, id, draft, warnings }) => ({ row, id, name: draft.name, warnings })), skipped: reading.skipped },
+      { status: 201 },
+    );
+  });
+
+  const fileTooLarge = () =>
+    errorResponse(413, "payload_too_large", `The file is over ${DISH_FILE_MAX_BYTES / 1_000_000} MB. Split it into smaller files.`);
 
   // --- Tác nhân thu thập (spec B, #31) ---
 
@@ -487,6 +557,8 @@ export function createAdminHandlers(deps: AdminDeps) {
     updatePending: updatePendingHandler,
     discardPending: discardPendingHandler,
     approvePending: approvePendingHandler,
+    approvePendingMany: approvePendingManyHandler,
+    importPending: importPendingHandler,
     listRuns: listRunsHandler,
     startRun: startRunHandler,
     getAgentSettings: getAgentSettingsHandler,

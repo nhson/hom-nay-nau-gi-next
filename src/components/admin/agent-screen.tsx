@@ -1,7 +1,7 @@
 "use client";
 
 import { Bot, ChevronDown, Loader2, Play, Settings2 } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ const FIELDS: { key: keyof AgentSettings; label: string; hint: string }[] = [
   { key: "pagesPerRun", label: "Số trang đọc mỗi lần", hint: "1 đến 20. Mỗi trang dùng một lượt AI miễn phí." },
 ];
 
-function runError(error: unknown): string {
+export function runError(error: unknown): string {
   if (error instanceof AdminApiError) {
     if (error.code === "agent_running") return "Tác nhân đang chạy rồi. Đợi lần chạy đó xong.";
     if (error.code === "network") return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
@@ -37,11 +37,13 @@ function runError(error: unknown): string {
 }
 
 /**
- * Tác nhân thu thập (spec #31) on the Chờ duyệt tab: Chạy ngay, Lần chạy gần nhất with the runs before
- * it, and Cài đặt tác nhân. The run itself happens on the server; this only starts it and shows records.
+ * The Tác nhân thu thập page (spec #31, moved to its own page by #41): Chạy ngay, Lần chạy gần nhất with
+ * the runs before it, and Cài đặt tác nhân. The run itself happens on the server; this only starts it and shows records.
  */
-export function AgentCard({ onRunFinished }: { onRunFinished: () => void }) {
-  const { requireLogin } = useAdmin();
+export function AgentScreen() {
+  const { requireLogin, refreshPendingCount: onRunFinished } = useAdmin();
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => heading.current?.focus(), []);
   const [runs, setRuns] = useState<AgentRun[] | null>(null);
   const [running, setRunning] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -102,12 +104,12 @@ export function AgentCard({ onRunFinished }: { onRunFinished: () => void }) {
   const [latest, ...earlier] = runs ?? [];
 
   return (
-    <section aria-labelledby="agent-title" className="mb-6 rounded-2xl border bg-card p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 id="agent-title" className="flex items-center gap-2 font-display text-lg font-semibold">
-            <Bot aria-hidden className="size-5" /> Tác nhân thu thập
-          </h2>
+          <h1 ref={heading} tabIndex={-1} className="flex items-center gap-2 font-display text-3xl font-semibold outline-none">
+            <Bot aria-hidden className="size-7" /> Tác nhân thu thập
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Mỗi sáng khoảng 5 giờ, tự đọc vài trang công thức mới trên monngonmoingay.com và vnexpress.net, rồi đề xuất những món Danh mục món còn thiếu.
           </p>
@@ -117,44 +119,46 @@ export function AgentCard({ onRunFinished }: { onRunFinished: () => void }) {
           {running ? "Đang chạy…" : "Chạy ngay"}
         </Button>
       </div>
-      <p role="status" className="mt-2 min-h-5 text-sm text-muted-foreground">
+      <p role="status" className="-mt-2 mb-3 min-h-5 text-sm text-muted-foreground">
         {running ? "Tác nhân đang đọc các trang. Có thể mất vài phút." : ""}
       </p>
 
-      <h3 className="mt-2 text-sm font-semibold">Lần chạy gần nhất</h3>
-      {failed ? (
-        <p className="mt-1 text-sm text-muted-foreground">Không tải được các lần chạy.</p>
-      ) : runs === null ? (
-        <div aria-busy="true" aria-label="Đang tải" className="mt-2 h-16 animate-pulse rounded-xl bg-muted" />
-      ) : !latest ? (
-        <p className="mt-1 text-sm text-muted-foreground">Chưa chạy lần nào. Lần chạy hằng ngày vào khoảng 5 giờ sáng.</p>
-      ) : (
-        <>
-          <RunSummary run={latest} />
-          {earlier.length > 0 && (
-            <details className="group mt-3 rounded-xl border">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3.5 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
-                Các lần chạy trước ({earlier.length})
-                <ChevronDown aria-hidden className="size-4 transition-transform group-open:rotate-180" />
-              </summary>
-              <ul className="divide-y border-t">
-                {earlier.map((run) => (
-                  <li key={run.id} className="px-3.5 py-3">
-                    <RunSummary run={run} compact />
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </>
-      )}
+      <section aria-labelledby="runs-title" className="rounded-2xl border bg-card p-5">
+        <h2 id="runs-title" className="font-display text-lg font-semibold">Lần chạy gần nhất</h2>
+        {failed ? (
+          <p className="mt-1 text-sm text-muted-foreground">Không tải được các lần chạy.</p>
+        ) : runs === null ? (
+          <div aria-busy="true" aria-label="Đang tải" className="mt-2 h-16 animate-pulse rounded-xl bg-muted" />
+        ) : !latest ? (
+          <p className="mt-1 text-sm text-muted-foreground">Chưa chạy lần nào. Lần chạy hằng ngày vào khoảng 5 giờ sáng.</p>
+        ) : (
+          <>
+            <RunSummary run={latest} />
+            {earlier.length > 0 && (
+              <details className="group mt-3 rounded-xl border">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3.5 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+                  Các lần chạy trước ({earlier.length})
+                  <ChevronDown aria-hidden className="size-4 transition-transform group-open:rotate-180" />
+                </summary>
+                <ul className="divide-y border-t">
+                  {earlier.map((run) => (
+                    <li key={run.id} className="px-3.5 py-3">
+                      <RunSummary run={run} compact />
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </>
+        )}
 
-      <AgentSettingsPanel />
-    </section>
+        <AgentSettingsPanel />
+      </section>
+    </div>
   );
 }
 
-function RunSummary({ run, compact = false }: { run: AgentRun; compact?: boolean }) {
+export function RunSummary({ run, compact = false }: { run: AgentRun; compact?: boolean }) {
   const note = runNote(run);
   const reasons = runReasons(run.entries);
   return (

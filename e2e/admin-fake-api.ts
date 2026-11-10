@@ -2,6 +2,7 @@ import type { Page, Route } from "@playwright/test";
 import { dishIdPrefix, nextDishId, normalizeDraft, validateDish } from "../src/domain/dish-rules";
 import { checkAgentSettings, type AgentSettings, type RunEntry } from "../src/domain/collector";
 import { startingTick } from "../src/domain/menu-photo";
+import { readDishFile } from "../src/domain/dish-file";
 import { pendingWarnings } from "../src/domain/pending-dish";
 
 /** The right password for the fake; "khoa" makes the fake answer as if 5 wrong tries had locked sign-in. */
@@ -37,7 +38,7 @@ export function seedDishes(): FakeDish[] {
 
 export interface FakePending {
   id: string;
-  source: { kind: "menu" | "agent" | "photo"; url: string | null };
+  source: { kind: "menu" | "agent" | "file" | "photo"; url: string | null };
   model: string | null;
   mealType: "buacom" | "buatomonuoc";
   category: "xao" | "canh" | "man" | null;
@@ -225,6 +226,43 @@ export async function installFakeAdmin(page: Page, initial: Partial<FakeAdmin> =
         const item: FakePending = { id: `p${++pendingSeq}`, source: { kind: "menu", url: null }, model: "google/gemma-4-31b-it:free", name, ...WRITTEN_RECIPE, createdAt: at, updatedAt: at };
         fake.pending.push(item);
         return json(route, 201, { pending: view(item) });
+      }
+      if (path === "/pending/import" && method === "POST") {
+        const { fileName, text } = request.postDataJSON() as { fileName: string; text: string };
+        const reading = readDishFile(text, [...fake.dishes, ...fake.pending].map((item) => item.name));
+        if (!reading.ok) return error(route, 400, "bad_request", "bad file", { refusal: reading.refusal });
+        const added = reading.add.map((item) => {
+          const at = new Date(Date.UTC(2026, 10, 8, 3, 0, ++pendingSeq)).toISOString();
+          const pending: FakePending = { id: `f${pendingSeq}`, source: { kind: "file", url: fileName }, model: null, ...item.draft, createdAt: at, updatedAt: at };
+          fake.pending.push(pending);
+          return { row: item.row, id: pending.id, name: item.draft.name, warnings: item.warnings };
+        });
+        return json(route, 201, { added, skipped: reading.skipped });
+      }
+      if (path === "/pending/approve" && method === "POST") {
+        const { ids } = request.postDataJSON() as { ids: string[] };
+        const approved: { id: string; dishId: string }[] = [];
+        const failed: { id: string; reason: string; issues: unknown[] }[] = [];
+        for (const pendingId of ids) {
+          const at = fake.pending.findIndex((item) => item.id === pendingId);
+          if (at < 0) {
+            failed.push({ id: pendingId, reason: "not_found", issues: [] });
+            continue;
+          }
+          const item = fake.pending[at];
+          const draft = normalizeDraft({ mealType: item.mealType, category: item.category, chay: item.chay, region: item.region, name: item.name, time: item.time, ingredients: item.ingredients, steps: item.steps });
+          const issues = validateDish(draft, fake.dishes);
+          if (issues.length > 0) {
+            failed.push({ id: pendingId, reason: "validation_failed", issues });
+            continue;
+          }
+          const dishId = nextDishId(dishIdPrefix(draft), fake.dishes.map((d) => d.id));
+          fake.dishes.push({ ...draft, id: dishId, retired: false, updatedAt: new Date().toISOString() });
+          fake.pending.splice(at, 1);
+          fake.version += 1;
+          approved.push({ id: pendingId, dishId });
+        }
+        return json(route, 200, { version: fake.version, approved, failed });
       }
       const [, , pid, action] = path.split("/");
       const index = fake.pending.findIndex((item) => item.id === decodeURIComponent(pid ?? ""));

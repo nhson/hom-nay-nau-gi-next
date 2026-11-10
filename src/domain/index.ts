@@ -15,3 +15,4 @@ export * from "./dish-rules";
 export * from "./collector";
 export * from "./menu-photo";
 export * from "./pending-dish";
+export * from "./dish-file";
