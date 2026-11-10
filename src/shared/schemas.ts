@@ -2,6 +2,7 @@ import { z } from "zod";
 import { DISH_PROBLEM_CODES } from "@/domain/dish-rules";
 import type { RunEntry } from "@/domain/collector";
 import { PENDING_SOURCE_KINDS } from "@/domain/pending-dish";
+import type { DishFileSkip, DishFileWarning } from "@/domain/dish-file";
 
 // Shared by the Route Handlers (outgoing) and the client (incoming), so server and client cannot
 // drift and a bad payload can never reach the on-device store.
@@ -95,6 +96,8 @@ export const apiErrorSchema = z.object({
     issues: z.array(dishIssueSchema).optional(),
     /** `bad_request` on Cài đặt tác nhân: the settings that are out of range. */
     fields: z.array(z.enum(["dishesPerDay", "pauseAt", "pagesPerRun"])).optional(),
+    /** `bad_request` on Nhập từ file: why the file was refused. */
+    refusal: z.enum(["not_json", "no_dishes", "too_many"]).optional(),
   }),
 });
 
@@ -138,6 +141,7 @@ export const menuReadingResponseSchema = z.object({
 
 export const pendingWarningSchema = z.discriminatedUnion("code", [
   z.object({ code: z.literal("ai-written") }),
+  z.object({ code: z.literal("missing"), field: z.enum(["category", "ingredients", "steps"]) }),
   z.object({ code: z.literal("chay-toi") }),
   z.object({
     code: z.literal("possible-duplicate"),
@@ -235,3 +239,40 @@ export const agentRunsResponseSchema = z.object({
 export type AgentSettingsView = z.infer<typeof agentSettingsSchema>;
 export type AgentRun = z.infer<typeof agentRunSchema>;
 export type AgentRunsResponse = z.infer<typeof agentRunsResponseSchema>;
+
+// --- Nhập từ file and bulk Duyệt (spec #41) ---
+
+/** What the admin page sends for a Nhập từ file: the file's name and its text, unparsed (the server reads it again). */
+export const dishFileImportSchema = z.object({ fileName: z.string().min(1), text: z.string() });
+
+const dishFileFieldSchema = z.enum(["mealType", "category", "chay", "region", "time", "ingredients", "steps"]);
+export const dishFileWarningSchema = z.discriminatedUnion("code", [
+  z.object({ code: z.literal("missing"), field: dishFileFieldSchema }),
+  z.object({ code: z.literal("unrecognised"), field: dishFileFieldSchema }),
+  z.object({ code: z.literal("name-cut") }),
+  z.object({ code: z.literal("chay-toi") }),
+  z.object({ code: z.literal("possible-duplicate"), name: z.string() }),
+]) satisfies z.ZodType<DishFileWarning>;
+export const dishFileSkipSchema = z.object({
+  row: z.number().int().min(1),
+  name: z.string().optional(),
+  reason: z.enum(["no_name", "duplicate", "repeated_in_file"]),
+}) satisfies z.ZodType<DishFileSkip>;
+export const dishFileImportResponseSchema = z.object({
+  /** The Món chờ duyệt that were made, in file order. */
+  added: z.array(z.object({ row: z.number().int().min(1), id: z.string(), name: z.string(), warnings: z.array(dishFileWarningSchema) })),
+  skipped: z.array(dishFileSkipSchema),
+});
+
+/** Bulk Duyệt: the Món chờ duyệt to approve, each as it is stored. */
+export const BULK_APPROVE_MAX = 200;
+export const bulkApproveSchema = z.object({ ids: z.array(z.string().min(1)).min(1).max(BULK_APPROVE_MAX) });
+export const bulkApproveResponseSchema = z.object({
+  /** The catalog version after the last approved dish. */
+  version: z.number().int().min(0),
+  approved: z.array(z.object({ id: z.string(), dishId: z.string() })),
+  /** `not_found`: approved or discarded meanwhile. `validation_failed`: the dish rules it breaks, as on single Duyệt. */
+  failed: z.array(z.object({ id: z.string(), reason: z.enum(["not_found", "validation_failed"]), issues: z.array(dishIssueSchema) })),
+});
+export type DishFileImportResponse = z.infer<typeof dishFileImportResponseSchema>;
+export type BulkApproveResponse = z.infer<typeof bulkApproveResponseSchema>;

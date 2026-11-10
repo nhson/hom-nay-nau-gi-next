@@ -42,7 +42,7 @@ export function readRecipeReply(reply: unknown): RecipeReading {
 }
 
 /** Minutes from a number or from text such as "45 phút", "1 giờ 30 phút", "2 tiếng". Null when there is no positive time. */
-function minutesFrom(value: unknown): number | null {
+export function minutesFrom(value: unknown): number | null {
   let minutes: number;
   if (typeof value === "number") {
     minutes = value;
@@ -65,7 +65,7 @@ function minutesFrom(value: unknown): number | null {
 }
 
 /** A list of lines from an array or one block of text, without bullets or step numbers ("- ", "1. ", "Bước 2:"). */
-function linesFrom(value: unknown): string[] {
+export function linesFrom(value: unknown): string[] {
   const raw = Array.isArray(value) ? value.map((item) => String(item)) : typeof value === "string" ? value.split(/\r?\n/) : [];
   return raw.map((line) =>
     line
@@ -97,14 +97,16 @@ function parseJsonText(text: string): unknown {
 
 /**
  * Where a Món chờ duyệt came from: an Ảnh thực đơn (the AI wrote the recipe), the Tác nhân thu thập
- * (a real page), or the old recipe-photo upload, kept only for items made before it was replaced.
+ * (a real page), a Nhập từ file (no AI), or the old recipe-photo upload, kept only for items made before it was replaced.
  */
-export const PENDING_SOURCE_KINDS = ["menu", "agent", "photo"] as const;
+export const PENDING_SOURCE_KINDS = ["menu", "agent", "file", "photo"] as const;
 export type PendingSourceKind = (typeof PENDING_SOURCE_KINDS)[number];
 
 /** Something the Quản trị viên should look at before Duyệt. Derived when read, so it follows the catalog as it is now. */
 export type PendingWarning =
   | { code: "ai-written" }
+  /** A dish from a file still lacks something Duyệt needs (the file left it out or it was not understood). */
+  | { code: "missing"; field: "category" | "ingredients" | "steps" }
   | { code: "chay-toi" }
   | { code: "possible-duplicate"; of: "dish" | "pending"; id: string; name: string; hidden: boolean };
 
@@ -113,13 +115,18 @@ export type PendingWarning =
  * already in the Danh mục món (hidden ones included: they still own their name) or another Món chờ duyệt.
  */
 export function pendingWarnings(
-  draft: Pick<DishDraft, "name" | "chay" | "ingredients" | "steps"> & { sourceKind?: PendingSourceKind },
+  draft: Pick<DishDraft, "name" | "chay" | "ingredients" | "steps"> & Partial<Pick<DishDraft, "mealType" | "category">> & { sourceKind?: PendingSourceKind },
   catalog: readonly Pick<Dish, "id" | "name" | "retired">[],
   pending: readonly { id: string; name: string }[],
   selfId?: string,
 ): PendingWarning[] {
   const warnings: PendingWarning[] = [];
   if (draft.sourceKind === "menu") warnings.push({ code: "ai-written" });
+  if (draft.sourceKind === "file") {
+    if (draft.mealType === "buacom" && !draft.category) warnings.push({ code: "missing", field: "category" });
+    if (draft.ingredients.length === 0) warnings.push({ code: "missing", field: "ingredients" });
+    if (draft.steps.length === 0) warnings.push({ code: "missing", field: "steps" });
+  }
   if (draft.chay && [draft.name, ...draft.ingredients, ...draft.steps].some(mentionsToi)) {
     warnings.push({ code: "chay-toi" });
   }

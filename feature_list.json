@@ -187,6 +187,17 @@
       ],
       "status": "done",
       "evidence": "Branch feat/menu-photo: ./init.sh green (434 unit/contract incl. 24 menu-photo domain tests and the reworked review contract with a fake reader; 99 Playwright incl. the menu journey, typed names, 8-limit, rate-limit mid-batch with retry, axe light/dark at phone width). Screenshots checked in light and dark. Two-axis code review run; fixed: name merging moved to the domain (namesToAdd), pure state updates and no tick race, dish name sent as the user message. Migration 0003_menu_source_kind must be applied to production after merge (owner approval)."
+    },
+    {
+      "id": "feat-020",
+      "name": "Admin menu, Tổng quan, Thêm món, Nhập từ file, bulk Duyệt",
+      "description": "Spec: issue #41. Sidebar/drawer admin menu; Tổng quan home at /admin (list moves to /admin/dishes); Thêm món page; agent on /admin/agent; Nhập từ file (JSON, preview, template, source kind file, migration 0005); bulk Duyệt on Chờ duyệt.",
+      "dependencies": [
+        "feat-017",
+        "feat-019"
+      ],
+      "status": "done",
+      "evidence": "Branch feat/admin-nav-import: ./init.sh green (533 unit/contract incl. 23 dish-file domain tests, catalogCounts, the file 'missing' review warning, and 12 import/bulk-approve contract tests on PGlite; Playwright incl. new e2e/admin-nav.spec.ts: sidebar at desktop width, drawer at phone width (Escape, focus return, closes on navigation), Tổng quan blocks failing on their own, Thêm món, import → preview → Chờ duyệt → bulk Duyệt with failures kept selected, template download, axe light/dark). Screenshots checked at phone and desktop width, light and dark. Two-axis code review run; fixed: parser field gaps now show as review warnings on file dishes, chay/tỏi in the preview, Thêm món lists the three ways separately, bulk Duyệt keeps its summary, catalogCounts moved to catalog.ts. After merge (owner): migration 0005_file_source_kind on production."
     }
   ]
 }

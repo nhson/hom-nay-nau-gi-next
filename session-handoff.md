@@ -2,30 +2,29 @@
 
 ## Current Objective
 
-- Goal: feat-017 (spec #31), Tác nhân thu thập: a daily run (and Chạy ngay) reads unseen recipe pages from the Nguồn công thức, asks the free OpenRouter models, and adds the dishes that fill catalog gaps as Món chờ duyệt.
-- Current status: built and verified on `feat/daily-agent` (./init.sh green; code review run and fixed). PR not merged.
-- Branch: `feat/daily-agent`
+- Goal: feat-020 (spec #41): admin menu (sidebar / phone drawer), Tổng quan home, Thêm món page, agent page, Nhập từ file (JSON) and bulk Duyệt.
+- Current status: built and verified on `feat/admin-nav-import` (./init.sh green; two-axis code review run and fixed). PR open, not merged.
+- Branch: `feat/admin-nav-import`
 
 ## Completed This Session
 
-- [x] Domain `src/domain/collector.ts`: robots.txt, sitemap/listing links, candidate choice (seen pages, retries, exact-name pre-skip, sources interleaved), gap ranking, run gate, settings bounds, run status and grouped reasons, page text, the read-page instructions
-- [x] Server `src/server/agent/`: runner (lock, per-site delay, 3 pages at a time, 240 s deadline, stops on the free limit), real fetcher (UA, 15 s, 2 MB), repository; migration `0004_collector` (seen sources, settings + lock, runs pruned to 30); Duyệt/Bỏ mark the page approved/discarded in the same statement
-- [x] Routes: `GET /api/v1/cron/collect` (Bearer `CRON_SECRET`), `GET|POST /api/v1/admin/agent/runs`, `GET|PUT /api/v1/admin/agent/settings`; `vercel.json` cron `0 22 * * *`
-- [x] UI on Chờ duyệt: Tác nhân thu thập card (Chạy ngay, Lần chạy gần nhất, Các lần chạy trước, Cài đặt tác nhân), site name on agent items, "Xem trang gốc" link in the review form
+- [x] Domain `src/domain/dish-file.ts`: `readDishFile` (Xuất JSON shape or bare list, codes or Vietnamese words, chay yes/no, lines as list or text, skips: no name / duplicate / repeated in file, warnings: missing / unrecognised / name cut / chay-tỏi / possible duplicate, 200-dish limit), `dishFileTemplate`; `catalogCounts` in `catalog.ts`; file dishes get "missing" review warnings in `pendingWarnings`
+- [x] Server: `POST /api/v1/admin/pending/import` (one-statement insert, 413 over 1 MB, refusal codes), `POST /api/v1/admin/pending/approve` (each through the single-approve path); migration `0005_file_source_kind`
+- [x] UI: `AdminFrame` sidebar + Radix drawer; `/admin` Tổng quan, `/admin/dishes`, `/admin/add`, `/admin/import`, `/admin/agent`; Chờ duyệt checkboxes, Chọn tất cả, summary
+- [x] Docs: CONTEXT.md (Nhập từ file, Tổng quan, Món chờ duyệt widened), docs/features.md A21–A25
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
 | Full gate | `./init.sh` | green | lint, typecheck, unit/contract, build, Playwright |
-| Agent contract | `corepack pnpm vitest run src/server/agent` | 26 passed | fake web + fake model + kit clock |
-| Browser + a11y | `e2e/review.spec.ts` | passed | Chạy ngay journey, settings, axe light/dark |
+| Import + bulk contract | `corepack pnpm vitest run src/server/admin/import.contract.test.ts` | passed | PGlite, real migrations |
+| Browser + a11y | `e2e/admin-nav.spec.ts` | passed | sidebar, drawer, journeys, axe light/dark |
 
 ## Blockers / Owner actions
 
-- Production migration `0004_collector` after merge (ask first)
-- `CRON_SECRET` must be added in Vercel by the owner; without it the cron route answers 401 to everyone (Chạy ngay still works)
-- The free models have not read a real monngonmoingay/vnexpress page yet: try Chạy ngay on the preview
+- Production migration `0005_file_source_kind` after merge (ask first)
+- PR #40 (docs: spec C low priority) still open
 
 ## Next Session Startup
 
@@ -35,4 +34,4 @@
 
 ## Recommended Next Step
 
-- feat-017 is live (PR #38; first Chạy ngay added 3 dishes). Next: spec C (push notifications). Langfuse integration is logged as low priority (progress.md, What's Next 6).
+- Merge the feat-020 PR when the owner says so, then run migration 0005 on production with approval. Spec C and Langfuse remain low priority.

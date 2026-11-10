@@ -1,0 +1,2 @@
+ALTER TABLE "pending_dishes" DROP CONSTRAINT "pending_dishes_source_kind_valid";--> statement-breakpoint
+ALTER TABLE "pending_dishes" ADD CONSTRAINT "pending_dishes_source_kind_valid" CHECK ("pending_dishes"."source_kind" in ('menu', 'agent', 'file', 'photo'));

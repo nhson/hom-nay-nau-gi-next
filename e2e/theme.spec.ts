@@ -62,7 +62,7 @@ test.describe("choosing a theme", () => {
     expect(await background(page)).toBe(DARK);
 
     await page.goto("/admin");
-    await expect(page.getByRole("heading", { name: "Danh mục món", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tổng quan", level: 1 })).toBeVisible();
     expect(await background(page)).toBe(DARK);
   });
 
@@ -189,14 +189,17 @@ test.describe("the control", () => {
     await expect(switchButton(page)).toBeFocused();
   });
 
-  test("is in the app header, the admin top bar and the admin sign-in page", async ({ page }) => {
+  test("is in the app header, the admin menu and the admin sign-in page", async ({ page }) => {
     await installFakeAdmin(page, { signedIn: true });
     await openApp(page);
     await expect(switchButton(page)).toBeVisible();
 
+    // On a phone the admin menu is a drawer behind the Menu button.
     await page.goto("/admin");
-    await expect(page.getByRole("heading", { name: "Danh mục món", level: 1 })).toBeVisible();
-    await expect(switchButton(page)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tổng quan", level: 1 })).toBeVisible();
+    await page.getByRole("button", { name: "Menu" }).click();
+    await expect(page.getByRole("dialog", { name: "Menu quản trị" }).getByRole("button", { name: "Giao diện" })).toBeVisible();
+    await page.keyboard.press("Escape");
 
     await page.goto("/admin/login");
     await expect(page.getByRole("heading", { name: "Đăng nhập", level: 1 })).toBeVisible();
@@ -253,10 +256,11 @@ for (const colorScheme of ["light", "dark"] as const) {
       expect(await violations(page)).toEqual([]);
     });
 
-    test("the admin list", async ({ page }) => {
+    test("the admin menu", async ({ page }) => {
       await installFakeAdmin(page, { signedIn: true });
-      await page.goto("/admin");
+      await page.goto("/admin/dishes");
       await expect(page.getByRole("table", { name: "Danh mục món" })).toBeVisible();
+      await page.getByRole("button", { name: "Menu" }).click();
       await switchButton(page).click();
       await expect(page.getByRole("menu")).toBeVisible();
       expect(await violations(page)).toEqual([]);

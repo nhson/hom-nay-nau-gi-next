@@ -5,6 +5,7 @@ import type { AgentRun, PendingDish, PendingWarningView } from "@/shared/schemas
 export function sourceLabel(item: Pick<PendingDish, "source">): string {
   if (item.source.kind === "menu") return "Ảnh thực đơn";
   if (item.source.kind === "photo") return "Ảnh công thức";
+  if (item.source.kind === "file") return item.source.url ? `Nhập từ file · ${item.source.url}` : "Nhập từ file";
   const site = sourceSite(item.source.url);
   return site ? `Tác nhân thu thập · ${site}` : "Tác nhân thu thập";
 }
@@ -56,9 +57,12 @@ export function reasonText(reason: RunReason): string {
   return `${where}: ${whole ? "" : `${reason.count} trang `}${REASON_TEXT[reason.reason]}`;
 }
 
+const MISSING_TEXT = { category: "Nhóm món", ingredients: "nguyên liệu", steps: "các bước" } as const;
+
 /** The Vietnamese wording of a warning (the API only says which one and about what). */
 export function warningText(warning: PendingWarningView): string {
   if (warning.code === "ai-written") return "AI tự viết công thức, hãy kiểm tra nguyên liệu, lượng và các bước.";
+  if (warning.code === "missing") return `File thiếu ${MISSING_TEXT[warning.field]}: thêm trước khi Duyệt.`;
   if (warning.code === "chay-toi") {
     return "Món chay có nhắc “tỏi”. Sửa nguyên liệu, các bước, hoặc tắt “Món chay” trước khi Duyệt.";
   }

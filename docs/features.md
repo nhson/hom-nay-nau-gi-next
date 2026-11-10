@@ -65,6 +65,11 @@ user stories are in issue #1.
 | A17 | Tạo món: one AI-written recipe per ticked name (about 4 people, amounts, short steps, chay rule), one request at a time with progress; a failure continues, the free limit stops, leftovers listed with "Thử lại" | ✅ |
 | A18 | Tác nhân thu thập (#31): daily at 05:00 Vietnam time (Vercel cron 22:00 UTC, `CRON_SECRET`) and Chạy ngay; reads unseen recipe pages from monngonmoingay.com (sitemaps) and vnexpress.net (cooking page), honours robots.txt with an honest User-Agent, one model call per page, keeps the top N that fill catalog gaps (Nhóm món / Bữa 1 món, chay, Vùng miền) as Món chờ duyệt with their source link | ✅ |
 | A19 | Remembers every page (proposed, approved, discarded, not a recipe, duplicate; failed pages retried up to 3 times); exact-name duplicates skipped, close matches proposed with the warning | ✅ |
+| A21 | Admin menu (#41): sidebar on tablet/desktop, a Menu drawer on phones (Escape closes, focus returns, picking a page closes it): Tổng quan, Danh mục món (`/admin/dishes`), Chờ duyệt with count, Thêm món, Nhập từ file, Tác nhân thu thập, Xuất JSON; Đăng xuất and Giao diện at the bottom | ✅ |
+| A22 | Tổng quan at `/admin`: catalog version and counts (shown, hidden, per Nhóm món and Bữa 1 món), waiting count, last agent run, shortcuts; each block loads and fails on its own | ✅ |
+| A23 | Thêm món page: Ảnh thực đơn / Gõ tên món (AI → Chờ duyệt) and Tự nhập công thức (published at once); the agent has its own page, Chờ duyệt is only the list | ✅ |
+| A24 | Nhập từ file: JSON (Xuất JSON shape or a bare list), only `name` required, codes or Vietnamese words, preview (add / skipped and why / warnings), 200 dishes and 1 MB, "Tải file mẫu" and a field guide; dishes go to Chờ duyệt as "Nhập từ file · tên file"; no AI | ✅ |
+| A25 | Bulk Duyệt on Chờ duyệt: checkboxes, Chọn tất cả, "Duyệt các món đã chọn (N)"; each dish approved on its own, failures stay selected with their reason | ✅ |
 | A20 | Lần chạy gần nhất with the last 30 runs and grouped reasons (robots, layout changed, page or AI errors, free limit, deadline); Cài đặt tác nhân: Số món mỗi ngày 0–10 (0 = tạm dừng), pause at 1–100 waiting, 1–20 pages a run | ✅ |
 
 ## Hộ gia đình (Household): dropped

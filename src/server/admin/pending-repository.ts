@@ -61,6 +61,26 @@ export async function insertPending(
   return toRecord(row);
 }
 
+/** Several Món chờ duyệt in ONE statement (Nhập từ file): all of them or none. */
+export async function insertPendingMany(
+  db: Db,
+  items: { id: string; draft: DishDraft }[],
+  input: { source: PendingRecord["source"]; at: Date },
+): Promise<void> {
+  if (items.length === 0) return;
+  await db.insert(pendingDishes).values(
+    items.map((item) => ({
+      id: item.id,
+      sourceKind: input.source.kind,
+      sourceUrl: input.source.url,
+      model: null,
+      ...draftColumns(item.draft),
+      createdAt: input.at,
+      updatedAt: input.at,
+    })),
+  );
+}
+
 /** Every Món chờ duyệt, newest first. */
 export async function listPending(db: Db): Promise<PendingRecord[]> {
   const rows = await db.select().from(pendingDishes).orderBy(desc(pendingDishes.createdAt), desc(pendingDishes.id));
@@ -87,10 +107,10 @@ export async function updatePending(db: Db, id: string, draft: DishDraft, at: Da
  */
 export async function deletePending(db: Db, id: string): Promise<boolean> {
   const result = await db.execute(sql`WITH gone AS (
-      DELETE FROM pending_dishes WHERE id = ${id}::text RETURNING id, source_url
+      DELETE FROM pending_dishes WHERE id = ${id}::text RETURNING id, source_url, source_kind
     ), seen AS (
       UPDATE agent_seen_sources SET outcome = 'discarded', last_processed_at = now()
-      WHERE url IN (SELECT source_url FROM gone WHERE source_url IS NOT NULL)
+      WHERE url IN (SELECT source_url FROM gone WHERE source_kind = 'agent')
     )
     SELECT id FROM gone`);
   const rows = Array.isArray(result) ? result : result.rows;
@@ -109,10 +129,10 @@ export function approvePending(db: Db, pendingId: string, dishId: string, draft:
     sql`WITH gone AS (
       DELETE FROM pending_dishes WHERE id = ${pendingId}::text
         AND EXISTS (SELECT 1 FROM catalog_meta WHERE id = 1)
-      RETURNING id, source_url
+      RETURNING id, source_url, source_kind
     ), seen AS (
       UPDATE agent_seen_sources SET outcome = 'approved', last_processed_at = now()
-      WHERE url IN (SELECT source_url FROM gone WHERE source_url IS NOT NULL)
+      WHERE url IN (SELECT source_url FROM gone WHERE source_kind = 'agent')
     ), changed AS (
       INSERT INTO dishes (id, position, meal_type, category, chay, region, name, time_minutes, ingredients, steps, retired, updated_at)
       SELECT ${dishId}::text, COALESCE((SELECT max(position) FROM dishes), -1) + 1, ${draft.mealType}::text, ${draft.category}::text,

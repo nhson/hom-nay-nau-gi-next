@@ -9,9 +9,26 @@ const heading = (page: Page, name: string) => page.getByRole("heading", { name, 
 const toast = (page: Page, text: string | RegExp) => page.locator("[data-sonner-toast]").filter({ hasText: text });
 
 async function openList(page: Page) {
-  await page.goto("/admin");
+  await page.goto("/admin/dishes");
   await expect(heading(page, "Danh mục món")).toBeVisible();
   await expect(page.getByRole("table", { name: "Danh mục món" })).toBeVisible();
+}
+
+/** The hand-written form: Danh mục món → Thêm món → Tự nhập công thức. */
+async function openNewDish(page: Page) {
+  await openList(page);
+  await page.getByRole("main").getByRole("link", { name: "Thêm món" }).click();
+  await expect(heading(page, "Thêm món")).toBeVisible();
+  await page.getByRole("link", { name: /Tự nhập công thức/ }).click();
+  await expect(page.getByLabel("Tên món", { exact: true })).toBeVisible();
+}
+
+/** Opens the phone menu drawer. */
+async function openMenu(page: Page) {
+  await page.getByRole("button", { name: "Menu" }).click();
+  const drawer = page.getByRole("dialog", { name: "Menu quản trị" });
+  await expect(drawer).toBeVisible();
+  return drawer;
 }
 
 async function openEdit(page: Page, name: RegExp) {
@@ -50,13 +67,13 @@ test.describe("signing in", () => {
     await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toContainText("Thử lại sau");
   });
 
-  test("the right password lands on the list, and sign-out returns to sign-in", async ({ page }) => {
+  test("the right password lands on Tổng quan, and sign-out returns to sign-in", async ({ page }) => {
     await installFakeAdmin(page);
     await page.goto("/admin/login?next=/admin");
     await page.getByLabel("Mật khẩu", { exact: true }).fill(GOOD_PASSWORD);
     await page.getByRole("button", { name: "Đăng nhập" }).click();
-    await expect(heading(page, "Danh mục món")).toBeVisible();
-    await page.getByRole("button", { name: "Đăng xuất" }).click();
+    await expect(heading(page, "Tổng quan")).toBeVisible();
+    await (await openMenu(page)).getByRole("button", { name: "Đăng xuất" }).click();
     await expect(page).toHaveURL(/\/admin\/login/);
   });
 
@@ -151,9 +168,7 @@ test.describe("adding and editing", () => {
 
   test("adds a dish with a Nhóm món, ingredients and steps", async ({ page }) => {
     const fake = await installFakeAdmin(page, { signedIn: true });
-    await openList(page);
-    await page.getByRole("link", { name: "Thêm món" }).click();
-    await expect(heading(page, "Thêm món")).toBeVisible();
+    await openNewDish(page);
 
     await page.getByLabel("Tên món", { exact: true }).fill("Canh bắp cải thịt bằm");
     await page.getByLabel("Nhóm món", { exact: true }).selectOption("canh");
@@ -351,7 +366,7 @@ test.describe("privacy and isolation", () => {
     const response = await page.goto("/admin");
     expect(response?.headers()["x-robots-tag"]).toContain("noindex");
     expect(response?.headers()["cache-control"]).toBe("no-store");
-    await expect(heading(page, "Danh mục món")).toBeVisible();
+    await expect(heading(page, "Tổng quan")).toBeVisible();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     await expect(page.getByRole("navigation", { name: "Chính" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Yêu thích" })).toHaveCount(0);
@@ -372,9 +387,7 @@ test.describe("privacy and isolation", () => {
     await page.reload();
     await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 
-    await openList(page);
-    await page.getByRole("link", { name: "Thêm món" }).click();
-    await expect(heading(page, "Thêm món")).toBeVisible();
+    await openNewDish(page);
     const cached = await page.evaluate(async () => {
       const urls: string[] = [];
       for (const name of await caches.keys()) for (const request of await (await caches.open(name)).keys()) urls.push(request.url);
