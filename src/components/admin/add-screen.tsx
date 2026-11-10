@@ -1,24 +1,80 @@
 "use client";
 
-import { ArrowRight, Camera, Keyboard, PenLine } from "lucide-react";
+import { Camera, FileUp, PenLine, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { adminApi, AdminApiError } from "@/lib/admin-api";
+import { cn } from "@/lib/utils";
 import type { PendingDish } from "@/shared/schemas";
 import { useAdmin } from "./admin-frame";
+import { ImportPanel } from "./import-panel";
 import { MenuCard } from "./menu-card";
 
+/** The Thêm món tabs, by their value in the address (`?cach=`). The first is the default. */
+const WAYS: { key: "anh" | "file"; label: string; icon: LucideIcon }[] = [
+  { key: "anh", label: "Ảnh thực đơn / Gõ tên", icon: Camera },
+  { key: "file", label: "Nhập từ file", icon: FileUp },
+];
+
+/** Where Thêm món opens on a tab: `/admin/add?cach=file`. The default tab has no parameter. */
+const addHref = (way: (typeof WAYS)[number]["key"]) => (way === "anh" ? "/admin/add" : `/admin/add?cach=${way}`);
+
 /**
- * Thêm món (spec #41): every way to add a dish on one page. Ảnh thực đơn and Gõ tên món have the AI
- * write the recipe into Chờ duyệt; Tự nhập công thức is the hand-written form, published straight away.
+ * Thêm món (spec #41, tabs since feat-021): every way to add a dish on one page. "Ảnh thực đơn / Gõ tên"
+ * and "Nhập từ file" put dishes in Chờ duyệt; Tự nhập công thức is the hand-written form, published at once.
+ * The tab is in the address, so a link or bookmark opens it and Back returns to the other one.
  */
 export function AddScreen() {
-  const { requireLogin, refreshPendingCount } = useAdmin();
-  const [pending, setPending] = useState<PendingDish[] | null>(null);
-  const [configured, setConfigured] = useState(true);
+  const way = useSearchParams().get("cach") === "file" ? "file" : "anh";
   const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => heading.current?.focus(), []);
+
+  return (
+    <div>
+      <div className="mb-5">
+        <h1 ref={heading} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
+          Thêm món
+        </h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Chọn một cách để thêm món vào Danh mục món.</p>
+      </div>
+
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <nav aria-label="Cách thêm món" className="inline-flex flex-wrap rounded-xl border bg-muted p-1">
+          {WAYS.map(({ key, label, icon: Icon }) => (
+            <Link
+              key={key}
+              href={addHref(key)}
+              aria-current={way === key ? "page" : undefined}
+              className={cn(
+                "inline-flex min-h-11 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                way === key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon aria-hidden className="size-4" /> {label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Link href="/admin/dishes/new" className={cn(buttonVariants({ variant: "outline" }), "h-11")}>
+            <PenLine aria-hidden /> Tự nhập công thức
+          </Link>
+          <span className="text-sm text-muted-foreground">Đăng ngay, không qua Chờ duyệt.</span>
+        </div>
+      </div>
+
+      {way === "file" ? <ImportPanel /> : <MenuPanel />}
+    </div>
+  );
+}
+
+/** Ảnh thực đơn and Gõ tên món: one checklist, one "Tạo món" (the AI writes each recipe into Chờ duyệt). */
+function MenuPanel() {
+  const { requireLogin, refreshPendingCount } = useAdmin();
+  const [pending, setPending] = useState<PendingDish[] | null>(null);
+  const [configured, setConfigured] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,54 +101,9 @@ export function AddScreen() {
   }
 
   return (
-    <div>
-      <div className="mb-5">
-        <h1 ref={heading} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
-          Thêm món
-        </h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Chọn một cách để thêm món vào Danh mục món.</p>
-      </div>
-
-      <ul className="mb-6 grid gap-3 md:grid-cols-3">
-        <Way icon={<Camera aria-hidden className="size-5" />} href="#upload-title" title="Ảnh thực đơn">
-          AI đọc tên món trong ảnh và viết công thức; món vào Chờ duyệt.
-        </Way>
-        <Way icon={<Keyboard aria-hidden className="size-5" />} href="#names-title" title="Gõ tên món">
-          Bạn gõ tên, AI viết công thức; món vào Chờ duyệt.
-        </Way>
-        <Way icon={<PenLine aria-hidden className="size-5" />} href="/admin/dishes/new" title="Tự nhập công thức">
-          Bạn tự viết công thức; món được đăng ngay, không qua Chờ duyệt.
-        </Way>
-      </ul>
-
-      <MenuCard configured={configured} pending={pending ?? []} onConfigured={setConfigured} onCreated={created} />
-    </div>
-  );
-}
-
-function Way({ icon, href, title, children }: { icon: ReactNode; href: string; title: string; children: ReactNode }) {
-  const body = (
     <>
-      <span className="flex items-center gap-2 font-display text-base font-semibold">
-        {icon} {title}
-        <ArrowRight aria-hidden className="ml-auto size-4 text-muted-foreground" />
-      </span>
-      <span className="mt-1 block text-sm text-muted-foreground">{children}</span>
+      <p className="mb-4 text-sm text-muted-foreground">AI viết công thức; món vào Chờ duyệt.</p>
+      <MenuCard configured={configured} pending={pending ?? []} onConfigured={setConfigured} onCreated={created} />
     </>
-  );
-  const className =
-    "block h-full rounded-2xl border bg-card p-4 outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50";
-  return (
-    <li>
-      {href.startsWith("#") ? (
-        <a href={href} className={className}>
-          {body}
-        </a>
-      ) : (
-        <Link href={href} className={className}>
-          {body}
-        </Link>
-      )}
-    </li>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileUp, Loader2, TriangleAlert } from "lucide-react";
+import { ChevronDown, Download, FileUp, Loader2, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
@@ -72,13 +72,12 @@ function downloadTemplate() {
 }
 
 /**
- * Nhập từ file (spec #41): a JSON file of dishes, previewed here with the same reader the server uses,
+ * Nhập từ file (spec #41; a tab of Thêm món since feat-021): a JSON file of dishes, previewed here with the same reader the server uses,
  * then added to Chờ duyệt in one go. No AI. Nothing reaches the public Danh mục món before Duyệt.
  */
-export function ImportScreen() {
+export function ImportPanel() {
   const router = useRouter();
   const { requireLogin, refreshPendingCount } = useAdmin();
-  const heading = useRef<HTMLHeadingElement>(null);
   const problemRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLHeadingElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -86,8 +85,6 @@ export function ImportScreen() {
   const [file, setFile] = useState<{ name: string; text: string } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => heading.current?.focus(), []);
 
   // The names a file may not repeat: the Danh mục món (hidden dishes included) and Chờ duyệt. The
   // server checks again when saving, so a failure here only makes the preview less exact.
@@ -159,15 +156,9 @@ export function ImportScreen() {
 
   return (
     <div>
-      <div className="mb-5">
-        <h1 ref={heading} tabIndex={-1} className="font-display text-3xl font-semibold outline-none">
-          Nhập từ file
-        </h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Thêm nhiều món một lúc từ một file JSON. Các món vào Chờ duyệt để bạn kiểm tra; người dùng chưa thấy món nào cho tới khi bạn Duyệt.
-          File không bao giờ sửa hay ẩn món đã có.
-        </p>
-      </div>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Nhiều món từ một file JSON, không dùng AI; món vào Chờ duyệt. File không bao giờ sửa hay ẩn món đã có.
+      </p>
 
       <section aria-labelledby="pick-title" className="mb-6 rounded-2xl border bg-card p-5">
         <h2 id="pick-title" className="font-display text-lg font-semibold">
@@ -269,26 +260,29 @@ export function ImportScreen() {
         </section>
       )}
 
-      <section aria-labelledby="guide-title" className="rounded-2xl border bg-card p-5">
-        <h2 id="guide-title" className="font-display text-lg font-semibold">
+      <details className="group rounded-2xl border bg-card">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-5 py-3 font-display text-lg font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
           Cách viết file
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Một danh sách món, hoặc <code>{"{ \"dishes\": [ ... ] }"}</code> như file Xuất JSON. Chỉ <code>name</code> là bắt buộc; giá trị thiếu
-          hoặc không hiểu được để trống và có cảnh báo, bạn sửa khi duyệt. Chữ hoa, chữ thường và dấu không quan trọng. Các trường khác (như{" "}
-          <code>id</code>, <code>version</code>, <code>retired</code>) bị bỏ qua.
-        </p>
-        <dl className="mt-3 divide-y rounded-xl border">
-          {FIELD_GUIDE.map((row) => (
-            <div key={row.field} className="grid gap-x-4 gap-y-0.5 px-3.5 py-2.5 text-sm sm:grid-cols-[12rem_1fr]">
-              <dt>
-                <code className="font-semibold">{row.field}</code> <span className="text-muted-foreground">· {row.meaning}</span>
-              </dt>
-              <dd className="text-muted-foreground">{row.values}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+          <ChevronDown aria-hidden className="size-5 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="border-t px-5 pt-3 pb-5">
+          <p className="text-sm text-muted-foreground">
+            Một danh sách món, hoặc <code>{"{ \"dishes\": [ ... ] }"}</code> như file Xuất JSON. Chỉ <code>name</code> là bắt buộc; giá trị thiếu
+            hoặc không hiểu được để trống và có cảnh báo, bạn sửa khi duyệt. Chữ hoa, chữ thường và dấu không quan trọng. Các trường khác (như{" "}
+            <code>id</code>, <code>version</code>, <code>retired</code>) bị bỏ qua.
+          </p>
+          <dl className="mt-3 divide-y rounded-xl border">
+            {FIELD_GUIDE.map((row) => (
+              <div key={row.field} className="grid gap-x-4 gap-y-0.5 px-3.5 py-2.5 text-sm sm:grid-cols-[12rem_1fr]">
+                <dt>
+                  <code className="font-semibold">{row.field}</code> <span className="text-muted-foreground">· {row.meaning}</span>
+                </dt>
+                <dd className="text-muted-foreground">{row.values}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </details>
     </div>
   );
 }

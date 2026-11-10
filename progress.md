@@ -3,7 +3,7 @@
 ## Current State
 
 **Last Updated:** 2026-11-10
-**Active Feature:** feat-020 admin menu, Tổng quan, Thêm món, Nhập từ file, bulk Duyệt (spec #41): built on `feat/admin-nav-import`, PR open, not merged
+**Active Feature:** feat-021 Nhập từ file moves into Thêm món (small tweak, no spec issue): built on `feat/add-tabs`, committed, not pushed
 
 ## Status
 
@@ -23,6 +23,8 @@
 - [x] feat-019 Ảnh thực đơn live (PR #37, spec #36); migration 0003 applied to production
 - [x] feat-017 Tác nhân thu thập live (PR #38, spec #31): migration 0004 applied to production, `CRON_SECRET` set and production redeployed. First Chạy ngay on 2026-11-09: 10 pages read, 3 dishes added to Chờ duyệt, status partial (vnexpress source error, one reader error)
 - [x] feat-020 built (spec #41, branch `feat/admin-nav-import`): admin sidebar / phone drawer, Tổng quan at `/admin` (list now at `/admin/dishes`), Thêm món page, agent on `/admin/agent`, Nhập từ file (JSON, preview, template, migration 0005 `file` source kind), bulk Duyệt; `./init.sh` green; awaiting merge and the production migration
+- [x] feat-020 merged (PR #42, `dde5951`); migration 0005 applied to production and verified
+- [x] feat-021 built (`feat/add-tabs`): Nhập từ file left the admin menu and is a tab of Thêm món (`/admin/add?cach=file`, Back works); "Tự nhập công thức" is a separate button; `/admin/import` redirects; "Cách viết file" folded; `./init.sh` green (offline flake passed on re-run)
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress

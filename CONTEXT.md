@@ -41,7 +41,7 @@ _Avoid_: Bản nháp, Draft, Hàng đợi (trong chữ hiển thị) — Danh m�
 _Avoid_: Ảnh công thức (cách cũ, đã thay), Menu (trong chữ hiển thị).
 
 **Nhập từ file**:
-Cách thêm nhiều món một lúc: **Quản trị viên** tải lên một file JSON (dạng file Xuất JSON, hoặc chỉ một danh sách món). Chỉ tên món là bắt buộc; Kiểu bữa ăn, Nhóm món, Vùng miền nhận cả mã (`buacom`, `canh`, `nam`) lẫn chữ tiếng Việt, có hay không dấu. Trang cho xem trước (sẽ thêm, bỏ qua và vì sao, cảnh báo) rồi thêm các món thành **Món chờ duyệt**. Món trùng tên với Danh mục món (cả món đã ẩn) hoặc Chờ duyệt bị bỏ qua; file không bao giờ sửa hay ẩn món đã có. Không dùng AI.
+Cách thêm nhiều món một lúc, là một thẻ của trang Thêm món (cạnh "Ảnh thực đơn / Gõ tên"): **Quản trị viên** tải lên một file JSON (dạng file Xuất JSON, hoặc chỉ một danh sách món). Chỉ tên món là bắt buộc; Kiểu bữa ăn, Nhóm món, Vùng miền nhận cả mã (`buacom`, `canh`, `nam`) lẫn chữ tiếng Việt, có hay không dấu. Trang cho xem trước (sẽ thêm, bỏ qua và vì sao, cảnh báo) rồi thêm các món thành **Món chờ duyệt**. Món trùng tên với Danh mục món (cả món đã ẩn) hoặc Chờ duyệt bị bỏ qua; file không bao giờ sửa hay ẩn món đã có. Không dùng AI.
 _Avoid_: Import, Tải lên hàng loạt (trong chữ hiển thị; tên trong mã như `/admin/import` vẫn dùng "import").
 
 **Tổng quan**:
