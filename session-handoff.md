@@ -37,4 +37,4 @@
 
 ## Recommended Next Step
 
-- Open the feat-021 PR. Possible follow-ups: record the HTTP status in agent source errors, and drop the openrouter/free fallback. Spec C and Langfuse remain low priority.
+- feat-021 is merged (PR #43). Next: the owner's next idea. Possible follow-ups: record the HTTP status in agent source errors, and drop the openrouter/free fallback. Push notifications (spec C) and Langfuse integration are low priority (progress.md, What's Next 6 and 7).
