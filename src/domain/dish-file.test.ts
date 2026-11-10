@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catalogCounts, dishFileTemplate, readDishFile } from "./dish-file";
+import { dishFileTemplate, readDishFile } from "./dish-file";
 import { bowl, dish } from "./testing";
 
 // Nhập từ file (spec #41): a JSON file of dishes becomes Món chờ duyệt. These tests pin what a file turns into.
@@ -218,20 +218,5 @@ describe("the template and a Xuất JSON file", () => {
         warnings: [],
       })),
     });
-  });
-});
-
-describe("the dish counts on Tổng quan", () => {
-  it("counts shown and hidden dishes, and the shown ones per Nhóm món and for Bữa 1 món", () => {
-    const dishes = [
-      dish({ id: "x1" }),
-      dish({ id: "x2" }),
-      dish({ id: "x3", retired: true }),
-      dish({ id: "c1", category: "canh" }),
-      dish({ id: "m1", category: "man", retired: true }),
-      bowl({ id: "t1" }),
-    ];
-    expect(catalogCounts(dishes)).toEqual({ shown: 4, hidden: 2, xao: 2, canh: 1, man: 0, buatomonuoc: 1 });
-    expect(catalogCounts([])).toEqual({ shown: 0, hidden: 0, xao: 0, canh: 0, man: 0, buatomonuoc: 0 });
   });
 });

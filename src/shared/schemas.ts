@@ -141,6 +141,7 @@ export const menuReadingResponseSchema = z.object({
 
 export const pendingWarningSchema = z.discriminatedUnion("code", [
   z.object({ code: z.literal("ai-written") }),
+  z.object({ code: z.literal("missing"), field: z.enum(["category", "ingredients", "steps"]) }),
   z.object({ code: z.literal("chay-toi") }),
   z.object({
     code: z.literal("possible-duplicate"),

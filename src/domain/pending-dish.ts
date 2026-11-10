@@ -105,6 +105,8 @@ export type PendingSourceKind = (typeof PENDING_SOURCE_KINDS)[number];
 /** Something the Quản trị viên should look at before Duyệt. Derived when read, so it follows the catalog as it is now. */
 export type PendingWarning =
   | { code: "ai-written" }
+  /** A dish from a file still lacks something Duyệt needs (the file left it out or it was not understood). */
+  | { code: "missing"; field: "category" | "ingredients" | "steps" }
   | { code: "chay-toi" }
   | { code: "possible-duplicate"; of: "dish" | "pending"; id: string; name: string; hidden: boolean };
 
@@ -113,13 +115,18 @@ export type PendingWarning =
  * already in the Danh mục món (hidden ones included: they still own their name) or another Món chờ duyệt.
  */
 export function pendingWarnings(
-  draft: Pick<DishDraft, "name" | "chay" | "ingredients" | "steps"> & { sourceKind?: PendingSourceKind },
+  draft: Pick<DishDraft, "name" | "chay" | "ingredients" | "steps"> & Partial<Pick<DishDraft, "mealType" | "category">> & { sourceKind?: PendingSourceKind },
   catalog: readonly Pick<Dish, "id" | "name" | "retired">[],
   pending: readonly { id: string; name: string }[],
   selfId?: string,
 ): PendingWarning[] {
   const warnings: PendingWarning[] = [];
   if (draft.sourceKind === "menu") warnings.push({ code: "ai-written" });
+  if (draft.sourceKind === "file") {
+    if (draft.mealType === "buacom" && !draft.category) warnings.push({ code: "missing", field: "category" });
+    if (draft.ingredients.length === 0) warnings.push({ code: "missing", field: "ingredients" });
+    if (draft.steps.length === 0) warnings.push({ code: "missing", field: "steps" });
+  }
   if (draft.chay && [draft.name, ...draft.ingredients, ...draft.steps].some(mentionsToi)) {
     warnings.push({ code: "chay-toi" });
   }

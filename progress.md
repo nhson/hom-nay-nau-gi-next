@@ -2,8 +2,8 @@
 
 ## Current State
 
-**Last Updated:** 2026-11-09
-**Active Feature:** none. feat-017 Tác nhân thu thập is live (PR #38)
+**Last Updated:** 2026-11-10
+**Active Feature:** feat-020 admin menu, Tổng quan, Thêm món, Nhập từ file, bulk Duyệt (spec #41): built on `feat/admin-nav-import`, PR open, not merged
 
 ## Status
 
@@ -22,6 +22,7 @@
 - [x] feat-018 Next.js 16.4.0 → 16.4.5 (PR #33): clears the security advisory that stopped `next build` every other run
 - [x] feat-019 Ảnh thực đơn live (PR #37, spec #36); migration 0003 applied to production
 - [x] feat-017 Tác nhân thu thập live (PR #38, spec #31): migration 0004 applied to production, `CRON_SECRET` set and production redeployed. First Chạy ngay on 2026-11-09: 10 pages read, 3 dishes added to Chờ duyệt, status partial (vnexpress source error, one reader error)
+- [x] feat-020 built (spec #41, branch `feat/admin-nav-import`): admin sidebar / phone drawer, Tổng quan at `/admin` (list now at `/admin/dishes`), Thêm món page, agent on `/admin/agent`, Nhập từ file (JSON, preview, template, migration 0005 `file` source kind), bulk Duyệt; `./init.sh` green; awaiting merge and the production migration
 - [x] Harness added in PR #12 (this file, `CLAUDE.md`, `feature_list.json`, `session-handoff.md`, `init.sh`); `./init.sh` ran green
 
 ### What's In Progress
@@ -30,6 +31,7 @@
 
 ### What's Next
 
+0. Owner reviews and merges the feat-020 PR; then run migration `0005_file_source_kind` on production (ask first). Until it runs, Nhập từ file fails on production with a CHECK violation (the rest of the admin works)
 1. Owner checks Ảnh thực đơn on a phone and raises enhancements
 2. Watch the first nightly run (22:00 UTC) in Lần chạy gần nhất; it proves `CRON_SECRET` reaches the cron route
 3. Prove the single-statement saves are fine on the real Neon driver beyond the first edit (they worked for one real save); nothing further needed unless something fails
@@ -47,6 +49,7 @@
 - [ ] Code review follow-ups on feat-016 (judgement calls, not blocking): the chay/tỏi warning also checks the name while the Duyệt rule checks only ingredients/steps; an exact-name duplicate is refused on Duyệt (add-dish rule), only near matches can be approved; warnings refresh on load/Lưu, not while editing; enum lists repeated in `pending-dish.ts`; `dish-form-screen.tsx` has many review-mode branches
 - [ ] Tác nhân thu thập: vnexpress gives a `source` error from Vercel although robots.txt and the listing answer 200 with the agent's User-Agent from a home connection (possibly a datacenter-IP block or a timeout); the run entry does not record the HTTP status, so add it before digging further
 - [ ] One of the first three agent dishes was read by the `openrouter/free` fallback, which routed to a 1.7B model (`liquid/lfm-3-1.7b:free`; no Nhóm món set). Check its quality in Chờ duyệt; consider dropping the generic fallback for page reading
+- [ ] feat-020 judgement calls: parser field gaps show in review as "missing" warnings derived from the dish as it is now (only for file dishes; an unrecognised value becomes a missing one); Nhập từ file accepts a few more yes/no and meal-type words and "1 giờ 30 phút" times than the spec listed; a file name is kept in `source_url` (Duyệt/Bỏ now mark seen pages only for agent rows); server error messages stay English like the rest of the admin API
 - [ ] Free OpenRouter models change often and are capped (about 50 calls a day without credit); a model id can disappear. Change `OPENROUTER_MODELS` or the default list in `openrouter-reader.ts`
 
 - [ ] Custom analytics events are not visible on Vercel Hobby (owner chose to stay): the north-star metric (mark_cooked/week) is unobservable

@@ -130,6 +130,17 @@ describe("Nhập từ file: a JSON file of dishes becomes Món chờ duyệt", (
     expect((await list(kit)).map((item) => item.name).sort()).toEqual(["Bún chả", "Gà kho gừng"]);
   });
 
+  it("keeps what a dish lacks for Duyệt as a warning in review", async () => {
+    const kit = await setup();
+    await importFile(kit, fileOf([{ name: "Bún riêu cua", mealType: "Bữa cơm 3 món", category: "lẩu" }]));
+    const [item] = await list(kit);
+    expect(item.warnings).toEqual([
+      { code: "missing", field: "category" },
+      { code: "missing", field: "ingredients" },
+      { code: "missing", field: "steps" },
+    ]);
+  });
+
   it("gives imported dishes the usual review warnings", async () => {
     const kit = await setup();
     await importFile(kit, fileOf([{ ...ga, name: "Canh chua cá lóc miền Tây", category: "canh", chay: true, ingredients: ["Cá", "Tỏi"] }]));

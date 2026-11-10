@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Camera, FileUp, PenLine } from "lucide-react";
+import { ArrowRight, Camera, Keyboard, PenLine } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { adminApi, AdminApiError } from "@/lib/admin-api";
@@ -54,14 +54,14 @@ export function AddScreen() {
       </div>
 
       <ul className="mb-6 grid gap-3 md:grid-cols-3">
-        <Way icon={<Camera aria-hidden className="size-5" />} href="#upload-title" title="Ảnh thực đơn hoặc gõ tên món">
-          AI viết công thức, món vào Chờ duyệt để bạn kiểm tra.
+        <Way icon={<Camera aria-hidden className="size-5" />} href="#upload-title" title="Ảnh thực đơn">
+          AI đọc tên món trong ảnh và viết công thức; món vào Chờ duyệt.
+        </Way>
+        <Way icon={<Keyboard aria-hidden className="size-5" />} href="#names-title" title="Gõ tên món">
+          Bạn gõ tên, AI viết công thức; món vào Chờ duyệt.
         </Way>
         <Way icon={<PenLine aria-hidden className="size-5" />} href="/admin/dishes/new" title="Tự nhập công thức">
-          Bạn tự viết công thức. Món được đăng ngay, không qua Chờ duyệt.
-        </Way>
-        <Way icon={<FileUp aria-hidden className="size-5" />} href="/admin/import" title="Nhập từ file">
-          Nhiều món một lúc từ một file JSON. Món vào Chờ duyệt.
+          Bạn tự viết công thức; món được đăng ngay, không qua Chờ duyệt.
         </Way>
       </ul>
 

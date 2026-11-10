@@ -78,6 +78,14 @@ export interface AdminDeps {
  */
 const MAX_UPLOAD_CHARS = 4_400_000;
 
+/**
+ * The most a Nhập từ file request body may carry: the file travels as a JSON string, and escaping can
+ * make it up to twice the file's size. The file itself is then held to DISH_FILE_MAX_BYTES.
+ */
+const MAX_IMPORT_BODY_CHARS = DISH_FILE_MAX_BYTES * 2 + 1_000;
+/** A file name is kept as the Món chờ duyệt's source; longer names are cut. */
+const FILE_NAME_MAX = 200;
+
 const loginBody = z.object({ passphrase: z.string() });
 const hiddenBody = z.object({ retired: z.boolean() });
 
@@ -463,13 +471,15 @@ export function createAdminHandlers(deps: AdminDeps) {
   const approvePendingManyHandler = guarded(true, async (request, db) => {
     const input = await readJson(request, bulkApproveSchema);
     if (!input) return errorResponse(400, "bad_request", `Send { ids: 1 to ${BULK_APPROVE_MAX} Món chờ duyệt ids }.`);
+    if (!(await readCatalog(db))) return catalogUnavailable();
     const approved: BulkApproveResponse["approved"] = [];
     const failed: BulkApproveResponse["failed"] = [];
     for (const id of new Set(input.ids)) {
       const record = await getPending(db, id);
       const result = record ? await approveOne(db, id, normalizeDraft(record)) : ({ ok: false, reason: "not_found" } as const);
       if (result.ok) approved.push({ id, dishId: result.dishId });
-      else if (result.reason === "catalog_unavailable") return catalogUnavailable();
+      // The catalog cannot vanish once there; were it to, what was approved so far is still reported.
+      else if (result.reason === "catalog_unavailable") break;
       else failed.push({ id, reason: result.reason, issues: result.reason === "validation_failed" ? result.issues : [] });
     }
     const catalog = await readCatalog(db);
@@ -479,8 +489,7 @@ export function createAdminHandlers(deps: AdminDeps) {
   /** Nhập từ file: the dishes of a JSON file become Món chờ duyệt, read again here against the names as they are now. No AI. */
   const importPendingHandler = guarded(true, async (request, db) => {
     const body = await request.text();
-    // The file travels as a JSON string, so escaping can make the body larger than the file itself.
-    if (body.length > DISH_FILE_MAX_BYTES * 2 + 1_000) return fileTooLarge();
+    if (body.length > MAX_IMPORT_BODY_CHARS) return fileTooLarge();
     let parsed: unknown = null;
     try {
       parsed = JSON.parse(body);
@@ -499,7 +508,7 @@ export function createAdminHandlers(deps: AdminDeps) {
       return errorResponse(400, "bad_request", "The file cannot be imported.", {}, { refusal: reading.refusal });
     }
     const added = reading.add.map((item) => ({ ...item, id: crypto.randomUUID() }));
-    const fileName = input.data.fileName.trim().slice(0, 200) || "file.json";
+    const fileName = input.data.fileName.trim().slice(0, FILE_NAME_MAX) || "file.json";
     await insertPendingMany(db, added, { source: { kind: "file", url: fileName }, at: now() });
     return json(
       { added: added.map(({ row, id, draft, warnings }) => ({ row, id, name: draft.name, warnings })), skipped: reading.skipped },

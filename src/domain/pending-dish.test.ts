@@ -199,5 +199,17 @@ describe("warnings on a Món chờ duyệt", () => {
     expect(pendingWarnings({ ...proposal("Gà kho gừng"), sourceKind: "photo" }, catalog, [])).toEqual([]);
     expect(pendingWarnings({ ...proposal("Gà kho gừng"), sourceKind: "agent" }, catalog, [])).toEqual([]);
   });
+
+  it("lists what a dish from a file still lacks for Duyệt, as it is now", () => {
+    const fromFile = { ...proposal("Gà kho gừng", { ingredients: [], steps: [] }), mealType: "buacom" as const, category: null, sourceKind: "file" as const };
+    expect(pendingWarnings(fromFile, catalog, [])).toEqual([
+      { code: "missing", field: "category" },
+      { code: "missing", field: "ingredients" },
+      { code: "missing", field: "steps" },
+    ]);
+    expect(pendingWarnings({ ...fromFile, mealType: "buatomonuoc", ingredients: ["Gà"], steps: ["Kho"] }, catalog, [])).toEqual([]);
+    // Other sources keep their own checks: the form says what Duyệt needs.
+    expect(pendingWarnings({ ...fromFile, sourceKind: "agent" }, catalog, [])).toEqual([]);
+  });
 });
 

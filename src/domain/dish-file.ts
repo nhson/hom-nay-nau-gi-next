@@ -3,7 +3,7 @@ import { mentionsToi, normalizeDraft, type DishDraft } from "./dish-rules";
 import { DISH_NAME_MAX } from "./menu-photo";
 import { linesFrom, minutesFrom, similarNames } from "./pending-dish";
 import { foldText } from "./selectors";
-import type { Category, Dish, MealType, Region } from "./types";
+import type { Category, MealType, Region } from "./types";
 
 /** Nhập từ file limits (spec #41): one file holds at most this many dishes and this many bytes. */
 export const DISH_FILE_MAX_DISHES = 200;
@@ -223,28 +223,4 @@ export function dishFileTemplate(): string {
     },
   ];
   return `${JSON.stringify({ dishes }, null, 2)}\n`;
-}
-
-/** The numbers on Tổng quan: shown and hidden dishes, and the shown ones per Nhóm món and for Bữa 1 món. */
-export interface CatalogCounts {
-  shown: number;
-  hidden: number;
-  xao: number;
-  canh: number;
-  man: number;
-  buatomonuoc: number;
-}
-
-export function catalogCounts(dishes: readonly Pick<Dish, "mealType" | "category" | "retired">[]): CatalogCounts {
-  const counts: CatalogCounts = { shown: 0, hidden: 0, xao: 0, canh: 0, man: 0, buatomonuoc: 0 };
-  for (const item of dishes) {
-    if (item.retired) {
-      counts.hidden++;
-      continue;
-    }
-    counts.shown++;
-    if (item.mealType === "buatomonuoc") counts.buatomonuoc++;
-    else if (item.category) counts[item.category]++;
-  }
-  return counts;
 }
